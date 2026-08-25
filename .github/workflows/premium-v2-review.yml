@@ -55,7 +55,7 @@ jobs:
           done
       - name: Screenshot desktop and mobile
         run: |
-          cat > /tmp/screenshot.mjs <<'JS'
+          cat > screenshot.mjs <<'JS'
           import { chromium } from 'playwright';
           import { pathToFileURL } from 'url';
           import path from 'path';
@@ -71,7 +71,8 @@ jobs:
           }
           await browser.close();
           JS
-          node /tmp/screenshot.mjs
+          node screenshot.mjs
+          rm screenshot.mjs
           for slug in koppen e-install energiek jansen akta; do
             test -s "premium-v2-review/$slug/desktop.png"
             test -s "premium-v2-review/$slug/mobile.png"
