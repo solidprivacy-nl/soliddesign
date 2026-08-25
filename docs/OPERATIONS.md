@@ -26,8 +26,11 @@ Expected:
 artifacts/golden/
 ├── pipeline.json
 ├── site_config.json
+├── design_profile.json
 ├── preview.html
-└── print_pack.html
+├── print_pack.html
+├── technical_report.md
+└── technical_report.html
 ```
 
 The golden gate is offline and needs no Overture network, Supabase, AI-model, Cloudflare or donor credentials.
@@ -147,9 +150,16 @@ Verify that the Overture website actually belongs to the business before the aud
 soliddesign audit prospect.json --out audit.json
 ```
 
-The adapter validates the public URL, runs Pitch Doctor behind its CLI/JSON boundary and writes SolidDesign `AuditResult` JSON.
+The adapter validates the public URL, runs Pitch Doctor behind its CLI/JSON boundary and now writes two evidence layers:
 
-That normalized JSON is the downstream contract.
+```text
+raw_audit.json   = donor JSON preserved before normalization
+audit.json       = SolidDesign normalized/reviewable contract
+```
+
+`raw_audit.json` is written next to `audit.json` by default. Use `--raw-out <path>` only when a different location is necessary.
+
+The normalized `audit.json` remains the downstream contract.
 
 ### Preserve raw evidence; present root causes
 
@@ -200,7 +210,31 @@ soliddesign assemble \
   --out artifacts/<prospect-id>
 ```
 
-Outputs VerifiedFacts, conversion brief, OpenPage-compatible SiteConfig, static preview and print pack.
+If `raw_audit.json` exists next to `audit.json`, it is included automatically in the technical report. An explicit `--raw-audit <path>` may override that location.
+
+Outputs:
+
+```text
+pipeline.json
+site_config.json
+design_profile.json
+preview.html
+print_pack.html
+technical_report.md
+technical_report.html
+```
+
+The report intentionally separates:
+
+```text
+reviewed findings
+→ suitable basis for prospect discussion
+
+raw donor checks
+→ traceability/depth only; review before turning into claims
+```
+
+The Markdown report is the easiest source for manually translating technical language. The HTML version is print-friendly and contains `noindex`.
 
 ## 11. Human review before publication/mail
 
@@ -211,6 +245,7 @@ Verify:
 - every service/claim is factual;
 - no fake testimonial/award exists;
 - raw donor errors are not presented as independent facts when they are cascading;
+- technical report uses reviewed findings as the primary discussion layer;
 - preview says it is a concept;
 - preview contains `noindex`;
 - CTA uses verified contact data;

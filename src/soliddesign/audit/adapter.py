@@ -22,8 +22,18 @@ def load_fixture_audit(path: str | Path) -> AuditResult:
     return normalize_pitch_doctor_json(data, source="fixture")
 
 
-def run_pitch_doctor(prospect: Prospect, *, command: str | None = None) -> AuditResult:
-    """Run Pitch Doctor through its stable CLI/JSON boundary."""
+def run_pitch_doctor(
+    prospect: Prospect,
+    *,
+    command: str | None = None,
+    raw_json_out: str | Path | None = None,
+) -> AuditResult:
+    """Run Pitch Doctor through its stable CLI/JSON boundary.
+
+    When ``raw_json_out`` is provided, the donor JSON is preserved byte-for-meaning
+    as formatted JSON before normalization. The normalized ``AuditResult`` remains
+    the downstream contract.
+    """
     validate_public_http_url(prospect.website_url)
     executable = command or os.getenv("PITCH_DOCTOR_COMMAND", "pitch-doctor")
     if shutil.which(executable) is None and not Path(executable).exists():
@@ -64,6 +74,14 @@ def run_pitch_doctor(prospect: Prospect, *, command: str | None = None) -> Audit
             raise AuditAdapterError("Pitch Doctor produced no JSON report")
 
         data = json.loads(json_files[0].read_text(encoding="utf-8"))
+        if raw_json_out is not None:
+            raw_path = Path(raw_json_out)
+            raw_path.parent.mkdir(parents=True, exist_ok=True)
+            raw_path.write_text(
+                json.dumps(data, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
         result = normalize_pitch_doctor_json(data, source="pitch-doctor")
         screenshot = _first_embedded_image(html_files[0]) if html_files else None
         return AuditResult(
