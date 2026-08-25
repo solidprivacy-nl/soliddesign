@@ -52,7 +52,6 @@ def build_site_config(
             "type": "hero",
             "variant": profile.hero_variant,
             "props": {
-                "eyebrow": f"Dienstverlening in {facts.city}" if facts.city else "Dienstverlening",
                 "headline": brief.headline,
                 "subheadline": brief.subheadline,
                 "primaryCta": brief.primary_cta,
@@ -142,7 +141,7 @@ def render_static_html(config: SiteConfig, *, prospect_name: str) -> str:
     theme = config.theme
     accent = _safe_color(theme.get("accent"), "#315E57")
     ink = _safe_color(theme.get("ink"), "#18201D")
-    muted = _safe_color(theme.get("muted"), "#66706A")
+    muted = _safe_color(theme.get("muted"), "#59625C")
     paper = _safe_color(theme.get("paper"), "#FBFAF7")
     surface = _safe_color(theme.get("surface"), "#F1EEE7")
     line = _safe_color(theme.get("line"), "#D9D5CC")
@@ -179,7 +178,7 @@ h1,h2,h3{{font-family:var(--display);font-weight:700;letter-spacing:-.035em}}
 h1{{max-width:760px;margin:0 0 24px;font-size:clamp(44px,5.8vw,74px);line-height:1.01;text-wrap:balance;overflow-wrap:break-word;hyphens:auto}}
 h2{{margin:0 0 18px;font-size:clamp(34px,4vw,50px);line-height:1.06;text-wrap:balance}}
 h3{{margin:0;font-size:23px;line-height:1.18}}
-.hero-eyebrow,.section-label,.cta-eyebrow{{margin:0 0 16px;color:var(--accent);font-size:13px;font-weight:800}}
+.section-label,.cta-eyebrow{{margin:0 0 16px;color:var(--accent);font-size:13px;font-weight:800}}
 .lede{{max-width:650px;margin:0 0 30px;color:var(--muted);font-size:19px}}
 .hero-actions{{display:flex;gap:12px;flex-wrap:wrap}}
 .service-summary{{background:var(--surface);border:1px solid var(--line);padding:30px 32px;border-radius:calc(var(--radius) * 1.5)}}
@@ -191,10 +190,9 @@ h3{{margin:0;font-size:23px;line-height:1.18}}
 .summary-row span{{font-weight:650;overflow-wrap:anywhere}}
 .summary-location{{margin:20px 0 0;color:var(--muted);font-size:14px}}
 section{{padding:76px 0;border-top:1px solid var(--line)}}
-.proof-band{{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}}
-.proof-items{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}}
-.proof-item{{padding:26px 28px;border-left:1px solid var(--line)}}
-.proof-item:first-child{{border-left:0}}
+.proof-band{{background:var(--surface);padding:18px 0}}
+.proof-items{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:36px}}
+.proof-item{{padding:10px 0}}
 .proof-item strong{{display:block;font-family:var(--display);font-size:23px;line-height:1.2}}
 .proof-item span{{display:block;margin-top:5px;color:var(--muted);font-size:13px}}
 .section-head{{display:grid;grid-template-columns:150px minmax(0,1fr);gap:36px;margin-bottom:42px}}
@@ -203,7 +201,7 @@ section{{padding:76px 0;border-top:1px solid var(--line)}}
 .service-row{{display:grid;grid-template-columns:minmax(210px,.72fr) minmax(280px,1.28fr);gap:42px;align-items:start;padding:30px 0;border-bottom:1px solid var(--line)}}
 .service-row p{{margin:0;color:var(--muted);max-width:620px}}
 .cta-wrap{{padding:76px 0}}
-.cta{{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:44px;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);padding:42px 44px;border-radius:calc(var(--radius) * 1.5)}}
+.cta{{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:44px;align-items:center;background:var(--surface);border:1px solid var(--line);padding:42px 44px;border-radius:calc(var(--radius) * 1.5)}}
 .cta h2{{max-width:720px;margin-bottom:10px}}
 .cta p{{margin:0;color:var(--muted)}}
 .cta .address{{margin-top:6px;font-size:14px}}
@@ -221,9 +219,8 @@ footer strong{{color:var(--ink);font-family:var(--display);font-size:17px}}
   h1{{font-size:clamp(40px,12vw,58px);line-height:1.02}}
   .lede{{font-size:17px}}
   .service-summary{{padding:26px 24px}}
-  .proof-items{{grid-template-columns:1fr}}
-  .proof-item,.proof-item:first-child{{padding:18px 0;border-left:0;border-top:1px solid var(--line)}}
-  .proof-item:first-child{{border-top:0}}
+  .proof-items{{grid-template-columns:1fr;gap:8px}}
+  .proof-item{{padding:12px 0}}
   section{{padding:60px 0}}
   .section-head{{grid-template-columns:1fr;gap:4px;margin-bottom:32px}}
   .service-row{{grid-template-columns:1fr;gap:10px;padding:24px 0}}
@@ -245,7 +242,7 @@ def render_snapshot_svg(config: SiteConfig) -> str:
     sub = html.escape(str(props.get("subheadline") or "")[:110])
     services = [str(x) for x in props.get("services", [])][:3]
     service_text = " · ".join(services)
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720"><rect width="1200" height="720" fill="#FBFAF7"/><rect y="0" width="1200" height="64" fill="#18201D"/><text x="55" y="41" font-family="Arial" font-size="15" fill="#F8F6F0">Concept redesign — niet de officiële website</text><text x="70" y="145" font-family="Georgia" font-size="25" font-weight="700" fill="#18201D">{html.escape(config.name[:60])}</text><line x1="70" y1="170" x2="1130" y2="170" stroke="#D9D5CC"/><text x="70" y="230" font-family="Arial" font-size="15" font-weight="700" fill="{accent}">Dienstverlening</text><text x="70" y="310" font-family="Georgia" font-size="43" font-weight="700" fill="#18201D">{headline}</text><text x="70" y="370" font-family="Arial" font-size="19" fill="#66706A">{sub}</text><rect x="735" y="225" width="395" height="240" rx="8" fill="#F1EEE7" stroke="#D9D5CC"/><text x="770" y="270" font-family="Arial" font-size="14" fill="#66706A">Diensten in één oogopslag</text><text x="770" y="325" font-family="Georgia" font-size="21" font-weight="700" fill="#18201D">{html.escape(service_text[:62])}</text><rect x="70" y="470" width="160" height="54" rx="6" fill="{accent}"/><text x="110" y="504" font-family="Arial" font-size="17" font-weight="700" fill="#fff">Bel direct</text></svg>'''
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720"><rect width="1200" height="720" fill="#FBFAF7"/><rect y="0" width="1200" height="64" fill="#18201D"/><text x="55" y="41" font-family="Arial" font-size="15" fill="#F8F6F0">Concept redesign — niet de officiële website</text><text x="70" y="145" font-family="Georgia" font-size="25" font-weight="700" fill="#18201D">{html.escape(config.name[:60])}</text><line x1="70" y1="170" x2="1130" y2="170" stroke="#D9D5CC"/><text x="70" y="230" font-family="Arial" font-size="15" font-weight="700" fill="{accent}">Dienstverlening</text><text x="70" y="310" font-family="Georgia" font-size="43" font-weight="700" fill="#18201D">{headline}</text><text x="70" y="370" font-family="Arial" font-size="19" fill="#59625C">{sub}</text><rect x="735" y="225" width="395" height="240" rx="8" fill="#F1EEE7" stroke="#D9D5CC"/><text x="770" y="270" font-family="Arial" font-size="14" fill="#59625C">Diensten in één oogopslag</text><text x="770" y="325" font-family="Georgia" font-size="21" font-weight="700" fill="#18201D">{html.escape(service_text[:62])}</text><rect x="70" y="470" width="160" height="54" rx="6" fill="{accent}"/><text x="110" y="504" font-family="Arial" font-size="17" font-weight="700" fill="#fff">Bel direct</text></svg>'''
 
 
 def _render_block(block: dict[str, Any]) -> str:
@@ -266,7 +263,7 @@ def _render_block(block: dict[str, Any]) -> str:
         )
         location = html.escape(str(p.get("location") or ""))
         location_html = f'<p class="summary-location">Vestiging: {location}</p>' if location else ""
-        return f'<div class="wrap"><section class="hero"><div class="hero-copy"><p class="hero-eyebrow">{html.escape(str(p.get("eyebrow", "Dienstverlening")))}</p><h1>{html.escape(str(p.get("headline", "")))}</h1><p class="lede">{html.escape(str(p.get("subheadline", "")))}</p><div class="hero-actions"><a class="btn" href="{href}">{html.escape(str(p.get("primaryCta", "Contact")))}</a><a class="btn secondary" href="#diensten">Bekijk diensten</a></div></div><aside class="service-summary" aria-label="Diensten in één oogopslag"><p class="summary-kicker">Diensten in één oogopslag</p><h2>Waarmee u terecht kunt</h2><div class="summary-list">{rows}</div>{location_html}</aside></section></div>'
+        return f'<div class="wrap"><section class="hero"><div class="hero-copy"><h1>{html.escape(str(p.get("headline", "")))}</h1><p class="lede">{html.escape(str(p.get("subheadline", "")))}</p><div class="hero-actions"><a class="btn" href="{href}">{html.escape(str(p.get("primaryCta", "Contact")))}</a><a class="btn secondary" href="#diensten">Bekijk diensten</a></div></div><aside class="service-summary" aria-label="Diensten in één oogopslag"><p class="summary-kicker">Diensten in één oogopslag</p><h2>Waarmee u terecht kunt</h2><div class="summary-list">{rows}</div>{location_html}</aside></section></div>'
     if t == "features":
         items = "".join(
             f'<div class="service-row"><h3>{html.escape(_clean_service(str(i.get("title", ""))))}</h3><p>{html.escape(str(i.get("description", "")))}</p></div>'
