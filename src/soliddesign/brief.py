@@ -43,9 +43,9 @@ def build_conversion_brief(facts: VerifiedFacts, audit: AuditResult) -> Conversi
 
 
 def _customer_headline(facts: VerifiedFacts) -> str:
-    services = [_clean_service(s) for s in facts.services if s.strip()]
+    services = [_clean_service(s).lower() for s in facts.services if s.strip()]
     if not services:
-        services = [_clean_service(facts.category)]
+        services = [_clean_service(facts.category).lower()]
 
     if len(services) >= 2:
         subject = f"{services[0]} en {services[1]}"
@@ -57,7 +57,7 @@ def _customer_headline(facts: VerifiedFacts) -> str:
 
 
 def _customer_subheadline(facts: VerifiedFacts) -> str:
-    remaining = [_clean_service(s) for s in facts.services[2:4] if s.strip()]
+    remaining = [_clean_service(s).lower() for s in facts.services[2:4] if s.strip()]
     if remaining:
         extra = _join_nl(remaining)
         return f"Ook voor {extra}. Neem rechtstreeks contact op voor een vraag of project."
