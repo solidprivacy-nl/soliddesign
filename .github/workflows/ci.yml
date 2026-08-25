@@ -35,13 +35,8 @@ jobs:
           grep -q 'noindex,nofollow,noarchive' /tmp/soliddesign-golden/preview.html
           ! grep -qi '<form' /tmp/soliddesign-golden/preview.html
           ! grep -Eqi 'linear-gradient|radial-gradient' /tmp/soliddesign-golden/preview.html
-      - name: Impeccable deterministic design QA
-        shell: bash
+      - name: Impeccable deterministic design gate
         run: |
-          set +e
           npx --yes impeccable@3.6.0 detect --json /tmp/soliddesign-golden/preview.html > /tmp/impeccable.json
-          code=$?
-          set -e
-          test "$code" -eq 0 -o "$code" -eq 2
           test -s /tmp/impeccable.json
-          cat /tmp/impeccable.json
+          test "$(cat /tmp/impeccable.json)" = "[]"
