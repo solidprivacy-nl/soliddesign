@@ -11,7 +11,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +35,7 @@ jobs:
             --out artifacts/gate2/overture-utrecht-services.json \
             > artifacts/gate2/overture-utrecht-services.stdout.json
 
-      - name: Analyze candidate universe
+      - name: Analyze candidate universe and select first prospect
         run: |
           python - <<'PY'
           import json, re
@@ -71,6 +71,10 @@ jobs:
               if install_terms.search(haystack):
                   candidates.append(r)
 
+          selected = next((r for r in candidates if r.get('name') == 'Hennie Jansen Elektrotechniek'), None)
+          if selected is None:
+              raise SystemExit('Selected prospect not found in current Overture result')
+
           report = {
               'bbox': '5.00,52.03,5.21,52.16',
               'category_filters': [
@@ -86,17 +90,40 @@ jobs:
               'top_categories': categories.most_common(50),
               'top_cities': cities.most_common(30),
               'installation_keyword_candidates': len(candidates),
+              'selected_prospect': selected.get('name'),
               'discovery_versions': sorted({r.get('discovery_version') for r in rows if r.get('discovery_version')}),
               'sources': sorted({r.get('discovery_source') for r in rows if r.get('discovery_source')}),
           }
           Path('artifacts/gate2/report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding='utf-8')
           Path('artifacts/gate2/installation-candidates.json').write_text(json.dumps(candidates, indent=2, ensure_ascii=False), encoding='utf-8')
+          Path('artifacts/gate2/prospect-hennie-jansen.json').write_text(json.dumps(selected, indent=2, ensure_ascii=False), encoding='utf-8')
           print(json.dumps(report, indent=2, ensure_ascii=False))
           PY
 
+      - name: Bootstrap pinned donor tools
+        run: bash scripts/bootstrap_donors.sh
+
+      - name: Audit selected real prospect
+        env:
+          PITCH_DOCTOR_COMMAND: ${{ github.workspace }}/.vendor/pitch-doctor/.venv/bin/pitch-doctor
+        run: |
+          set +e
+          soliddesign audit artifacts/gate2/prospect-hennie-jansen.json \
+            --out artifacts/gate2/audit-hennie-jansen.json \
+            > artifacts/gate2/audit.stdout 2> artifacts/gate2/audit.stderr
+          rc=$?
+          set -e
+          echo "$rc" > artifacts/gate2/audit.exitcode
+          if [ "$rc" -ne 0 ]; then
+            echo "Audit failed with exit code $rc"
+            cat artifacts/gate2/audit.stderr
+            exit "$rc"
+          fi
+
       - name: Upload Gate 2 evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gate2-overture-utrecht-services
+          name: gate2-overture-utrecht-audit
           path: artifacts/gate2/
           retention-days: 14
