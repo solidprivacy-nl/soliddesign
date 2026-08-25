@@ -43,8 +43,7 @@ jobs:
           from pathlib import Path
           from urllib.parse import urlsplit
 
-          path = Path('artifacts/gate2/overture-utrecht-services.json')
-          rows = json.loads(path.read_text(encoding='utf-8'))
+          rows = json.loads(Path('artifacts/gate2/overture-utrecht-services.json').read_text(encoding='utf-8'))
 
           def domain(url):
               try:
@@ -63,11 +62,7 @@ jobs:
           )
           candidates = []
           for r in rows:
-              haystack = ' '.join([
-                  r.get('name') or '',
-                  r.get('category') or '',
-                  r.get('website_url') or '',
-              ])
+              haystack = ' '.join([r.get('name') or '', r.get('category') or '', r.get('website_url') or ''])
               if install_terms.search(haystack):
                   candidates.append(r)
 
@@ -96,7 +91,7 @@ jobs:
           }
           Path('artifacts/gate2/report.json').write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding='utf-8')
           Path('artifacts/gate2/installation-candidates.json').write_text(json.dumps(candidates, indent=2, ensure_ascii=False), encoding='utf-8')
-          Path('artifacts/gate2/prospect-hennie-jansen.json').write_text(json.dumps(selected, indent=2, ensure_ascii=False), encoding='utf-8')
+          Path('artifacts/gate2/prospect-hennie-jansen-raw.json').write_text(json.dumps(selected, indent=2, ensure_ascii=False), encoding='utf-8')
           print(json.dumps(report, indent=2, ensure_ascii=False))
           PY
 
@@ -107,23 +102,144 @@ jobs:
         env:
           PITCH_DOCTOR_COMMAND: ${{ github.workspace }}/.vendor/pitch-doctor/.venv/bin/pitch-doctor
         run: |
-          set +e
-          soliddesign audit artifacts/gate2/prospect-hennie-jansen.json \
-            --out artifacts/gate2/audit-hennie-jansen.json \
+          soliddesign audit artifacts/gate2/prospect-hennie-jansen-raw.json \
+            --out artifacts/gate2/audit-hennie-jansen-raw.json \
             > artifacts/gate2/audit.stdout 2> artifacts/gate2/audit.stderr
-          rc=$?
-          set -e
-          echo "$rc" > artifacts/gate2/audit.exitcode
-          if [ "$rc" -ne 0 ]; then
-            echo "Audit failed with exit code $rc"
-            cat artifacts/gate2/audit.stderr
-            exit "$rc"
-          fi
+
+      - name: Human-review audit facts and qualification evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('artifacts/gate2')
+          prospect = json.loads((root / 'prospect-hennie-jansen-raw.json').read_text(encoding='utf-8'))
+          raw_audit = json.loads((root / 'audit-hennie-jansen-raw.json').read_text(encoding='utf-8'))
+
+          findings = {f['key']: f for f in raw_audit.get('findings', [])}
+          required = ['reachability', 'ssl']
+          missing = [k for k in required if k not in findings]
+          if missing:
+              raise SystemExit(f'Expected root findings missing: {missing}')
+
+          # Keep only root technical causes from the failed-load audit. Other critical
+          # checks can be cascading/unknown when the page never loads and therefore
+          # must not be presented as independent sales claims.
+          reviewed_audit = {
+              'url': raw_audit['url'],
+              'score': raw_audit.get('score'),
+              'grade': raw_audit.get('grade'),
+              'source': 'human-reviewed:pitch-doctor',
+              'current_screenshot_data_uri': raw_audit.get('current_screenshot_data_uri'),
+              'findings': [
+                  findings['reachability'],
+                  findings['ssl'],
+                  {
+                      'key': 'demand_site_mismatch',
+                      'severity': 'warning',
+                      'title': 'Bestaande marktactiviteit heeft geen betrouwbare eigen website als bestemming',
+                      'evidence': [
+                          'Overture Maps release 2026-08-19.0 lists the Utrecht business with an owned website and telephone number.',
+                          'Independent public business-directory review on 2026-08-25 showed 4.8/5 from 15 reviews and approximately 19 years active.',
+                          'The live website audit failed because the SSL certificate had expired.'
+                      ],
+                      'business_impact': 'Mensen die het bedrijf online vinden kunnen afhaken wanneer de eigen website een certificaatfout geeft in plaats van een betrouwbare route naar contact.',
+                      'recommendation': 'Herstel betrouwbare HTTPS-bereikbaarheid en geef bezoekers daarna een eenvoudige, mobiele route van dienst naar telefonisch contact.',
+                      'verified': True,
+                  },
+              ],
+          }
+
+          # Enrich only with services independently observed in public business listings.
+          # Reviews/years-active are qualification evidence, not approved marketing claims.
+          prospect['category'] = 'elektrotechniek'
+          prospect['observed_services'] = [
+              'Elektrotechnische installaties',
+              'Groepenkast',
+              'Verlichting',
+              'Storingen en reparaties',
+          ]
+          prospect['approved_claims'] = []
+          prospect['rating'] = None
+          prospect['review_count'] = None
+
+          score = {
+              'hard_gates': {
+                  'existing_website': True,
+                  'active_business': True,
+                  'economics_fit': True,
+                  'existing_demand': True,
+                  'conversion_opportunity': True,
+                  'execution_fit': True,
+                  'targeting_allowed': True,
+              },
+              'factors': {
+                  'customer_economics': {
+                      'score': 3,
+                      'evidence': ['Electrical installation and repair work has plausible order value for the standard offer; ability-to-pay is not yet directly proven.'],
+                  },
+                  'existing_demand': {
+                      'score': 4,
+                      'evidence': ['Independent public directory evidence on 2026-08-25 showed 4.8/5 from 15 reviews and approximately 19 years active.'],
+                  },
+                  'conversion_opportunity': {
+                      'score': 5,
+                      'evidence': ['Live audit found the owned website inaccessible because its SSL certificate had expired.'],
+                  },
+                  'execution_fit': {
+                      'score': 5,
+                      'evidence': ['Standard local-service website: services, trust information and direct contact; no complex portal or transaction flow identified.'],
+                  },
+                  'competitive_context': {
+                      'score': 2,
+                      'evidence': ['The same bounded Overture run produced 83 installation-related candidates; competitor digital superiority has not yet been benchmarked deeply.'],
+                  },
+              },
+          }
+
+          (root / 'prospect-hennie-jansen-reviewed.json').write_text(json.dumps(prospect, indent=2, ensure_ascii=False), encoding='utf-8')
+          (root / 'audit-hennie-jansen-reviewed.json').write_text(json.dumps(reviewed_audit, indent=2, ensure_ascii=False), encoding='utf-8')
+          (root / 'score-hennie-jansen.json').write_text(json.dumps(score, indent=2, ensure_ascii=False), encoding='utf-8')
+          PY
+
+      - name: Assemble first real proof
+        run: |
+          soliddesign assemble \
+            --prospect artifacts/gate2/prospect-hennie-jansen-reviewed.json \
+            --audit artifacts/gate2/audit-hennie-jansen-reviewed.json \
+            --score artifacts/gate2/score-hennie-jansen.json \
+            --preview-url 'https://preview.example.invalid/p/hje-utrecht-84b25688' \
+            --out artifacts/gate2/proof-hennie-jansen \
+            > artifacts/gate2/assemble.stdout
+
+      - name: Verify proof safety invariants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          root = Path('artifacts/gate2/proof-hennie-jansen')
+          preview = (root / 'preview.html').read_text(encoding='utf-8').lower()
+          pack = (root / 'print_pack.html').read_text(encoding='utf-8').lower()
+          pipeline = json.loads((root / 'pipeline.json').read_text(encoding='utf-8'))
+
+          assert 'noindex' in preview
+          assert '<form' not in preview
+          assert 'testimonial' not in preview
+          assert '4.8/5' not in preview
+          assert '19 years' not in preview
+          assert '4.8/5' not in pack
+          assert pipeline['qualification']['eligible'] is True
+          assert pipeline['qualification']['total_score'] == 19
+          assert len(pipeline['audit']['findings']) == 3
+          assert pipeline['verified_facts']['approved_claims'] == []
+          print('Proof safety checks passed; qualification 19/25.')
+          PY
 
       - name: Upload Gate 2 evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gate2-overture-utrecht-audit
+          name: gate2-overture-utrecht-proof
           path: artifacts/gate2/
           retention-days: 14
