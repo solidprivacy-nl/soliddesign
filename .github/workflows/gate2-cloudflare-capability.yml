@@ -1,0 +1,35 @@
+name: Gate 2 Cloudflare Capability Probe
+
+on:
+  push:
+    branches:
+      - gate2/cloudflare-capability-probe
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check secret presence only
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python - <<'PY'
+          import json, os
+          result = {
+              'cloudflare_api_token_present': bool(os.getenv('CF_TOKEN')),
+              'cloudflare_account_id_present': bool(os.getenv('CF_ACCOUNT')),
+          }
+          print(json.dumps(result))
+          with open('cloudflare-capability.json','w',encoding='utf-8') as f:
+              json.dump(result,f,indent=2)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gate2-cloudflare-capability
+          path: cloudflare-capability.json
+          retention-days: 7
