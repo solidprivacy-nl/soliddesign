@@ -122,9 +122,10 @@ jobs:
           if missing:
               raise SystemExit(f'Expected root findings missing: {missing}')
 
-          # Keep only root technical causes from the failed-load audit. Other critical
-          # checks can be cascading/unknown when the page never loads and therefore
-          # must not be presented as independent sales claims.
+          # Preserve the donor's raw audit separately. For prospect-facing output,
+          # collapse cascading failed-load checks into the verified root causes and
+          # present those causes in Dutch. Pitch Doctor itself supports en/es/fr/zh,
+          # not Dutch, in the frozen reviewed revision.
           reviewed_audit = {
               'url': raw_audit['url'],
               'score': raw_audit.get('score'),
@@ -132,16 +133,32 @@ jobs:
               'source': 'human-reviewed:pitch-doctor',
               'current_screenshot_data_uri': raw_audit.get('current_screenshot_data_uri'),
               'findings': [
-                  findings['reachability'],
-                  findings['ssl'],
+                  {
+                      'key': 'reachability',
+                      'severity': 'critical',
+                      'title': 'Website niet betrouwbaar bereikbaar',
+                      'evidence': findings['reachability'].get('evidence', []),
+                      'business_impact': 'Bezoekers die de website openen krijgen momenteel geen betrouwbare route naar het bedrijf, waardoor contact al vóór de inhoud van de site kan afbreken.',
+                      'recommendation': 'Herstel eerst de technische bereikbaarheid en controleer daarna de volledige contactroute op mobiel en desktop.',
+                      'verified': True,
+                  },
+                  {
+                      'key': 'ssl',
+                      'severity': 'critical',
+                      'title': 'HTTPS-certificaat verlopen',
+                      'evidence': findings['ssl'].get('evidence', []),
+                      'business_impact': 'Een certificaatwaarschuwing verlaagt direct het vertrouwen en kan browsers of bezoekers ervan weerhouden de website verder te openen.',
+                      'recommendation': 'Vernieuw het TLS-certificaat en forceer daarna een correct werkende HTTPS-versie.',
+                      'verified': True,
+                  },
                   {
                       'key': 'demand_site_mismatch',
                       'severity': 'warning',
                       'title': 'Bestaande marktactiviteit heeft geen betrouwbare eigen website als bestemming',
                       'evidence': [
-                          'Overture Maps release 2026-08-19.0 lists the Utrecht business with an owned website and telephone number.',
-                          'Independent public business-directory review on 2026-08-25 showed 4.8/5 from 15 reviews and approximately 19 years active.',
-                          'The live website audit failed because the SSL certificate had expired.'
+                          'Overture Maps release 2026-08-19.0 bevat het Utrechtse bedrijf met eigen website en telefoonnummer.',
+                          'Onafhankelijke openbare bedrijvengidscontrole op 2026-08-25 toonde 4,8/5 uit 15 beoordelingen en circa 19 jaar activiteit.',
+                          'De live website-audit faalde doordat het SSL-certificaat was verlopen.'
                       ],
                       'business_impact': 'Mensen die het bedrijf online vinden kunnen afhaken wanneer de eigen website een certificaatfout geeft in plaats van een betrouwbare route naar contact.',
                       'recommendation': 'Herstel betrouwbare HTTPS-bereikbaarheid en geef bezoekers daarna een eenvoudige, mobiele route van dienst naar telefonisch contact.',
@@ -176,23 +193,23 @@ jobs:
               'factors': {
                   'customer_economics': {
                       'score': 3,
-                      'evidence': ['Electrical installation and repair work has plausible order value for the standard offer; ability-to-pay is not yet directly proven.'],
+                      'evidence': ['Elektrotechnische installatie- en reparatiewerkzaamheden hebben plausibele orderwaarde; concrete betaalcapaciteit is nog niet direct bewezen.'],
                   },
                   'existing_demand': {
                       'score': 4,
-                      'evidence': ['Independent public directory evidence on 2026-08-25 showed 4.8/5 from 15 reviews and approximately 19 years active.'],
+                      'evidence': ['Onafhankelijke openbare bedrijvengidscontrole op 2026-08-25 toonde 4,8/5 uit 15 beoordelingen en circa 19 jaar activiteit.'],
                   },
                   'conversion_opportunity': {
                       'score': 5,
-                      'evidence': ['Live audit found the owned website inaccessible because its SSL certificate had expired.'],
+                      'evidence': ['De live audit kon de eigen website niet betrouwbaar bereiken doordat het SSL-certificaat was verlopen.'],
                   },
                   'execution_fit': {
                       'score': 5,
-                      'evidence': ['Standard local-service website: services, trust information and direct contact; no complex portal or transaction flow identified.'],
+                      'evidence': ['Standaard lokale dienstensite met diensten, vertrouwen en direct contact; geen complex portaal of transactiestroom vastgesteld.'],
                   },
                   'competitive_context': {
                       'score': 2,
-                      'evidence': ['The same bounded Overture run produced 83 installation-related candidates; competitor digital superiority has not yet been benchmarked deeply.'],
+                      'evidence': ['Dezelfde begrensde Overture-run leverde 83 installatiegerelateerde kandidaten; digitale superioriteit van directe concurrenten is nog niet diep gebenchmarkt.'],
                   },
               },
           }
@@ -228,18 +245,20 @@ jobs:
           assert 'testimonial' not in preview
           assert '4.8/5' not in preview
           assert '19 years' not in preview
-          assert '4.8/5' not in pack
+          assert '4,8/5' not in pack
+          assert 'your website could not be reached' not in pack
+          assert 'website niet bereikbaar tijdens live audit' in pack
           assert pipeline['qualification']['eligible'] is True
           assert pipeline['qualification']['total_score'] == 19
           assert len(pipeline['audit']['findings']) == 3
           assert pipeline['verified_facts']['approved_claims'] == []
-          print('Proof safety checks passed; qualification 19/25.')
+          print('Proof safety and localization checks passed; qualification 19/25.')
           PY
 
       - name: Upload Gate 2 evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: gate2-overture-utrecht-proof
+          name: gate2-overture-utrecht-proof-nl
           path: artifacts/gate2/
           retention-days: 14
