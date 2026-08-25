@@ -1,0 +1,66 @@
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+from .audit.adapter import audit_result_from_dict, run_pitch_doctor
+from .discovery.google_places import search_businesses
+from .pipeline import prospect_from_dict, qualification_input_from_dict, run_component_spike, run_golden_fixture
+
+
+def _read_json(path: str | Path) -> dict:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(prog="soliddesign")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    golden = sub.add_parser("golden", help="Run the offline golden-prospect component spike")
+    golden.add_argument("--fixtures", default="tests/fixtures/golden")
+    golden.add_argument("--out", default="artifacts/golden")
+    golden.add_argument("--preview-url", default="https://preview.example.invalid/p/golden")
+
+    discover = sub.add_parser("discover", help="Search Google Places for businesses with existing websites")
+    discover.add_argument("query")
+    discover.add_argument("--limit", type=int, default=10)
+    discover.add_argument("--out")
+
+    audit = sub.add_parser("audit", help="Run the guarded Pitch Doctor adapter for one prospect JSON file")
+    audit.add_argument("prospect")
+    audit.add_argument("--out", required=True)
+
+    assemble = sub.add_parser("assemble", help="Build preview + print pack from reviewed prospect/audit/score JSON files")
+    assemble.add_argument("--prospect", required=True)
+    assemble.add_argument("--audit", required=True)
+    assemble.add_argument("--score", required=True)
+    assemble.add_argument("--out", required=True)
+    assemble.add_argument("--preview-url", required=True)
+
+    args = parser.parse_args()
+    if args.command == "golden":
+        print(json.dumps(run_golden_fixture(args.fixtures, args.out, preview_url=args.preview_url), indent=2))
+        return
+    if args.command == "discover":
+        results = [p.to_dict() for p in search_businesses(args.query, limit=args.limit)]
+        text = json.dumps(results, indent=2, ensure_ascii=False)
+        if args.out:
+            Path(args.out).write_text(text, encoding="utf-8")
+        print(text)
+        return
+    if args.command == "audit":
+        prospect = prospect_from_dict(_read_json(args.prospect))
+        result = run_pitch_doctor(prospect)
+        Path(args.out).write_text(json.dumps(result.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
+        print(args.out)
+        return
+    if args.command == "assemble":
+        prospect = prospect_from_dict(_read_json(args.prospect))
+        audit_result = audit_result_from_dict(_read_json(args.audit))
+        q_input = qualification_input_from_dict(_read_json(args.score))
+        print(json.dumps(run_component_spike(prospect, audit_result, q_input, args.out, preview_url=args.preview_url), indent=2))
+
+
+if __name__ == "__main__":
+    main()
