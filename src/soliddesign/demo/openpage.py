@@ -180,7 +180,7 @@ h3{{margin:0;font-size:24px;line-height:1.15}}
 .hero-panel strong{{display:block;font-family:var(--display);font-size:26px;line-height:1.1}}
 .hero-panel span{{display:block;margin-top:8px;color:#d9ded9;font-size:14px}}
 section{{padding:84px 0;border-top:1px solid var(--line)}}
-.proof-band{{padding:28px 0;background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}}
+.proof-band{{padding:28px 12px;background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}}
 .proof-items{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0 12px}}
 .proof-item{{padding:12px 28px;border-left:1px solid var(--line)}}
 .proof-item:first-child{{border-left:0}}
