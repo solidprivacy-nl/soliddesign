@@ -1,9 +1,9 @@
 # Gate 2 Evidence — Overture Utrecht
 
 **Date:** 2026-08-25  
-**Status:** live discovery + first real audit + proof assembly proven; public preview still blocked on Cloudflare account credentials.
+**Status:** Gate 2 end-to-end live single-prospect integration proven.
 
-This evidence note records aggregate, reproducible results from the first real Dutch Gate-2 run. Raw prospect datasets and customer/prospect files are deliberately **not** committed to this public repository.
+This evidence note records aggregate, reproducible results from the first real Dutch Gate-2 run. Raw prospect datasets, customer/prospect files and the operational opaque preview URL are deliberately **not** committed to this public repository.
 
 ## Objective
 
@@ -19,6 +19,9 @@ OVERTURE
 → verified facts
 → concept preview
 → print pack
+→ public noindex preview
+→ disable/restore lifecycle
+→ operational state
 ```
 
 ## Overture run
@@ -156,26 +159,104 @@ Safety checks passed:
 
 When a live audit cannot produce a screenshot because the site itself is unreachable, the print pack should not display a generic “screenshot missing” placeholder.
 
-Canonical behavior should instead show the verified live-audit state:
+Canonical behavior instead shows the verified live-audit state:
 
 > Website niet bereikbaar tijdens live audit
 
 with the reviewed business impact. This is both more accurate and more useful commercially.
 
-## Cloudflare gate
+## Cloudflare static preview — proven
 
-A safe GitHub Actions capability probe checked only whether deployment credentials were present. It exposed no secret values.
+The Gate-2 proof was published through one shared Cloudflare Pages project using Direct Upload. No custom domain, Worker, queue or additional hosting layer was added.
 
-Result:
+The prospect route uses an opaque path beneath the shared preview project. The actual URL is operational state and is intentionally not stored in this public repository.
+
+Verified deployment properties:
 
 ```text
-CLOUDFLARE_API_TOKEN  = missing
-CLOUDFLARE_ACCOUNT_ID = missing
+provider                    = Cloudflare Pages
+shared project              = yes
+opaque prospect path        = yes
+browser HTTP status         = 200
+HTML noindex                = yes
+form                         = none
+testimonials                 = none
 ```
 
-No installable/connected Cloudflare plugin was available in the current ChatGPT environment either.
+### HTTP verification lesson
 
-Therefore the remaining Gate-2 external blocker is not architecture or code. A Cloudflare account deployment authorization/token must be supplied through a secure secret channel before the proof can be published.
+The first machine check used Python `urllib`'s default user-agent and received HTTP `403`, despite a successful Cloudflare deployment.
+
+A diagnostic run then tested both the stable Pages hostname and the atomic deployment hostname using a normal browser user-agent. Both returned HTTP `200` and the expected concept content.
+
+Therefore the first `403` was a verifier artifact, not proof that the public preview was inaccessible.
+
+Canonical rule:
+
+```text
+DEPLOYMENT SUCCESS
+→ verify with browser-representative request
+→ distinguish hosting failure from machine-client blocking
+```
+
+## Disable/restore lifecycle — proven
+
+The same opaque preview path was deliberately replaced by a neutral page stating that the concept was unavailable.
+
+Verification succeeded:
+
+```text
+live proof
+→ deploy neutral unavailable page
+→ browser verifies unavailable state
+→ redeploy original proof
+→ browser verifies concept restored
+```
+
+This proves that a prospect preview can be operationally disabled without deleting the shared Pages project or introducing one project per prospect.
+
+## Supabase operational state
+
+The dedicated SolidDesign Supabase project now contains the selected prospect's:
+
+- prospect record;
+- reviewed audit;
+- 19/25 qualification;
+- demo configuration;
+- live preview URL;
+- `LIVE` demo status;
+- `preview_published` event;
+- one synthetic `preview_visit` verification event.
+
+The synthetic visit metadata explicitly records:
+
+```text
+synthetic     = true
+fingerprinting = false
+http_status   = 200
+```
+
+No browser fingerprint, IP address, user-agent fingerprint, cookie identifier or other visitor identity was persisted.
+
+## Gate-2 conclusion
+
+The following chain is now empirically proven with one real Dutch prospect:
+
+```text
+OVERTURE DISCOVERY
+→ SEPARATE DEMAND EVIDENCE
+→ LIVE AUDIT
+→ HUMAN ROOT-CAUSE REVIEW
+→ 5-FACTOR QUALIFICATION
+→ VERIFIED FACTS
+→ CONVERSION BRIEF
+→ CONCEPT + PRINT PACK
+→ CLOUDFLARE NOINDEX PREVIEW
+→ DISABLE / RESTORE
+→ SUPABASE OPERATIONAL STATE
+```
+
+**Gate 2 = PASS.**
 
 ## Decision
 
@@ -194,6 +275,8 @@ OVERTURE PRIMARY
 
 No Google Places key is required for this stage.
 
+Cloudflare Pages remains the Phase-1 static preview provider. One shared project is sufficient; do not create one project per prospect.
+
 ## Do not infer yet
 
 This run does **not** prove:
@@ -203,6 +286,7 @@ This run does **not** prove:
 - the scoring model predicts sales;
 - the concept improves response rate;
 - the €2,950 offer will close;
-- the live demo adds enough value to justify its production cost.
+- the live demo adds enough value to justify its production cost;
+- one-prospect operational success implies 5-, 30- or 100-prospect economics.
 
 Those remain later evidence gates.
