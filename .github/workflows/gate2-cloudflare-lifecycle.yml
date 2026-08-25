@@ -1,0 +1,121 @@
+name: Gate 2 Cloudflare Lifecycle
+
+on:
+  push:
+    branches:
+      - gate2/cloudflare-lifecycle
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PROJECT_NAME: soliddesign-previews-solidprivacy
+      OPAQUE_ID: 8f4d9c2e7a61b503
+      FINAL_PREVIEW_URL: https://soliddesign-previews-solidprivacy.pages.dev/p/8f4d9c2e7a61b503/
+      BROWSER_UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/150 Safari/537.36
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify deployment authorization
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+
+      - name: Install tools
+        run: |
+          python -m pip install -e .
+          npm install --no-save wrangler@latest
+
+      - name: Download reviewed proof evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: gate2-overture-utrecht-proof-nl
+          path: gate2-source
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: solidprivacy-nl/soliddesign
+          run-id: 32885529646
+
+      - name: Reassemble final live proof
+        run: |
+          prospect=$(find gate2-source -type f -name 'prospect-*-reviewed.json' | head -1)
+          audit=$(find gate2-source -type f -name 'audit-*-reviewed.json' | head -1)
+          score=$(find gate2-source -type f -name 'score-*.json' | head -1)
+          soliddesign assemble --prospect "$prospect" --audit "$audit" --score "$score" \
+            --preview-url "$FINAL_PREVIEW_URL" --out rebuilt > assemble.stdout
+          mkdir -p "live/p/${OPAQUE_ID}" "disabled/p/${OPAQUE_ID}"
+          cp rebuilt/preview.html "live/p/${OPAQUE_ID}/index.html"
+          cat > live/index.html <<'HTML'
+          <!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive"><title>SolidDesign previews</title></head><body><p>Persoonlijke conceptomgeving.</p></body></html>
+          HTML
+          cp live/index.html disabled/index.html
+          cat > "disabled/p/${OPAQUE_ID}/index.html" <<'HTML'
+          <!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive"><title>Concept niet beschikbaar</title></head><body><h1>Concept niet beschikbaar</h1><p>Deze persoonlijke conceptlink is uitgeschakeld.</p></body></html>
+          HTML
+
+      - name: Disable preview
+        run: |
+          npx wrangler pages deploy disabled --project-name "$PROJECT_NAME" --branch main --commit-message 'Gate 2 lifecycle disable'
+          for i in $(seq 1 12); do
+            code=$(curl -L -A "$BROWSER_UA" -sS -o disabled-live.html -w '%{http_code}' "$FINAL_PREVIEW_URL" || true)
+            if [ "$code" = "200" ] && grep -qi 'concept niet beschikbaar' disabled-live.html; then
+              echo 'Disable lifecycle verified'
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+
+      - name: Restore preview
+        run: |
+          npx wrangler pages deploy live --project-name "$PROJECT_NAME" --branch main --commit-message 'Gate 2 lifecycle restore'
+          for i in $(seq 1 12); do
+            code=$(curl -L -A "$BROWSER_UA" -sS -o restored-live.html -D restored.headers -w '%{http_code}' "$FINAL_PREVIEW_URL" || true)
+            if [ "$code" = "200" ] && grep -qi 'concept redesign' restored-live.html && grep -qi 'noindex' restored-live.html; then
+              echo 'Restore lifecycle verified'
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+
+      - name: Record evidence
+        run: |
+          python - <<'PY'
+          import json, os
+          evidence={
+            'project_name': os.environ['PROJECT_NAME'],
+            'preview_url': os.environ['FINAL_PREVIEW_URL'],
+            'opaque_path': '/p/'+os.environ['OPAQUE_ID']+'/',
+            'browser_http_200_verified': True,
+            'noindex_verified': True,
+            'no_form_verified': '<form' not in open('rebuilt/preview.html',encoding='utf-8').read().lower(),
+            'disable_lifecycle_verified': True,
+            'restore_lifecycle_verified': True,
+          }
+          open('cloudflare-gate2-evidence.json','w',encoding='utf-8').write(json.dumps(evidence,indent=2))
+          print(json.dumps(evidence,indent=2))
+          PY
+
+      - name: Upload final evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate2-cloudflare-final
+          path: |
+            cloudflare-gate2-evidence.json
+            rebuilt/print_pack.html
+            rebuilt/pipeline.json
+            rebuilt/site_config.json
+          retention-days: 14
