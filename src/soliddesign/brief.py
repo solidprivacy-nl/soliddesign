@@ -16,13 +16,12 @@ def build_conversion_brief(facts: VerifiedFacts, audit: AuditResult) -> Conversi
 
     service = facts.services[0] if facts.services else facts.category
     if facts.city:
-        headline = f"{service} in {facts.city}, met een duidelijkere route naar contact"
+        headline = f"{facts.company_name}. {service} in {facts.city}."
     else:
-        headline = f"{service}, met een duidelijkere route naar contact"
-
+        headline = f"{facts.company_name}. {service}."
     subheadline = (
-        f"Een conversiegerichter concept voor {facts.company_name}, "
-        "gebaseerd op geverifieerde bedrijfsinformatie en concrete auditbevindingen."
+        "Een helder overzicht van de dienstverlening en een directe route naar contact "
+        "voor uw project of vraag."
     )
 
     if facts.phone:
