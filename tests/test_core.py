@@ -62,7 +62,7 @@ class DemoTests(unittest.TestCase):
         return VerifiedFacts(company_name="Test BV", category="installateur", city="Utrecht", address="Test 1", website_url="https://example.com", phone="0301234567", rating=4.8, review_count=50, services=("Warmtepompinstallatie", "Verwarming", "Duurzame woninginstallaties"), brand_colors=("#155EEF",), approved_claims=(), evidence={})
 
     def _brief(self):
-        return ConversionBrief(headline="Warmtepompinstallatie en verwarming in Utrecht.", subheadline="Ook voor duurzame woninginstallaties. Neem rechtstreeks contact op voor een vraag of project.", primary_cta="Bel direct", primary_cta_url="tel:0301234567", opportunities=("CTA verbeteren",), trust_points=("4.8/5 op basis van 50 Google-beoordelingen",), sections=("hero", "services", "trust"))
+        return ConversionBrief(headline="Warmtepompen en verwarming in Utrecht.", subheadline="Ook voor duurzame woninginstallaties. Neem rechtstreeks contact op voor een vraag of project.", primary_cta="Bel direct", primary_cta_url="tel:0301234567", opportunities=("CTA verbeteren",), trust_points=("4.8/5 op basis van 50 Google-beoordelingen",), sections=("hero", "services", "trust"))
 
     def test_safe_openpage_shape(self):
         facts = self._facts()
@@ -85,11 +85,17 @@ class DemoTests(unittest.TestCase):
         self.assertIn("no_fake_proof", profile.anti_patterns)
         self.assertIn("no_decorative_empty_hero_panel", profile.anti_patterns)
 
+    def test_sector_accent_is_contextual_without_new_template(self):
+        facts = VerifiedFacts(company_name="Warmte BV", category="installatietechniek", city="Utrecht", address="Test 1", website_url="https://example.com", phone=None, rating=None, review_count=None, services=("warmtepompinstallatie", "verwarming"), brand_colors=(), approved_claims=(), evidence={})
+        profile = derive_design_profile(facts, self._brief())
+        self.assertEqual(profile.palette["accent"], "#3F6754")
+        self.assertEqual(profile.hero_variant, "service_split")
+
     def test_customer_copy_is_not_database_copy(self):
         facts = self._facts()
         audit = AuditResult(url=facts.website_url, score=40, grade="F", findings=(), source="test")
         brief = build_conversion_brief(facts, audit)
-        self.assertEqual(brief.headline, "Warmtepompinstallatie en verwarming in Utrecht.")
+        self.assertEqual(brief.headline, "Warmtepompen en verwarming in Utrecht.")
         self.assertIn("Ook voor duurzame woninginstallaties", brief.subheadline)
         self.assertNotIn(facts.company_name + ".", brief.headline)
         self.assertNotIn("helder overzicht van de dienstverlening", brief.subheadline.lower())
@@ -104,8 +110,10 @@ class DemoTests(unittest.TestCase):
         self.assertNotIn("hero-panel", page)
         self.assertIn("service-summary", page)
         self.assertIn("overflow-wrap:break-word", page)
-        self.assertIn("hyphens:auto", page)
+        self.assertIn("hyphens:none", page)
+        self.assertNotIn("hyphens:auto", page)
         self.assertIn("service-list", page)
+        self.assertIn("Warmtepompinstallatie", render_static_html(build_site_config(facts, self._brief()), prospect_name=facts.company_name))
 
     def test_no_fake_proof_fillers_when_real_proof_is_absent(self):
         facts = VerifiedFacts(company_name="Test BV", category="installateur", city="Utrecht", address="Test 1", website_url="https://example.com", phone="0301234567", rating=None, review_count=None, services=("Onderhoud",), brand_colors=(), approved_claims=(), evidence={})
