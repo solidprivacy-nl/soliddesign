@@ -1,10 +1,10 @@
-# Premium Design v1
+# Premium Design
 
 ## Objective
 
-Upgrade the pre-sale concept from a technically improved generic page to a materially more premium, persuasive local-service concept **without broadening the architecture**.
+Upgrade the pre-sale concept from a technically improved page to a materially more attractive, credible and commercially sharper local-service concept **without broadening the architecture**.
 
-The design layer exists to improve sales proof quality. It is not a general website-builder platform.
+The design layer improves sales proof quality. It is not a general website-builder platform.
 
 ## Non-negotiable ground rule
 
@@ -12,24 +12,7 @@ The design layer exists to improve sales proof quality. It is not a general webs
 
 If a design improvement requires a new agent, queue, daemon, visual editor, database, provider router, template marketplace or free-form code generator, the default answer is **no**.
 
-## Root problem
-
-Gate 2 proved discovery, audit, qualification, proof assembly and deployment. The remaining weakness was the last-mile concept quality.
-
-The original renderer had a fixed generic composition:
-
-```text
-split hero
-→ equal feature cards
-→ stats bar
-→ generic CTA
-```
-
-with Inter-like typography, large rounding and a decorative gradient placeholder.
-
-That was structurally correct but commercially weak.
-
-## v1 architecture
+## Architecture
 
 ```text
 VERIFIED FACTS
@@ -44,106 +27,86 @@ SOLIDDESIGN PREMIUM RENDERER
       ↓
 IMPECCABLE DESIGN QA
       ↓
-HUMAN VISUAL ACCEPTANCE
+HUMAN 5-SECOND VISUAL GATE
       ↓
 STATIC PREVIEW
 ```
 
-Only one new owned contract is introduced: `DesignProfile`.
+Only one owned design contract exists: `DesignProfile`.
 
-Only one new executable donor is introduced: `impeccable@3.6.0` in CI.
+Only one executable design donor exists in CI: `impeccable@3.6.0`.
 
-## DesignProfile
+## Why premium v2 was required
 
-`DesignProfile` is deliberately small and deterministic.
+Gate 3 proved that premium-v1 was technically repeatable, but a full-size visual review exposed defects that deterministic QA did not catch:
 
-It contains:
+- long hero copy could overlap the adjacent panel;
+- the dark decorative hero panel dominated the page without adding useful information;
+- generated headlines and service copy still felt database-like;
+- location/direct-contact filler was being presented as if it were proof;
+- the final dark CTA repeated the same heavy visual mass;
+- a scanner-clean page was therefore not automatically outreach-ready.
+
+Canonical lesson:
 
 ```text
-page_type
- tone
- palette
- font_display
- font_body
- radius
- hero_variant
- services_variant
- trust_variant
- cta_variant
- media_strategy
- motion_level
- anti_patterns
+DETERMINISTIC QA PASS
+!=
+VISUAL ACCEPTANCE PASS
 ```
-
-It does **not** contain:
-
-- generated HTML;
-- generated React;
-- prompts;
-- agent state;
-- arbitrary CSS;
-- template source code;
-- a component marketplace.
 
 ## Current Phase-1 design recipe
 
-Phase 1 intentionally supports one strong composition:
+Phase 1 intentionally keeps **one** composition:
 
 ```text
 authority_service
 ```
 
-This is appropriate for local service businesses where trust, clarity and direct contact matter more than visual novelty.
-
-Current block recipe:
+Current recipe:
 
 ```text
 restrained navbar
-→ authority hero
-→ verified proof band when facts exist
+→ customer-facing split hero
+→ functional light service summary
+→ factual proof only when verified proof exists
 → editorial service list
-→ contrast CTA
+→ light direct-contact CTA
 → minimal footer
 ```
 
-This is one recipe, not a template family system.
+There is no template-family system.
 
-## Design intelligence
+## Premium v2 corrections
 
-Design decisions are inspired by the reviewed UI/UX Pro Max patterns, but its runtime/database is not imported.
+Premium v2 changes craft, not architecture:
 
-Current deterministic routing is intentionally narrow:
+- shorter human-readable service labels in hero copy;
+- sentence-case service presentation;
+- responsive grid columns use `minmax(0, ...)` and content containers use `min-width: 0`;
+- headline size is bounded and automatic hyphenation is disabled;
+- decorative dark hero panel removed;
+- functional service summary replaces decoration;
+- fake proof fillers removed;
+- muted text contrast strengthened;
+- final CTA is light and restrained;
+- small sector-aware accent routing is allowed when no verified brand color exists.
 
-- verified brand color wins when safe;
-- otherwise category signals select a restrained accent;
-- typography and layout stay consistent;
-- no per-sector template proliferation.
-
-Only broaden routing when repeated Gate-3 evidence shows one composition is materially wrong for a recurring business class.
+Source facts remain unchanged; only their customer-facing presentation is normalized.
 
 ## Copy discipline
 
 The concept page is written for the prospect's customer, not for the prospect.
-
-Separate purposes:
 
 ```text
 AUDIT / PRINT PACK
 = explain the conversion opportunity to the business owner
 
 CONCEPT WEBSITE
-= show what the business could say to its customer
+= demonstrate how the business can communicate to its customer
 ```
 
-The customer-facing concept must not say things such as:
-
-- "conversion-oriented redesign";
-- "audit finding";
-- "we improved your CTA".
-
-It should present verified services, location and contact clearly.
-
-All factual claims remain constrained by `VerifiedFacts`.
+Do not publish database-like concatenations, audit language or claims about the redesign process as customer copy.
 
 ## Proof discipline
 
@@ -160,27 +123,7 @@ Never invent:
 - service areas;
 - awards.
 
-The renderer may only display proof already allowed by `VerifiedFacts` / reviewed enrichment.
-
-## Visual principles
-
-Premium v1 means:
-
-- clear hierarchy;
-- strong typography;
-- deliberate whitespace;
-- restrained color;
-- low visual noise;
-- direct CTA;
-- editorial rhythm rather than repeated cards;
-- limited rounding;
-- no decorative glow;
-- no generic AI gradient aesthetic;
-- no unnecessary motion.
-
-Premium does **not** mean maximal creativity.
-
-For local-service concepts, trust and clarity outrank novelty.
+Only proof explicitly allowed by `VerifiedFacts` / reviewed enrichment may appear. If verified proof is absent, omit the proof block rather than filling it with weak facts such as city or the existence of a telephone number.
 
 ## Media strategy
 
@@ -190,18 +133,11 @@ Current contract:
 verified_company_image_else_editorial_no_photo
 ```
 
-Until a verified image pipeline exists, the renderer prefers an intentional photo-free editorial composition over fake or misleading imagery.
+A clean photo-free composition is preferable to invented employees, projects, vans, offices or customer work.
 
-Future order, only if justified:
+Verified company imagery may be added later only through a small proven input path; lack of imagery is not justification for an image-generation subsystem.
 
-1. verified company imagery;
-2. licensed relevant stock imagery;
-3. editorial photo-free design;
-4. generated concept-support imagery only after economics and claim-safety are proven.
-
-Do not generate fake employees, projects, vans, offices or customer work.
-
-## Impeccable QA
+## Deterministic QA
 
 Pinned donor:
 
@@ -211,58 +147,55 @@ reviewed SHA: fcd7622cd2d8e2b09344ba8ede9fcac82cec4e70
 CLI: 3.6.0
 ```
 
-CI runs:
+CI requires:
 
 ```bash
 npx --yes impeccable@3.6.0 detect --json preview.html
 ```
 
-The tool is advisory in premium-v1 while Gate 3 establishes which findings correlate with actual visual acceptance.
+and the result must be exactly `[]`.
 
-Hard local CI invariants already reject known unwanted patterns such as decorative gradients and forms.
+Known findings are fixed in the renderer. Do not suppress findings or build an autonomous critique/retry agent.
 
-Do not build an automated critique/retry agent around Impeccable.
+## Human 5-second visual gate
 
-## Human acceptance gate
+Before any concept is used for outreach, review both desktop and mobile.
 
-For Gate 3, one short visual acceptance remains human.
+A concept passes only when all five statements are true:
 
-Questions:
+1. **Attractiveness:** within five seconds it is visibly more attractive and composed than the weak experience it is intended to replace.
+2. **Credibility:** it looks plausible and professional for the actual business/sector.
+3. **Commercial clarity:** the customer proposition is understandable above the fold.
+4. **Action:** the primary CTA is obvious without hunting.
+5. **Craft:** there is no overlap, clipping, ugly word break, template filler, fake proof or obvious AI-slop pattern.
 
-1. Is the new concept obviously stronger than the current website?
-2. Does it feel credible and premium for this business category?
-3. Is the customer proposition understandable above the fold?
-4. Is the primary CTA obvious?
-5. Does anything look generic, fake or AI-generated?
+A scanner pass does not override a human failure.
 
-Record repeated failures. Automate only repeated observed failure modes.
+When the failure is one-off, fix the content/case. When the same failure recurs across real cases, fix the smallest deterministic renderer rule. Do not create a framework in anticipation of variation.
+
+## Current visual decision
+
+The five Gate-3 prospects were rebuilt with premium-v2 at desktop and mobile widths. The first v2 review still failed because long technical words were hyphenated awkwardly and raw service labels looked database-like. One small correction normalized hero terminology, service casing and sector accents.
+
+The second review passed the five-second gate across all five cases. This is sufficient for the first commercial experiment; it is not evidence that the renderer is a finished production-site design system.
 
 ## Explicitly rejected architecture
 
-Do not add in premium-v1:
+Do not add without later outcome evidence:
 
-- Onlook;
-- Loupe application/runtime;
-- Open Design daemon;
-- Taste Skill runtime;
+- second website builder;
+- autonomous design agent;
 - Figma integration;
-- multi-agent design team;
-- autonomous critique loop;
-- image-to-code pipeline;
-- 50-template library;
-- free-form generated HTML/React;
+- template catalogue;
 - design database/server;
-- second website builder.
+- image-to-code pipeline;
+- autonomous critique loop;
+- generated React/HTML;
+- multi-agent design team;
+- large visual-variation framework.
 
-## Exit criterion for premium-v1 spike
+## Rule for future changes
 
-Premium-v1 is sufficient to enter Gate 3 when the existing Gate-2 prospect can be regenerated such that:
+Commercial evidence outranks aesthetic speculation.
 
-- all existing safety invariants remain green;
-- the `DesignProfile` is recorded in artifacts;
-- Impeccable runs successfully and produces machine-readable output;
-- browser rendering is valid on desktop and mobile;
-- the new concept is materially stronger in human visual review than the old concept;
-- no new operational service is required.
-
-If that condition is met, the five-prospect Gate-3 run uses this renderer.
+If real outreach later shows that one composition is insufficient, the maximum first extension is **one additional deterministic composition variant** tied to a recurring business context. Do not build a template system before that evidence exists.

@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 
 from soliddesign.audit.adapter import audit_result_from_dict
+from soliddesign.brief import build_conversion_brief
 from soliddesign.demo.openpage import build_site_config, render_static_html
 from soliddesign.design import derive_design_profile
 from soliddesign.models import (
@@ -58,10 +59,10 @@ class AuditContractTests(unittest.TestCase):
 
 class DemoTests(unittest.TestCase):
     def _facts(self):
-        return VerifiedFacts(company_name="Test BV", category="installateur", city="Utrecht", address="Test 1", website_url="https://example.com", phone="0301234567", rating=4.8, review_count=50, services=("Onderhoud",), brand_colors=("#155EEF",), approved_claims=(), evidence={})
+        return VerifiedFacts(company_name="Test BV", category="installateur", city="Utrecht", address="Test 1", website_url="https://example.com", phone="0301234567", rating=4.8, review_count=50, services=("Warmtepompinstallatie", "Verwarming", "Duurzame woninginstallaties"), brand_colors=("#155EEF",), approved_claims=(), evidence={})
 
     def _brief(self):
-        return ConversionBrief(headline="Test BV. Onderhoud in Utrecht.", subheadline="Een helder overzicht van de dienstverlening.", primary_cta="Bel direct", primary_cta_url="tel:0301234567", opportunities=("CTA verbeteren",), trust_points=("4.8/5 op basis van 50 Google-beoordelingen",), sections=("hero", "services", "trust"))
+        return ConversionBrief(headline="Warmtepompen en verwarming in Utrecht.", subheadline="Ook voor duurzame woninginstallaties. Neem rechtstreeks contact op voor een vraag of project.", primary_cta="Bel direct", primary_cta_url="tel:0301234567", opportunities=("CTA verbeteren",), trust_points=("4.8/5 op basis van 50 Google-beoordelingen",), sections=("hero", "services", "trust"))
 
     def test_safe_openpage_shape(self):
         facts = self._facts()
@@ -77,20 +78,51 @@ class DemoTests(unittest.TestCase):
         facts = self._facts()
         profile = derive_design_profile(facts, self._brief())
         self.assertEqual(profile.page_type, "authority_service")
-        self.assertEqual(profile.hero_variant, "authority")
+        self.assertEqual(profile.hero_variant, "service_split")
         self.assertEqual(profile.services_variant, "editorial_list")
+        self.assertEqual(profile.cta_variant, "light")
         self.assertEqual(profile.motion_level, "low")
         self.assertIn("no_fake_proof", profile.anti_patterns)
+        self.assertIn("no_decorative_empty_hero_panel", profile.anti_patterns)
 
-    def test_premium_renderer_avoids_known_ai_slop(self):
+    def test_sector_accent_is_contextual_without_new_template(self):
+        facts = VerifiedFacts(company_name="Warmte BV", category="installatietechniek", city="Utrecht", address="Test 1", website_url="https://example.com", phone=None, rating=None, review_count=None, services=("warmtepompinstallatie", "verwarming"), brand_colors=(), approved_claims=(), evidence={})
+        profile = derive_design_profile(facts, self._brief())
+        self.assertEqual(profile.palette["accent"], "#3F6754")
+        self.assertEqual(profile.hero_variant, "service_split")
+
+    def test_customer_copy_is_not_database_copy(self):
+        facts = self._facts()
+        audit = AuditResult(url=facts.website_url, score=40, grade="F", findings=(), source="test")
+        brief = build_conversion_brief(facts, audit)
+        self.assertEqual(brief.headline, "Warmtepompen en verwarming in Utrecht.")
+        self.assertIn("Ook voor duurzame woninginstallaties", brief.subheadline)
+        self.assertNotIn(facts.company_name + ".", brief.headline)
+        self.assertNotIn("helder overzicht van de dienstverlening", brief.subheadline.lower())
+
+    def test_premium_renderer_avoids_known_ai_slop_and_overlap_pattern(self):
         facts = self._facts()
         page = render_static_html(build_site_config(facts, self._brief()), prospect_name=facts.company_name).lower()
         self.assertNotIn("linear-gradient", page)
         self.assertNotIn("radial-gradient", page)
         self.assertNotIn("font-family:inter", page)
         self.assertNotIn("box-shadow", page)
+        self.assertNotIn("hero-panel", page)
+        self.assertIn("service-summary", page)
+        self.assertIn("overflow-wrap:break-word", page)
+        self.assertIn("hyphens:none", page)
+        self.assertNotIn("hyphens:auto", page)
         self.assertIn("service-list", page)
-        self.assertIn("hero-panel", page)
+        self.assertIn("Warmtepompinstallatie", render_static_html(build_site_config(facts, self._brief()), prospect_name=facts.company_name))
+
+    def test_no_fake_proof_fillers_when_real_proof_is_absent(self):
+        facts = VerifiedFacts(company_name="Test BV", category="installateur", city="Utrecht", address="Test 1", website_url="https://example.com", phone="0301234567", rating=None, review_count=None, services=("Onderhoud",), brand_colors=(), approved_claims=(), evidence={})
+        brief = ConversionBrief(headline="Onderhoud in Utrecht.", subheadline="Neem rechtstreeks contact op voor een vraag of project.", primary_cta="Bel direct", primary_cta_url="tel:0301234567", opportunities=(), trust_points=(), sections=("hero", "services", "contact"))
+        cfg = build_site_config(facts, brief)
+        self.assertNotIn("stats", [b["type"] for b in cfg.blocks])
+        page = render_static_html(cfg, prospect_name=facts.company_name)
+        self.assertNotIn("vestigingsplaats", page.lower())
+        self.assertNotIn("telefonisch contact", page.lower())
 
     def test_print_pack_shows_verified_unreachable_state_without_fake_screenshot(self):
         prospect = Prospect(
@@ -136,8 +168,8 @@ class DemoTests(unittest.TestCase):
             evidence={},
         )
         brief = ConversionBrief(
-            headline="Test Installatie. Onderhoud in Utrecht.",
-            subheadline="Een helder overzicht van de dienstverlening.",
+            headline="Onderhoud in Utrecht.",
+            subheadline="Neem rechtstreeks contact op voor een vraag of project.",
             primary_cta="Bel direct",
             primary_cta_url="tel:0301234567",
             opportunities=("Websitebereikbaarheid herstellen",),
@@ -170,6 +202,7 @@ class GoldenPipelineTests(unittest.TestCase):
             data = json.loads((out / "pipeline.json").read_text(encoding="utf-8"))
             self.assertNotIn("raw_html", data["verified_facts"])
             self.assertEqual(data["design_profile"]["page_type"], "authority_service")
+            self.assertEqual(data["design_profile"]["hero_variant"], "service_split")
             self.assertIn("<svg", (out / "print_pack.html").read_text(encoding="utf-8"))
 
 
