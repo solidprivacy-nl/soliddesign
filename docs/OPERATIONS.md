@@ -127,6 +127,8 @@ Overture `source_confidence` is confidence that the place exists. It is not a de
 
 Do not fill `rating` or `review_count` with invented proxies. They remain `null` unless separately and lawfully enriched.
 
+Do not judge market coverage from an arbitrary first-N unfiltered Overture sample. Apply the intended geography and sector filters before interpreting `LIMIT` results.
+
 ## 7. Review one prospect
 
 Add only verified downstream facts such as:
@@ -148,6 +150,26 @@ soliddesign audit prospect.json --out audit.json
 The adapter validates the public URL, runs Pitch Doctor behind its CLI/JSON boundary and writes SolidDesign `AuditResult` JSON.
 
 That normalized JSON is the downstream contract.
+
+### Preserve raw evidence; present root causes
+
+The donor report is evidence, not automatically prospect-facing copy.
+
+If a blocking finding such as `reachability` proves that the page never loaded, downstream checks may be cascading unknowns rather than independent verified defects. In that situation:
+
+```text
+RAW AUDIT
+→ preserve unchanged
+→ identify blocking root cause
+→ remove/collapse cascading failed-load findings from prospect-facing output
+→ human-reviewed AuditResult
+```
+
+Never turn one root failure into a long list of sales claims merely because the donor emitted multiple checks.
+
+The frozen Pitch Doctor revision supports `en`, `es`, `fr` and `zh`, but not Dutch. Dutch prospect-facing audit text therefore belongs in the human-reviewed presentation layer; do not mutate the raw donor evidence.
+
+If no screenshot exists because the website was unreachable, the print pack should show the verified live-audit state rather than inventing or implying a missing screenshot.
 
 ## 9. Human qualification
 
@@ -188,11 +210,12 @@ Verify:
 - website belongs to the intended prospect;
 - every service/claim is factual;
 - no fake testimonial/award exists;
+- raw donor errors are not presented as independent facts when they are cascading;
 - preview says it is a concept;
 - preview contains `noindex`;
 - CTA uses verified contact data;
 - no form collects data;
-- screenshots belong to the intended business;
+- screenshots/audit-state panels belong to the intended business;
 - QR points to the intended preview;
 - preview can be deleted.
 
