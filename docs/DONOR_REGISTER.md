@@ -1,20 +1,95 @@
 # Donor Register
 
-This register records external repositories considered or used by SolidDesign.
+This register records external repositories/datasets considered or used by SolidDesign.
 
 ## Adoption rule
 
-Use donor code only when semantic fit is high and total integration/change cost is lower than a thin implementation.
+Use external code only when semantic fit is high and total integration/change cost is lower than a thin implementation.
 
 Classifications:
 
 - `ADOPT` — use as a subsystem/runtime dependency;
-- `ADAPT` — copy/use a bounded component with local interface;
-- `IDEA` — patterns only, no code copying;
+- `ADAPT` — bounded component/pattern behind local interface;
+- `IDEA` — patterns only;
 - `DEFER` — potentially useful later;
 - `REJECT` — do not use.
 
-## 1. NezbiT/pitch-doctor
+## 1. Overture Maps Foundation — Places
+
+Documentation: https://docs.overturemaps.org/guides/places/
+
+Role: **CANONICAL PHASE-1 DISCOVERY DATASET**
+
+Status: `ADOPT DATA SOURCE`
+
+Relevant capability:
+
+- 75M+ global place records;
+- names;
+- current taxonomy;
+- websites;
+- phones;
+- addresses;
+- operating status;
+- source confidence;
+- stable GERS IDs;
+- public cloud GeoParquet.
+
+Boundary:
+
+- Overture is candidate discovery, not commercial-demand truth;
+- release ID is recorded;
+- external data remains untrusted until validated;
+- use `basic_category` / `taxonomy`, not deprecated `categories`.
+
+Licensing/attribution: follow Overture's theme/source attribution guidance:
+https://docs.overturemaps.org/attribution/
+
+## 2. DuckDB
+
+Project: https://duckdb.org/  
+Package: `duckdb==1.5.5`
+
+Role: **OVERTURE QUERY ENGINE**
+
+Status: `ADOPT DEPENDENCY`
+
+Purpose: bounded SQL queries against Overture cloud-hosted GeoParquet.
+
+Why DuckDB instead of a local Overture warehouse:
+
+- one embedded dependency;
+- no server;
+- no data mirror;
+- push filtering to cloud Parquet;
+- matches Overture's official quickstart.
+
+## 3. Dukotah/leadgen
+
+Repository: https://github.com/Dukotah/leadgen  
+Reviewed revision: `36784ad5125ac51e61741a478d0c7e3877e69d16`  
+License: MIT — verified in root `LICENSE`.
+
+Role: **OVERTURE DISCOVERY PATTERN DONOR**
+
+Status: `ADAPT PATTERN`
+
+Useful reviewed pattern:
+
+- bounded Overture Places query via DuckDB/S3;
+- normalized lead records;
+- optional OSM fallback concept.
+
+SolidDesign modifications:
+
+- current Overture `basic_category`/`taxonomy` instead of deprecated `categories`;
+- official STAC latest-release lookup;
+- website required;
+- closed-place filtering;
+- explicit release/source provenance;
+- no multi-source pipeline by default.
+
+## 4. NezbiT/pitch-doctor
 
 Repository: https://github.com/NezbiT/pitch-doctor
 
@@ -30,14 +105,13 @@ Relevant capability:
 - Playwright screenshots;
 - contact friction;
 - CTA/UX checks;
-- SEO/accessibility/performance checks;
-- Google Business Profile integration;
+- SEO/accessibility/performance;
 - business-language findings;
-- HTML/PDF reporting patterns.
+- HTML/PDF patterns.
 
-Boundary: normalize output into SolidDesign schemas; do not make donor internals our business-state model.
+Boundary: normalize into SolidDesign `AuditResult`.
 
-## 2. buildingopen/openpage
+## 5. buildingopen/openpage
 
 Repository: https://github.com/buildingopen/openpage
 
@@ -49,97 +123,84 @@ Status: `SPIKE / LIKELY ADOPT`
 
 Relevant capability:
 
-- typed JSON `SiteConfig` source of truth;
+- typed JSON `SiteConfig`;
 - visual editing;
 - deterministic renderer;
-- AI generation endpoint;
 - standalone HTML export.
 
-Boundary: use for pre-sale proof; do not assume it is the final production-customer stack.
+Boundary: pre-sale proof only; production stack remains undecided.
 
-## 3. JackInSightsV2/Automated-Agentic-AI-Web-Agency
+## 6. JackInSightsV2/Automated-Agentic-AI-Web-Agency
 
 Repository: https://github.com/JackInSightsV2/Automated-Agentic-AI-Web-Agency
 
 License: MIT — verified in root `LICENSE`.
 
-Role: **COMPONENT DONOR / FULL-CHASSIS COMPARATOR**
+Role: **FULL-CHASSIS COMPARATOR / OPTIONAL GOOGLE REFERENCE**
 
-Status: `ADAPT SMALL / DO NOT FULL-ADOPT YET`
+Status: `IDEA / DEFER`
 
-Potentially useful:
+Previously useful:
 
-- Google Places Scout patterns;
+- Google Places field/API pattern;
 - Supabase state/logging ideas;
-- build/review/retry patterns;
-- deployment patterns.
+- build/review/retry ideas.
 
-Mismatch:
+Current decision:
 
-- targets businesses without websites;
-- UK-specific verification;
-- autonomous email/call/SMS/WhatsApp/closing;
-- broader agentic infrastructure than current MVP needs.
+- Google Places is no longer canonical discovery;
+- larger agentic runtime is not incorporated.
 
-Security note: upstream orchestrator invokes Claude Code with `--dangerously-skip-permissions`; do not import that runtime without an explicit sandbox/security design.
+Security note: reviewed upstream orchestrator invokes Claude Code with `--dangerously-skip-permissions`; do not import that runtime without explicit sandbox design.
 
-## 4. Dukotah/leadgen
+## 7. Google Places
 
-Repository: https://github.com/Dukotah/leadgen
+Provider, not donor repository.
 
-License: MIT — verified in root `LICENSE`.
-
-Role: **DISCOVERY DONOR LATER**
+Role: **OPTIONAL FUTURE ENRICHMENT/FALLBACK**
 
 Status: `DEFER`
 
-Potential:
+Potential later value:
 
-- Overture/OpenStreetMap/open data;
-- dedupe;
-- multi-source discovery;
-- vertical patterns.
+- rating/review count;
+- measured Overture coverage gaps.
 
-Not required to validate the first offer.
+Not a Phase-1 dependency. No Google scraping.
 
-## 5. GoogleChrome/lighthouse
+## 8. GoogleChrome/lighthouse
 
-Repository: https://github.com/GoogleChrome/lighthouse
-
+Repository: https://github.com/GoogleChrome/lighthouse  
 License: Apache-2.0.
 
-Role: technical performance benchmark.
+Role: technical benchmark.
 
 Status: `DEFER`
 
 Reason: avoid duplicating audit tooling until Pitch Doctor gaps are proven.
 
-## 6. NicoSKOOL/astro-seo-website-builder
+## 9. NicoSKOOL/astro-seo-website-builder
 
 Repository: https://github.com/NicoSKOOL/astro-seo-website-builder
 
 README states MIT, but root-license provenance must be independently confirmed before code copying.
 
-Role: possible later production-builder idea donor.
-
 Status: `IDEA / DEFER`.
 
-## 7. Marcelluxx/lead-hunter-ai
+## 10. Marcelluxx/lead-hunter-ai
 
 Repository: https://github.com/Marcelluxx/lead-hunter-ai
 
 License: proprietary according to repository documentation.
-
-Role: security/audit pattern study only.
 
 Status: `IDEA ONLY / NO CODE COPYING`.
 
 Useful concepts:
 
 - guarded crawling;
-- SSRF protections;
+- SSRF protection;
 - evidence records;
-- explicit untrusted-content boundary.
+- untrusted-content boundary.
 
 ## Provenance template
 

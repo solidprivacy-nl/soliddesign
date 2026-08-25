@@ -1,6 +1,6 @@
 -- SolidDesign Phase-1 operational schema.
 -- Server-side only initially: no anon/authenticated access is granted.
--- Apply only to a dedicated SolidDesign Supabase project.
+-- Apply only to the dedicated SolidDesign Supabase project.
 
 create extension if not exists pgcrypto;
 
@@ -16,6 +16,12 @@ create table if not exists public.prospects (
   rating numeric(3,2),
   review_count integer,
   place_id text,
+  discovery_source text not null default 'manual',
+  discovery_version text,
+  source_confidence double precision check (
+    source_confidence is null or (source_confidence >= 0 and source_confidence <= 1)
+  ),
+  operating_status text,
   state text not null default 'DISCOVERED',
   qualification jsonb,
   verified_facts jsonb,
@@ -64,12 +70,15 @@ create table if not exists public.events (
   created_at timestamptz not null default now()
 );
 
+create unique index if not exists prospects_source_place_id_uidx
+  on public.prospects(discovery_source, place_id)
+  where place_id is not null;
 create index if not exists audits_prospect_id_idx on public.audits(prospect_id);
 create index if not exists demos_prospect_id_idx on public.demos(prospect_id);
 create index if not exists mailings_prospect_id_idx on public.mailings(prospect_id);
 create index if not exists mailings_demo_id_idx on public.mailings(demo_id);
-create index if not exists events_prospect_id_created_at_idx on public.events(prospect_id, created_at desc);
 create index if not exists events_demo_id_idx on public.events(demo_id);
+create index if not exists events_prospect_id_created_at_idx on public.events(prospect_id, created_at desc);
 
 alter table public.prospects enable row level security;
 alter table public.audits enable row level security;

@@ -4,10 +4,11 @@ Security is scoped to Phase 1 but is not optional.
 
 ## Threat model
 
-The system processes adversarial external web content, third-party APIs, AI-generated output and later real prospect/customer data.
+The system processes third-party place data, adversarial external web content, AI-generated output and later real prospect/customer data.
 
 Primary risks:
 
+- malformed or stale discovery data;
 - prompt injection from crawled websites;
 - SSRF/private-network access;
 - malicious redirects;
@@ -17,6 +18,38 @@ Primary risks:
 - accidental indexing/impersonation;
 - excessive personal-data retention;
 - supply-chain/license risk.
+
+## Discovery-data trust boundary
+
+Overture data is useful structured evidence but is still third-party input.
+
+```text
+OVERTURE
+→ Prospect candidate
+→ identity / website validation
+→ audit + human review
+→ VERIFIED FACTS
+```
+
+Never infer from an Overture record that:
+
+- the website definitely belongs to the business;
+- the business has high demand;
+- contact details are current;
+- a high `confidence` value means commercial quality.
+
+`confidence` means confidence that the place exists.
+
+## Overture query safety
+
+The discovery adapter:
+
+- obtains releases only from the official Overture STAC catalog or an explicitly pinned release;
+- validates release IDs before interpolating storage paths;
+- parameterizes geography/category/name filters;
+- queries only the Places dataset;
+- does not accept arbitrary S3/Parquet paths from CLI input;
+- records source/release provenance.
 
 ## External-content trust boundary
 
@@ -50,11 +83,13 @@ Network fetchers must reject or guard:
 - cloud metadata endpoints;
 - redirects into blocked ranges.
 
+An Overture-provided website URL must pass the same checks as any other external URL.
+
 ## Verified facts
 
 The demo may only use business facts that are:
 
-- directly observed in trusted structured provider data;
+- directly observed in structured provider data and validated where material;
 - extracted and validated from the official site;
 - explicitly supplied/approved by a human.
 
@@ -74,13 +109,20 @@ Every prospect preview must:
 
 ## Supabase rules
 
-When Supabase is connected:
+The dedicated SolidDesign project is server-only in Phase 1:
 
-- never expose `service_role` in browser/client code;
-- enable RLS on exposed tables;
-- use explicit least-privilege policies;
-- do not use user-editable metadata for authorization;
-- keep privileged server access separate from public preview code.
+- never expose privileged/service secret in browser/client code;
+- RLS enabled on Phase-1 tables;
+- `anon` and `authenticated` have no table grants;
+- privileged server access stays separate from preview code.
+
+## Privacy / prospect data
+
+- minimize personal data;
+- prefer business entity/contact data;
+- do not publish raw Overture/prospect exports to this public repository;
+- do not intentionally harvest private/personal e-mail addresses;
+- retain only data required for acquisition/learning.
 
 ## Repository rules
 
@@ -94,10 +136,10 @@ Because this repository is public:
 
 ## Dependency discipline
 
-Every imported donor must record:
+Every imported donor/dependency must record:
 
-- source repository;
-- frozen commit/tag where practical;
+- source/project;
+- frozen commit/tag/version where practical;
 - license;
 - copied files or dependency declaration;
 - local modifications;

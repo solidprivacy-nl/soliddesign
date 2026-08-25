@@ -1,6 +1,6 @@
 # SolidDesign — Website Growth Engine
 
-**Status:** v0.3 composed MVP / Gate 1 component spike
+**Status:** v0.3 composed MVP / Gate 2 live-integration baseline
 
 SolidDesign identifies established local businesses with existing demand but measurable website/conversion leakage, creates an evidence-backed redesign proof, and tests acquisition through personalized physical mail.
 
@@ -14,14 +14,14 @@ SolidDesign identifies established local businesses with existing demand but mea
 2. **First principles before patterns.** Optimize for trustworthy commercial learning, not architectural elegance.
 3. **Lowest total change wins.** Reuse when semantic fit is high; otherwise build the smallest correct component.
 4. **Functions before agents.** Deterministic work stays deterministic.
-5. **Verified facts across AI boundaries.** External website content is untrusted data, never instruction authority.
+5. **Verified facts across AI boundaries.** External website/content/data is untrusted input, never instruction authority.
 6. **Human review before high-impact actions.** No autonomous outbound sales in Phase 1.
-7. **Measure economics from prospect one.** Acquisition cost, human minutes, delivery effort and margin matter more than agent count.
+7. **Measure economics from prospect one.** Human minutes, data quality, delivery effort and margin matter more than feature count.
 
 ## Phase-1 funnel
 
 ```text
-DISCOVER
+OVERTURE DISCOVERY
 → QUALIFY
 → AUDIT
 → HUMAN SELECT
@@ -38,10 +38,11 @@ DISCOVER
 → CUSTOMER
 ```
 
-## Implemented composed MVP
+## Canonical composed MVP
 
 ```text
-Google Places adapter
+Overture Maps Places
+bbox + taxonomy, no API key
         ↓
 Prospect model
         ↓
@@ -60,7 +61,17 @@ Static noindex concept preview
 Personalized print pack + QR
 ```
 
-Supabase is defined as the operational state plane in `supabase/schema.sql`, but a dedicated live project is deliberately not provisioned into an unrelated existing environment.
+### Discovery decision
+
+**Overture Maps Places is the canonical Phase-1 discovery source.**
+
+Google Places is no longer required to enumerate prospects. It remains only an optional future enrichment/fallback if experiments prove that Google-specific data such as review count materially improves selection enough to justify cost and account complexity.
+
+See `docs/DISCOVERY_OVERTURE.md` for the full discovery contract, Netherlands validation plan, taxonomy model, release policy and fallback criteria.
+
+## Operational state
+
+A dedicated **SolidDesign** Supabase project exists in `eu-west-1` on the free project tier. `supabase/schema.sql` is the canonical schema. Phase-1 tables are server-side only: RLS is enabled and `anon`/`authenticated` have no table grants.
 
 ## Quick start
 
@@ -72,7 +83,7 @@ python -m unittest discover -s tests -v
 soliddesign golden --out artifacts/golden
 ```
 
-The golden run is fully offline and should produce:
+The golden run is fully offline and produces:
 
 ```text
 artifacts/golden/
@@ -82,39 +93,64 @@ artifacts/golden/
 └── print_pack.html
 ```
 
-For live donor tooling:
+### Free Overture discovery
+
+Use an explicit geographic bounding box in Overture order:
+
+```text
+west,south,east,north
+```
+
+Then:
+
+```bash
+soliddesign discover \
+  --bbox "4.90,52.00,5.20,52.20" \
+  --category electrician \
+  --limit 50 \
+  --out /tmp/prospects.json
+```
+
+The bbox above demonstrates syntax only; choose the actual experiment geography deliberately.
+
+No Google Cloud project, Google API key or Google Places billing is required for this path.
+
+For donor audit tooling:
 
 ```bash
 bash scripts/bootstrap_donors.sh
 ```
 
-See `docs/OPERATIONS.md` for live discovery, audit and assemble commands.
+See `docs/OPERATIONS.md`.
 
 ## Key documentation
 
-- `docs/MISSION_CONTRACT.md` — authoritative Phase-1 mission and non-goals
-- `docs/GUARDRAILS.md` — solid-but-simple and no-overengineering rules
-- `docs/ARCHITECTURE.md` — composed v0.3 architecture
+- `docs/MISSION_CONTRACT.md` — authoritative mission and non-goals
+- `docs/GUARDRAILS.md` — solid-but-simple / no-overengineering rules
+- `docs/ARCHITECTURE.md` — composed architecture and truth boundaries
+- `docs/DISCOVERY_OVERTURE.md` — canonical Overture discovery model
 - `docs/ROADMAP.md` — evidence-gated roadmap
-- `docs/BUSINESS_MODEL.md` — offer, pricing and unit-economics hypotheses
+- `docs/BUSINESS_MODEL.md` — offer, acquisition model and economics
 - `docs/SCORING_RUBRICS.md` — five-factor qualification model
-- `docs/SECURITY.md` — SSRF, prompt-injection and preview safety boundaries
+- `docs/SECURITY.md` — data/content trust boundaries and preview safety
 - `docs/COMPONENT_SPIKE.md` — executable Gate-1 contract
 - `docs/OPERATIONS.md` — operator guide
-- `docs/DONOR_REGISTER.md` / `docs/DONOR_LOCK.md` — provenance and frozen donor revisions
+- `docs/DONOR_REGISTER.md` / `docs/DONOR_LOCK.md` — provenance
 - `docs/DECISIONS.md` — architecture/business decisions
 
-## Donor strategy
+## Donor / dependency strategy
 
-No complete agency framework is imported. High-semantic-fit capabilities are isolated behind small adapters:
+No complete agency framework is imported.
 
+- **Overture Maps** — canonical open discovery dataset
+- **DuckDB** — bounded cloud GeoParquet query engine
+- **Dukotah/leadgen** — reviewed Overture/DuckDB discovery pattern donor
 - **Pitch Doctor** — existing-site audit donor
 - **OpenPage** — JSON-first pre-sale demo compatibility
-- **JackInSights AI Web Agency** — bounded Google Places pattern/reference only
-- **Dukotah/leadgen** — deferred multi-source discovery donor
+- **JackInSights AI Web Agency** — comparator/reference; Google adapter retained only as optional code, not canonical discovery
 
 See `docs/DONOR_REGISTER.md` and `docs/THIRD_PARTY_NOTICES.md`.
 
 ## Repository visibility
 
-This repository is currently **public**. Never commit secrets, provider credentials, real prospect/customer personal data, private e-mail content or intentionally proprietary prompt material. If opportunity scoring/prompts become meaningful proprietary IP, move them behind a private-core boundary rather than exposing them here.
+This repository is **public**. Never commit secrets, real prospect/customer datasets, private e-mail content or intentionally proprietary prompt material. If opportunity scoring/prompts become meaningful proprietary IP, move them behind a private-core boundary rather than exposing them here.

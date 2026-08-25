@@ -15,9 +15,7 @@ We look for established businesses that already have demand and reputation but w
 ```text
 working business
 +
-existing online demand
-+
-good reputation
+credible existing demand
 +
 existing website
 +
@@ -28,17 +26,71 @@ visible conversion leakage
 standardizable delivery
 ```
 
+Reputation can strengthen the case but is evidence, not a mandatory Google-specific field.
+
+## Discovery economics change
+
+Phase-1 market enumeration now uses **Overture Maps Places**.
+
+Business consequence:
+
+```text
+paid provider-wide discovery
+→ replaced by
+open/free candidate-universe discovery
+```
+
+This reduces the cost of finding the initial universe and removes Google Cloud/API billing from the core funnel.
+
+However:
+
+> **Free discovery is not free qualification.**
+
+Overture tells us which places/businesses may exist and can provide website/category/contact/location fields. It does not prove commercial demand.
+
+Therefore the business model separates:
+
+```text
+DISCOVERY
+Who belongs in the candidate universe?
+
+from
+
+QUALIFICATION
+Which candidates are commercially worth pursuing?
+```
+
+## Existing-demand evidence
+
+Existing demand remains central to the thesis.
+
+It may be evidenced by:
+
+- commercial-intent sector;
+- visible search/local presence;
+- reputation/review evidence observed during human research or lawful enrichment;
+- relative peer activity;
+- evidence the business is established and active;
+- other market-specific signals.
+
+Do **not** treat Overture existence confidence as demand. It is a data-quality/existence field.
+
+For the first five prospects, manual research is acceptable and preferable to building another API integration before value is proven.
+
 ## Acquisition thesis
 
 Proof before purchase:
 
-1. identify a high-opportunity business;
-2. audit its current digital conversion path;
-3. create a limited personalized concept;
-4. send a personalized physical envelope;
-5. include before/after visual, three findings and QR/URL;
-6. prospect decides whether to engage;
-7. human handles sales from real interest onward.
+1. choose sector + bounded geography;
+2. use Overture to create the candidate universe;
+3. validate business/site identity;
+4. audit the current conversion path;
+5. evidence demand and score the opportunity;
+6. human-select the best prospects;
+7. create a limited personalized concept;
+8. send a personalized physical envelope;
+9. include before/after visual, three findings and QR/URL;
+10. human handles sales from real interest onward.
 
 No “no cure no pay” claim in Phase 1.
 
@@ -109,6 +161,22 @@ Expected Prospect Value
 P(win) × Customer Gross Value - Cost To Pursue
 ```
 
+## Discovery metrics
+
+From market one, measure:
+
+```text
+raw Overture records
+valid businesses
+working websites
+audit-eligible candidates
+qualified candidates
+human cleanup minutes
+source/query cost
+```
+
+The Overture source/API fee is expected to be €0. Human cleanup remains a real acquisition cost.
+
 ## Core metric
 
 > Gross profit per 100 qualified prospects.
@@ -123,3 +191,15 @@ Test later:
 - same pack + live interactive demo.
 
 If the live demo adds little response relative to cost, reserve it for the highest-value tier.
+
+## Optional paid enrichment rule
+
+A commercial data source such as Google Places may be added only when:
+
+```text
+measured improvement in selection / conversion
+>
+provider cost + integration complexity + operational burden
+```
+
+No paid enrichment across the entire raw Overture universe by default.

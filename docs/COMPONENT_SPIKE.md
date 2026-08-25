@@ -21,15 +21,29 @@ fixture Prospect
 
 ### Discovery → Prospect
 
-Stable internal `Prospect` fields let us replace Google Places later without touching scoring/demo logic.
+`Prospect` is the owned source-neutral boundary.
+
+Canonical live source is now Overture Maps; Google is optional.
+
+Source provenance fields:
+
+```text
+discovery_source
+discovery_version
+source_confidence
+operating_status
+place_id
+```
+
+This is enough to change a discovery provider without touching scoring/demo logic. Do not build a generalized plugin framework.
 
 ### Audit donor → AuditResult
 
-Pitch Doctor is invoked behind a CLI/JSON adapter. Donor internals do not become our domain model.
+Pitch Doctor is invoked behind a CLI/JSON adapter. Donor internals do not become the domain model.
 
 ### Audit/Prospect → VerifiedFacts
 
-This is the AI trust boundary. Raw HTML is excluded.
+This is the AI trust boundary. Raw HTML and unvalidated source data are excluded.
 
 ### VerifiedFacts/Brief → SiteConfig
 
@@ -47,14 +61,34 @@ Site config follows the reviewed OpenPage shape:
 
 Phase 1 deliberately avoids testimonial and contact-form blocks.
 
+## Overture adapter contract
+
+```text
+bbox + taxonomy
+→ latest/pinned Overture release
+→ businesses with website
+→ non-closed records
+→ Prospect[]
+```
+
+The adapter must not:
+
+- interpret Overture confidence as demand;
+- use deprecated `categories` for new logic;
+- accept arbitrary remote parquet paths;
+- require Google credentials.
+
 ## Acceptance tests
 
-- score is reproducible;
+- score reproducible;
 - failed hard gate blocks demo;
-- loopback/private metadata URLs are rejected;
+- loopback/private metadata URLs rejected;
 - no raw HTML crosses VerifiedFacts;
-- no testimonials are generated;
-- no form block is generated;
+- no testimonials generated;
+- no form block generated;
 - preview has noindex + concept banner;
 - print pack renders comparison + QR/URL;
-- the complete fixture run has no network dependency.
+- Overture bbox/release validation is deterministic;
+- Overture mapping stores source provenance;
+- Overture query references `basic_category`/`taxonomy`, not deprecated `categories`;
+- complete fixture run has no network dependency.

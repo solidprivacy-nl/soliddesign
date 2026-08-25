@@ -16,6 +16,10 @@ class Prospect:
     rating: float | None = None
     review_count: int | None = None
     place_id: str | None = None
+    discovery_source: str = "manual"
+    discovery_version: str | None = None
+    source_confidence: float | None = None
+    operating_status: str | None = None
     observed_services: tuple[str, ...] = ()
     brand_colors: tuple[str, ...] = ()
     approved_claims: tuple[str, ...] = ()
@@ -39,7 +43,7 @@ class AuditFinding:
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
-        data["evidence"] = list(self.evidence)
+        data["evidence"] = list(data["evidence"])
         return data
 
 

@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from .audit.adapter import audit_result_from_dict, run_pitch_doctor
-from .discovery.google_places import search_businesses
+from .discovery.overture import parse_bbox, search_businesses
 from .pipeline import prospect_from_dict, qualification_input_from_dict, run_component_spike, run_golden_fixture
 
 
@@ -22,9 +22,24 @@ def main() -> None:
     golden.add_argument("--out", default="artifacts/golden")
     golden.add_argument("--preview-url", default="https://preview.example.invalid/p/golden")
 
-    discover = sub.add_parser("discover", help="Search Google Places for businesses with existing websites")
-    discover.add_argument("query")
-    discover.add_argument("--limit", type=int, default=10)
+    discover = sub.add_parser(
+        "discover",
+        help="Search Overture Maps Places for businesses with existing websites",
+    )
+    discover.add_argument(
+        "--bbox",
+        required=True,
+        help="west,south,east,north coordinates, matching Overture's bbox order",
+    )
+    discover.add_argument(
+        "--category",
+        action="append",
+        default=[],
+        help="Overture basic_category/taxonomy label; repeat for OR matching",
+    )
+    discover.add_argument("--name", help="Optional case-insensitive business-name substring")
+    discover.add_argument("--limit", type=int, default=50)
+    discover.add_argument("--release", help="Optional pinned Overture release, e.g. 2026-07-22.0")
     discover.add_argument("--out")
 
     audit = sub.add_parser("audit", help="Run the guarded Pitch Doctor adapter for one prospect JSON file")
@@ -43,7 +58,17 @@ def main() -> None:
         print(json.dumps(run_golden_fixture(args.fixtures, args.out, preview_url=args.preview_url), indent=2))
         return
     if args.command == "discover":
-        results = [p.to_dict() for p in search_businesses(args.query, limit=args.limit)]
+        bbox = parse_bbox(args.bbox)
+        results = [
+            p.to_dict()
+            for p in search_businesses(
+                bbox,
+                categories=args.category,
+                name_contains=args.name,
+                limit=args.limit,
+                release=args.release,
+            )
+        ]
         text = json.dumps(results, indent=2, ensure_ascii=False)
         if args.out:
             Path(args.out).write_text(text, encoding="utf-8")
