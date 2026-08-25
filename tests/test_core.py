@@ -5,6 +5,7 @@ from pathlib import Path
 
 from soliddesign.audit.adapter import audit_result_from_dict
 from soliddesign.demo.openpage import build_site_config, render_static_html
+from soliddesign.design import derive_design_profile
 from soliddesign.models import (
     AuditFinding,
     AuditResult,
@@ -56,16 +57,40 @@ class AuditContractTests(unittest.TestCase):
 
 
 class DemoTests(unittest.TestCase):
+    def _facts(self):
+        return VerifiedFacts(company_name="Test BV", category="installateur", city="Utrecht", address="Test 1", website_url="https://example.com", phone="0301234567", rating=4.8, review_count=50, services=("Onderhoud",), brand_colors=("#155EEF",), approved_claims=(), evidence={})
+
+    def _brief(self):
+        return ConversionBrief(headline="Test BV. Onderhoud in Utrecht.", subheadline="Een helder overzicht van de dienstverlening.", primary_cta="Bel direct", primary_cta_url="tel:0301234567", opportunities=("CTA verbeteren",), trust_points=("4.8/5 op basis van 50 Google-beoordelingen",), sections=("hero", "services", "trust"))
+
     def test_safe_openpage_shape(self):
-        facts = VerifiedFacts(company_name="Test BV", category="installateur", city="Utrecht", address="Test 1", website_url="https://example.com", phone="0301234567", rating=4.8, review_count=50, services=("Onderhoud",), brand_colors=("#155EEF",), approved_claims=(), evidence={})
-        brief = ConversionBrief(headline="Onderhoud in Utrecht", subheadline="Concept", primary_cta="Bel direct", primary_cta_url="tel:0301234567", opportunities=("CTA verbeteren",), trust_points=("4.8/5 op basis van 50 Google-beoordelingen",), sections=("hero", "services", "trust"))
-        cfg = build_site_config(facts, brief)
+        facts = self._facts()
+        cfg = build_site_config(facts, self._brief())
         block_types = [b["type"] for b in cfg.blocks]
         self.assertNotIn("testimonials", block_types)
         self.assertNotIn("contact", block_types)
         page = render_static_html(cfg, prospect_name=facts.company_name)
         self.assertIn("noindex,nofollow,noarchive", page)
         self.assertNotIn("<form", page.lower())
+
+    def test_design_profile_is_small_and_deterministic(self):
+        facts = self._facts()
+        profile = derive_design_profile(facts, self._brief())
+        self.assertEqual(profile.page_type, "authority_service")
+        self.assertEqual(profile.hero_variant, "authority")
+        self.assertEqual(profile.services_variant, "editorial_list")
+        self.assertEqual(profile.motion_level, "low")
+        self.assertIn("no_fake_proof", profile.anti_patterns)
+
+    def test_premium_renderer_avoids_known_ai_slop(self):
+        facts = self._facts()
+        page = render_static_html(build_site_config(facts, self._brief()), prospect_name=facts.company_name).lower()
+        self.assertNotIn("linear-gradient", page)
+        self.assertNotIn("radial-gradient", page)
+        self.assertNotIn("font-family:inter", page)
+        self.assertNotIn("box-shadow", page)
+        self.assertIn("service-list", page)
+        self.assertIn("hero-panel", page)
 
     def test_print_pack_shows_verified_unreachable_state_without_fake_screenshot(self):
         prospect = Prospect(
@@ -111,8 +136,8 @@ class DemoTests(unittest.TestCase):
             evidence={},
         )
         brief = ConversionBrief(
-            headline="Onderhoud in Utrecht",
-            subheadline="Concept",
+            headline="Test Installatie. Onderhoud in Utrecht.",
+            subheadline="Een helder overzicht van de dienstverlening.",
             primary_cta="Bel direct",
             primary_cta_url="tel:0301234567",
             opportunities=("Websitebereikbaarheid herstellen",),
@@ -141,8 +166,10 @@ class GoldenPipelineTests(unittest.TestCase):
             self.assertEqual(result["qualification_score"], 20)
             self.assertTrue((out / "preview.html").exists())
             self.assertTrue((out / "print_pack.html").exists())
+            self.assertTrue((out / "design_profile.json").exists())
             data = json.loads((out / "pipeline.json").read_text(encoding="utf-8"))
             self.assertNotIn("raw_html", data["verified_facts"])
+            self.assertEqual(data["design_profile"]["page_type"], "authority_service")
             self.assertIn("<svg", (out / "print_pack.html").read_text(encoding="utf-8"))
 
 
