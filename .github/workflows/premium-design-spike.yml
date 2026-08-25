@@ -1,0 +1,177 @@
+name: Premium design spike
+
+on:
+  push:
+    branches: ["design/premium-v1"]
+    paths:
+      - ".github/workflows/premium-design-spike.yml"
+      - "src/soliddesign/design.py"
+      - "src/soliddesign/brief.py"
+      - "src/soliddesign/demo/openpage.py"
+      - "src/soliddesign/pipeline.py"
+      - "tests/test_core.py"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PROJECT_NAME: soliddesign-previews-solidprivacy
+      PREVIEW_BRANCH: premium-v1
+      OPAQUE_ID: d3c95a7e6f2041b8
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.18.0"
+
+      - name: Verify bounded deployment authorization
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+
+      - name: Install spike tools
+        run: |
+          python -m pip install -e .
+          npm install --no-save wrangler@4.126.0 playwright@1.59.1 impeccable@3.6.0
+          npx playwright install --with-deps chromium
+
+      - name: Download Gate-2 reviewed prospect evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: gate2-overture-utrecht-proof-nl
+          path: gate2-source
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: solidprivacy-nl/soliddesign
+          run-id: 32885529646
+
+      - name: Rebuild same prospect with premium-v1
+        run: |
+          set -euo pipefail
+          prospect=$(find gate2-source -type f -name 'prospect-*-reviewed.json' | head -1)
+          audit=$(find gate2-source -type f -name 'audit-*-reviewed.json' | head -1)
+          score=$(find gate2-source -type f -name 'score-*.json' | head -1)
+          test -n "$prospect" && test -n "$audit" && test -n "$score"
+          preview_url="https://${PREVIEW_BRANCH}.${PROJECT_NAME}.pages.dev/p/${OPAQUE_ID}/"
+          soliddesign assemble \
+            --prospect "$prospect" \
+            --audit "$audit" \
+            --score "$score" \
+            --preview-url "$preview_url" \
+            --out premium \
+            > assemble.stdout
+          test -s premium/preview.html
+          test -s premium/design_profile.json
+          grep -q 'noindex,nofollow,noarchive' premium/preview.html
+          ! grep -qi '<form' premium/preview.html
+          ! grep -qi 'testimonial' premium/preview.html
+
+      - name: Deterministic old-versus-new design QA
+        shell: bash
+        run: |
+          set +e
+          npx impeccable detect --json gate2-source/proof-hennie-jansen/preview.html > old-impeccable.json
+          old_code=$?
+          npx impeccable detect --json premium/preview.html > new-impeccable.json
+          new_code=$?
+          set -e
+          test "$old_code" -eq 0 -o "$old_code" -eq 2
+          test "$new_code" -eq 0
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          old=json.loads(Path('old-impeccable.json').read_text())
+          new=json.loads(Path('new-impeccable.json').read_text())
+          evidence={
+            'old_impeccable_findings': len(old),
+            'new_impeccable_findings': len(new),
+            'new_impeccable_clean': len(new) == 0,
+            'old_preview_bytes': Path('gate2-source/proof-hennie-jansen/preview.html').stat().st_size,
+            'new_preview_bytes': Path('premium/preview.html').stat().st_size,
+            'design_profile': json.loads(Path('premium/design_profile.json').read_text()),
+          }
+          Path('comparison.json').write_text(json.dumps(evidence, indent=2), encoding='utf-8')
+          print(json.dumps(evidence, indent=2))
+          PY
+
+      - name: Screenshot old and premium concepts
+        run: |
+          cat > screenshot.mjs <<'JS'
+          import { chromium } from 'playwright';
+          import { pathToFileURL } from 'url';
+          import path from 'path';
+          const browser = await chromium.launch({headless:true});
+          const cases = [
+            ['old', path.resolve('gate2-source/proof-hennie-jansen/preview.html')],
+            ['premium', path.resolve('premium/preview.html')],
+          ];
+          for (const [name,file] of cases) {
+            for (const [size,width,height] of [['desktop',1440,1000],['mobile',390,844]]) {
+              const page = await browser.newPage({viewport:{width,height}});
+              await page.goto(pathToFileURL(file).href);
+              await page.screenshot({path:`${name}-${size}.png`,fullPage:true});
+              await page.close();
+            }
+          }
+          await browser.close();
+          JS
+          node screenshot.mjs
+
+      - name: Deploy premium concept to non-production Pages branch
+        run: |
+          mkdir -p "deploy/p/${OPAQUE_ID}"
+          cp premium/preview.html "deploy/p/${OPAQUE_ID}/index.html"
+          cat > deploy/index.html <<'HTML'
+          <!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive"><title>SolidDesign design spike</title></head><body><p>Niet-geïndexeerde designproef.</p></body></html>
+          HTML
+          npx wrangler pages deploy deploy \
+            --project-name "$PROJECT_NAME" \
+            --branch "$PREVIEW_BRANCH" \
+            --commit-hash "$GITHUB_SHA" \
+            --commit-message 'Premium design v1 spike' \
+            | tee wrangler.out
+
+      - name: Browser-representative HTTP verification
+        run: |
+          url="https://${PREVIEW_BRANCH}.${PROJECT_NAME}.pages.dev/p/${OPAQUE_ID}/"
+          for i in $(seq 1 12); do
+            code=$(curl -A 'Mozilla/5.0 SolidDesign visual verification' -sS -o live.html -w '%{http_code}' "$url" || true)
+            if [ "$code" = "200" ] && grep -q 'noindex,nofollow,noarchive' live.html && grep -q 'hero-panel' live.html; then
+              printf '%s\n' "$url" > preview-url.txt
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Premium branch preview did not verify" >&2
+          exit 1
+
+      - name: Upload design-spike evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: premium-design-v1-spike
+          path: |
+            comparison.json
+            old-impeccable.json
+            new-impeccable.json
+            old-desktop.png
+            old-mobile.png
+            premium-desktop.png
+            premium-mobile.png
+            premium/design_profile.json
+            premium/site_config.json
+            premium/preview.html
+            premium/print_pack.html
+            preview-url.txt
+          retention-days: 14
