@@ -5,8 +5,17 @@ from pathlib import Path
 
 from soliddesign.audit.adapter import audit_result_from_dict
 from soliddesign.demo.openpage import build_site_config, render_static_html
-from soliddesign.models import ConversionBrief, FactorScore, QualificationInput, VerifiedFacts
+from soliddesign.models import (
+    AuditFinding,
+    AuditResult,
+    ConversionBrief,
+    FactorScore,
+    Prospect,
+    QualificationInput,
+    VerifiedFacts,
+)
 from soliddesign.pipeline import run_golden_fixture
+from soliddesign.print_pack.renderer import render_print_pack
 from soliddesign.qualification import qualify
 from soliddesign.security import UnsafeUrlError, validate_public_http_url
 
@@ -57,6 +66,70 @@ class DemoTests(unittest.TestCase):
         page = render_static_html(cfg, prospect_name=facts.company_name)
         self.assertIn("noindex,nofollow,noarchive", page)
         self.assertNotIn("<form", page.lower())
+
+    def test_print_pack_shows_verified_unreachable_state_without_fake_screenshot(self):
+        prospect = Prospect(
+            id="test:1",
+            name="Test Installatie",
+            category="installateur",
+            city="Utrecht",
+            address="Teststraat 1",
+            website_url="https://example.com",
+            phone="0301234567",
+            observed_services=("Onderhoud",),
+        )
+        audit = AuditResult(
+            url=prospect.website_url,
+            score=0,
+            grade="F",
+            findings=(
+                AuditFinding(
+                    key="reachability",
+                    severity="critical",
+                    title="Website niet betrouwbaar bereikbaar",
+                    evidence=("TLS failure",),
+                    business_impact="Bezoekers krijgen geen betrouwbare route naar het bedrijf.",
+                    recommendation="Herstel bereikbaarheid.",
+                    verified=True,
+                ),
+            ),
+            current_screenshot_data_uri=None,
+            source="human-reviewed:pitch-doctor",
+        )
+        facts = VerifiedFacts(
+            company_name=prospect.name,
+            category=prospect.category,
+            city=prospect.city,
+            address=prospect.address,
+            website_url=prospect.website_url,
+            phone=prospect.phone,
+            rating=None,
+            review_count=None,
+            services=prospect.observed_services,
+            brand_colors=(),
+            approved_claims=(),
+            evidence={},
+        )
+        brief = ConversionBrief(
+            headline="Onderhoud in Utrecht",
+            subheadline="Concept",
+            primary_cta="Bel direct",
+            primary_cta_url="tel:0301234567",
+            opportunities=("Websitebereikbaarheid herstellen",),
+            trust_points=(),
+            sections=("hero", "services", "contact"),
+        )
+        pack = render_print_pack(
+            prospect,
+            audit,
+            brief,
+            build_site_config(facts, brief),
+            preview_url="https://preview.example.invalid/p/test",
+        )
+        self.assertIn("Website niet bereikbaar tijdens live audit", pack)
+        self.assertIn("Bezoekers krijgen geen betrouwbare route", pack)
+        self.assertIn("1 concrete kans die ons opviel", pack)
+        self.assertNotIn("Huidige screenshot wordt bij live audit toegevoegd", pack)
 
 
 class GoldenPipelineTests(unittest.TestCase):
