@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "build/**"]
+    branches: [main, "build/**", "design/**"]
   pull_request:
 
 permissions:
@@ -17,6 +17,9 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.18.0"
       - name: Install
         run: python -m pip install -e .
       - name: Unit tests
@@ -28,5 +31,17 @@ jobs:
           test -s /tmp/soliddesign-golden/preview.html
           test -s /tmp/soliddesign-golden/print_pack.html
           test -s /tmp/soliddesign-golden/site_config.json
+          test -s /tmp/soliddesign-golden/design_profile.json
           grep -q 'noindex,nofollow,noarchive' /tmp/soliddesign-golden/preview.html
           ! grep -qi '<form' /tmp/soliddesign-golden/preview.html
+          ! grep -Eqi 'linear-gradient|radial-gradient' /tmp/soliddesign-golden/preview.html
+      - name: Impeccable deterministic design QA
+        shell: bash
+        run: |
+          set +e
+          npx --yes impeccable@3.6.0 detect --json /tmp/soliddesign-golden/preview.html > /tmp/impeccable.json
+          code=$?
+          set -e
+          test "$code" -eq 0 -o "$code" -eq 2
+          test -s /tmp/impeccable.json
+          cat /tmp/impeccable.json
