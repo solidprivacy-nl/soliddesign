@@ -31,7 +31,7 @@ This first gate needs no Google, Supabase, AI-model, Cloudflare or donor credent
 ## 3. Bootstrap donor tools
 
 ```bash
-./scripts/bootstrap_donors.sh
+bash scripts/bootstrap_donors.sh
 ```
 
 Set the emitted `PITCH_DOCTOR_COMMAND` path. Vendor checkouts are pinned; never edit them as SolidDesign source.
