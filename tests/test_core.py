@@ -89,8 +89,8 @@ class DemoTests(unittest.TestCase):
         facts = self._facts()
         audit = AuditResult(url=facts.website_url, score=40, grade="F", findings=(), source="test")
         brief = build_conversion_brief(facts, audit)
-        self.assertEqual(brief.headline, "Warmtepompinstallatie en Verwarming in Utrecht.")
-        self.assertIn("Ook voor Duurzame woninginstallaties", brief.subheadline)
+        self.assertEqual(brief.headline, "Warmtepompinstallatie en verwarming in Utrecht.")
+        self.assertIn("Ook voor duurzame woninginstallaties", brief.subheadline)
         self.assertNotIn(facts.company_name + ".", brief.headline)
         self.assertNotIn("helder overzicht van de dienstverlening", brief.subheadline.lower())
 
