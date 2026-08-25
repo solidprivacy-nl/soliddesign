@@ -82,7 +82,7 @@ def _first_valid_color(colors: tuple[str, ...]) -> str | None:
 def _category_accent(text: str) -> str:
     normalized = text.lower()
     if any(term in normalized for term in ("elektr", "install", "bouw", "aannem", "onderhoud")):
-        return "#B85C32"
+        return "#9A4726"
     if any(term in normalized for term in ("zorg", "health", "therap", "praktijk")):
         return "#2E746C"
     if any(term in normalized for term in ("interieur", "hout", "schilder", "renov")):
