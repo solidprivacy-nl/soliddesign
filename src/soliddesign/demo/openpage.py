@@ -32,7 +32,8 @@ def build_site_config(
     design_profile: DesignProfile | None = None,
 ) -> SiteConfig:
     profile = design_profile or derive_design_profile(facts, brief)
-    trust_items = _trust_items(facts, brief)
+    trust_items = _trust_items(brief)
+    services = tuple(facts.services[:6])
 
     blocks: list[dict[str, Any]] = [
         {
@@ -51,12 +52,13 @@ def build_site_config(
             "type": "hero",
             "variant": profile.hero_variant,
             "props": {
+                "eyebrow": f"Dienstverlening in {facts.city}" if facts.city else "Dienstverlening",
                 "headline": brief.headline,
                 "subheadline": brief.subheadline,
                 "primaryCta": brief.primary_cta,
                 "primaryCtaUrl": brief.primary_cta_url,
+                "services": list(services[:3]),
                 "location": facts.city,
-                "service": facts.services[0] if facts.services else facts.category,
             },
         },
     ]
@@ -67,11 +69,11 @@ def build_site_config(
                 "id": "block-proof-1",
                 "type": "stats",
                 "variant": profile.trust_variant,
-                "props": {"title": "Geverifieerde gegevens", "items": trust_items},
+                "props": {"items": trust_items},
             }
         )
 
-    if facts.services:
+    if services:
         blocks.append(
             {
                 "id": "block-services-1",
@@ -79,18 +81,20 @@ def build_site_config(
                 "variant": profile.services_variant,
                 "props": {
                     "label": "Diensten",
-                    "title": "Waarvoor u contact kunt opnemen",
+                    "title": "Diensten en werkzaamheden",
+                    "intro": "Kies het onderwerp dat past bij uw vraag en neem rechtstreeks contact op.",
                     "items": [
                         {
                             "title": service,
-                            "description": f"Neem contact op met {facts.company_name} voor informatie over {service}.",
+                            "description": _service_description(service),
                         }
-                        for service in facts.services[:6]
+                        for service in services
                     ],
                 },
             }
         )
 
+    primary_service = services[0] if services else facts.category
     blocks.extend(
         [
             {
@@ -98,9 +102,10 @@ def build_site_config(
                 "type": "cta",
                 "variant": profile.cta_variant,
                 "props": {
-                    "eyebrow": facts.city or facts.category,
-                    "headline": "Bespreek uw vraag rechtstreeks",
-                    "subheadline": facts.address,
+                    "eyebrow": "Rechtstreeks contact",
+                    "headline": f"Een vraag over {_clean_service(primary_service)}?",
+                    "subheadline": _contact_line(facts),
+                    "address": facts.address,
                     "buttonText": brief.primary_cta,
                     "buttonUrl": brief.primary_cta_url,
                 },
@@ -112,7 +117,6 @@ def build_site_config(
                 "props": {
                     "logo": facts.company_name,
                     "copyright": f"Concept voor {facts.company_name}.",
-                    "links": ["Contact"],
                 },
             },
         ]
@@ -145,7 +149,7 @@ def render_static_html(config: SiteConfig, *, prospect_name: str) -> str:
     inverse = _safe_color(theme.get("inverse"), "#F8F6F0")
     font_display = _safe_font(theme.get("fontDisplay"), 'Georgia, "Times New Roman", serif')
     font_body = _safe_font(theme.get("fontSans"), 'system-ui, -apple-system, "Segoe UI", sans-serif')
-    radius = _safe_radius(theme.get("radius"), 8)
+    radius = _safe_radius(theme.get("radius"), 6)
     rendered = "\n".join(_render_block(block) for block in config.blocks)
 
     return f"""<!doctype html>
@@ -158,57 +162,73 @@ def render_static_html(config: SiteConfig, *, prospect_name: str) -> str:
 :root{{--accent:{accent};--ink:{ink};--muted:{muted};--paper:{paper};--surface:{surface};--line:{line};--inverse:{inverse};--radius:{radius}px;--display:{font_display};--body:{font_body}}}
 *{{box-sizing:border-box}}
 html{{scroll-behavior:smooth}}
-body{{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.65}}
+body{{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}}
 a{{color:inherit}}
-.wrap{{width:min(1160px,calc(100% - 48px));margin:auto}}
-.concept{{background:var(--ink);color:var(--inverse);padding:10px 24px;text-align:center;font-size:12px}}
-nav{{display:flex;justify-content:space-between;align-items:center;min-height:84px;border-bottom:1px solid var(--line)}}
+a:focus-visible{{outline:3px solid var(--accent);outline-offset:3px}}
+.wrap{{width:min(1120px,calc(100% - 48px));margin:auto}}
+.concept{{background:var(--ink);color:var(--inverse);padding:9px 24px;text-align:center;font-size:12px}}
+nav{{display:flex;justify-content:space-between;align-items:center;min-height:82px;border-bottom:1px solid var(--line)}}
 .brand{{font-family:var(--display);font-size:21px;font-weight:700;letter-spacing:-.02em}}
-.links{{display:flex;gap:28px;align-items:center;color:var(--muted);font-size:14px}}
+.links{{display:flex;gap:24px;align-items:center;color:var(--muted);font-size:14px}}
+.links>a:not(.btn){{text-decoration:none}}
 .btn{{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 20px;background:var(--accent);color:white;text-decoration:none;font-size:14px;font-weight:750;letter-spacing:.01em;border:1px solid transparent;border-radius:var(--radius)}}
 .btn.secondary{{background:transparent;color:var(--ink);border-color:var(--line)}}
-.hero{{padding:88px 0 72px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);gap:64px;align-items:end}}
+.hero{{padding:88px 0 76px;display:grid;grid-template-columns:minmax(0,1.22fr) minmax(280px,.78fr);gap:72px;align-items:center}}
+.hero-copy,.service-summary{{min-width:0}}
 h1,h2,h3{{font-family:var(--display);font-weight:700;letter-spacing:-.035em}}
-h1{{max-width:820px;margin:0 0 24px;font-size:clamp(48px,7vw,86px);line-height:.98}}
-h2{{margin:0 0 24px;font-size:clamp(34px,4vw,52px);line-height:1.05}}
-h3{{margin:0;font-size:24px;line-height:1.15}}
-.lede{{max-width:660px;margin:0 0 30px;color:var(--muted);font-size:19px}}
+h1{{max-width:760px;margin:0 0 24px;font-size:clamp(44px,5.8vw,74px);line-height:1.01;text-wrap:balance;overflow-wrap:break-word;hyphens:auto}}
+h2{{margin:0 0 18px;font-size:clamp(34px,4vw,50px);line-height:1.06;text-wrap:balance}}
+h3{{margin:0;font-size:23px;line-height:1.18}}
+.hero-eyebrow,.section-label,.cta-eyebrow{{margin:0 0 16px;color:var(--accent);font-size:13px;font-weight:800}}
+.lede{{max-width:650px;margin:0 0 30px;color:var(--muted);font-size:19px}}
 .hero-actions{{display:flex;gap:12px;flex-wrap:wrap}}
-.hero-panel{{min-height:420px;background:var(--ink);color:var(--inverse);padding:36px;display:flex;flex-direction:column;justify-content:space-between;border-radius:calc(var(--radius) * 1.5)}}
-.hero-panel .mark{{font-family:var(--display);font-size:clamp(68px,10vw,132px);line-height:.8;color:var(--inverse);opacity:.94}}
-.hero-panel .meta{{border-top:1px solid #ffffff33;padding-top:22px}}
-.hero-panel strong{{display:block;font-family:var(--display);font-size:26px;line-height:1.1}}
-.hero-panel span{{display:block;margin-top:8px;color:#d9ded9;font-size:14px}}
-section{{padding:84px 0;border-top:1px solid var(--line)}}
-.proof-band{{padding:28px 12px;background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}}
-.proof-items{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;padding:0 12px}}
-.proof-item{{padding:12px 28px;border-left:1px solid var(--line)}}
+.service-summary{{background:var(--surface);border:1px solid var(--line);padding:30px 32px;border-radius:calc(var(--radius) * 1.5)}}
+.summary-kicker{{margin:0 0 8px;color:var(--muted);font-size:13px}}
+.service-summary h2{{font-size:30px;margin-bottom:24px}}
+.summary-list{{border-top:1px solid var(--line)}}
+.summary-row{{display:flex;align-items:flex-start;gap:12px;padding:16px 0;border-bottom:1px solid var(--line)}}
+.summary-dot{{width:8px;height:8px;margin-top:9px;flex:0 0 auto;border-radius:50%;background:var(--accent)}}
+.summary-row span{{font-weight:650;overflow-wrap:anywhere}}
+.summary-location{{margin:20px 0 0;color:var(--muted);font-size:14px}}
+section{{padding:76px 0;border-top:1px solid var(--line)}}
+.proof-band{{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}}
+.proof-items{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}}
+.proof-item{{padding:26px 28px;border-left:1px solid var(--line)}}
 .proof-item:first-child{{border-left:0}}
-.proof-item strong{{display:block;font-family:var(--display);font-size:24px}}
-.proof-item span{{color:var(--muted);font-size:13px}}
-.section-head{{display:grid;grid-template-columns:160px 1fr;gap:36px;margin-bottom:46px}}
-.section-label{{color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.08em}}
+.proof-item strong{{display:block;font-family:var(--display);font-size:23px;line-height:1.2}}
+.proof-item span{{display:block;margin-top:5px;color:var(--muted);font-size:13px}}
+.section-head{{display:grid;grid-template-columns:150px minmax(0,1fr);gap:36px;margin-bottom:42px}}
+.section-intro{{max-width:650px;margin:10px 0 0;color:var(--muted)}}
 .service-list{{border-top:1px solid var(--line)}}
-.service-row{{display:grid;grid-template-columns:minmax(180px,.7fr) minmax(260px,1.3fr);gap:42px;align-items:start;padding:32px 0;border-bottom:1px solid var(--line)}}
+.service-row{{display:grid;grid-template-columns:minmax(210px,.72fr) minmax(280px,1.28fr);gap:42px;align-items:start;padding:30px 0;border-bottom:1px solid var(--line)}}
 .service-row p{{margin:0;color:var(--muted);max-width:620px}}
-.eyebrow{{margin:0 0 14px;color:#df8964;font-size:13px;font-weight:750}}
-.cta-wrap{{padding:88px 0}}
-.cta{{display:grid;grid-template-columns:1fr auto;gap:48px;align-items:end;background:var(--ink);color:var(--inverse);padding:54px;border-radius:calc(var(--radius) * 1.5)}}
-.cta h2{{max-width:700px;margin-bottom:12px}}
-.cta p{{margin:0;color:#d9ded9}}
-footer{{display:flex;justify-content:space-between;gap:24px;padding:34px 0 50px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}}
+.cta-wrap{{padding:76px 0}}
+.cta{{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:44px;align-items:center;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);padding:42px 44px;border-radius:calc(var(--radius) * 1.5)}}
+.cta h2{{max-width:720px;margin-bottom:10px}}
+.cta p{{margin:0;color:var(--muted)}}
+.cta .address{{margin-top:6px;font-size:14px}}
+footer{{display:flex;justify-content:space-between;gap:24px;padding:32px 0 48px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}}
 footer strong{{color:var(--ink);font-family:var(--display);font-size:17px}}
-@media(max-width:820px){{
-  .wrap{{width:min(100% - 32px,1160px)}}
-  .links span{{display:none}}
-  .hero{{grid-template-columns:1fr;gap:36px;padding:60px 0}}
-  .hero-panel{{min-height:300px}}
-  .proof-items{{grid-template-columns:1fr;padding:0}}
-  .proof-item,.proof-item:first-child{{padding:18px 14px;border-left:0;border-top:1px solid var(--line)}}
+@media(max-width:900px){{
+  .hero{{grid-template-columns:minmax(0,1fr) minmax(250px,.72fr);gap:40px}}
+  h1{{font-size:clamp(42px,7vw,62px)}}
+}}
+@media(max-width:760px){{
+  .wrap{{width:min(100% - 32px,1120px)}}
+  nav{{min-height:72px}}
+  .links>a:not(.btn){{display:none}}
+  .hero{{grid-template-columns:1fr;gap:32px;padding:56px 0 60px}}
+  h1{{font-size:clamp(40px,12vw,58px);line-height:1.02}}
+  .lede{{font-size:17px}}
+  .service-summary{{padding:26px 24px}}
+  .proof-items{{grid-template-columns:1fr}}
+  .proof-item,.proof-item:first-child{{padding:18px 0;border-left:0;border-top:1px solid var(--line)}}
   .proof-item:first-child{{border-top:0}}
-  .section-head{{grid-template-columns:1fr;gap:8px}}
-  .service-row{{grid-template-columns:1fr;gap:12px}}
-  .cta{{grid-template-columns:1fr;padding:36px 28px}}
+  section{{padding:60px 0}}
+  .section-head{{grid-template-columns:1fr;gap:4px;margin-bottom:32px}}
+  .service-row{{grid-template-columns:1fr;gap:10px;padding:24px 0}}
+  .cta-wrap{{padding:60px 0}}
+  .cta{{grid-template-columns:1fr;padding:30px 26px;gap:24px}}
   footer{{flex-direction:column}}
 }}
 </style></head><body>
@@ -221,29 +241,37 @@ def render_snapshot_svg(config: SiteConfig) -> str:
     hero = next((b for b in config.blocks if b.get("type") == "hero"), {"props": {}})
     props = hero.get("props", {})
     accent = _safe_color(config.theme.get("accent"), "#315E57")
-    headline = html.escape(str(props.get("headline") or config.name)[:78])
-    sub = html.escape(str(props.get("subheadline") or "")[:130])
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720"><rect width="1200" height="720" fill="#FBFAF7"/><rect y="0" width="1200" height="72" fill="#18201D"/><text x="55" y="45" font-family="Georgia" font-size="24" fill="#F8F6F0">{html.escape(config.name[:70])}</text><text x="70" y="180" font-family="Arial" font-size="15" font-weight="700" fill="{accent}">Concept redesign</text><text x="70" y="265" font-family="Georgia" font-size="46" font-weight="700" fill="#18201D">{headline}</text><text x="70" y="345" font-family="Arial" font-size="20" fill="#66706A">{sub}</text><rect x="760" y="130" width="360" height="430" rx="12" fill="#18201D"/><text x="800" y="310" font-family="Georgia" font-size="110" fill="#F8F6F0">{html.escape((str(props.get("service") or "S")[:1]).upper())}</text><rect x="70" y="465" width="190" height="58" rx="8" fill="{accent}"/><text x="112" y="501" font-family="Arial" font-size="18" font-weight="700" fill="#fff">Neem contact op</text></svg>'''
+    headline = html.escape(str(props.get("headline") or config.name)[:72])
+    sub = html.escape(str(props.get("subheadline") or "")[:110])
+    services = [str(x) for x in props.get("services", [])][:3]
+    service_text = " · ".join(services)
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720"><rect width="1200" height="720" fill="#FBFAF7"/><rect y="0" width="1200" height="64" fill="#18201D"/><text x="55" y="41" font-family="Arial" font-size="15" fill="#F8F6F0">Concept redesign — niet de officiële website</text><text x="70" y="145" font-family="Georgia" font-size="25" font-weight="700" fill="#18201D">{html.escape(config.name[:60])}</text><line x1="70" y1="170" x2="1130" y2="170" stroke="#D9D5CC"/><text x="70" y="230" font-family="Arial" font-size="15" font-weight="700" fill="{accent}">Dienstverlening</text><text x="70" y="310" font-family="Georgia" font-size="43" font-weight="700" fill="#18201D">{headline}</text><text x="70" y="370" font-family="Arial" font-size="19" fill="#66706A">{sub}</text><rect x="735" y="225" width="395" height="240" rx="8" fill="#F1EEE7" stroke="#D9D5CC"/><text x="770" y="270" font-family="Arial" font-size="14" fill="#66706A">Diensten in één oogopslag</text><text x="770" y="325" font-family="Georgia" font-size="21" font-weight="700" fill="#18201D">{html.escape(service_text[:62])}</text><rect x="70" y="470" width="160" height="54" rx="6" fill="{accent}"/><text x="110" y="504" font-family="Arial" font-size="17" font-weight="700" fill="#fff">Bel direct</text></svg>'''
 
 
 def _render_block(block: dict[str, Any]) -> str:
     t, p, variant = block.get("type"), block.get("props") or {}, block.get("variant")
     if t == "navbar":
-        links = "".join(f"<span>{html.escape(str(x))}</span>" for x in p.get("links", []))
+        links = "".join(
+            f'<a href="#{html.escape(str(x).lower(), quote=True)}">{html.escape(str(x))}</a>'
+            for x in p.get("links", [])
+        )
         href = html.escape(str(p.get("ctaUrl") or "#"), quote=True)
         return f'<div class="wrap"><nav><div class="brand">{html.escape(str(p.get("logo", "")))}</div><div class="links">{links}<a class="btn secondary" href="{href}">{html.escape(str(p.get("ctaText", "Contact")))}</a></div></nav></div>'
     if t == "hero":
         href = html.escape(str(p.get("primaryCtaUrl") or "#"), quote=True)
+        services = [str(x) for x in p.get("services", []) if str(x).strip()]
+        rows = "".join(
+            f'<div class="summary-row"><span class="summary-dot" aria-hidden="true"></span><span>{html.escape(_clean_service(service))}</span></div>'
+            for service in services
+        )
         location = html.escape(str(p.get("location") or ""))
-        service = html.escape(str(p.get("service") or "Dienstverlening"))
-        mark = (service[:1] or "S").upper()
-        return f'<div class="wrap"><section class="hero"><div><h1>{html.escape(str(p.get("headline", "")))}</h1><p class="lede">{html.escape(str(p.get("subheadline", "")))}</p><div class="hero-actions"><a class="btn" href="{href}">{html.escape(str(p.get("primaryCta", "Contact")))}</a></div></div><aside class="hero-panel" aria-label="Dienst en locatie"><div class="mark">{html.escape(mark)}</div><div class="meta"><strong>{service}</strong><span>{location}</span></div></aside></section></div>'
+        return f'<div class="wrap"><section class="hero"><div class="hero-copy"><p class="hero-eyebrow">{html.escape(str(p.get("eyebrow", "Dienstverlening")))}</p><h1>{html.escape(str(p.get("headline", "")))}</h1><p class="lede">{html.escape(str(p.get("subheadline", "")))}</p><div class="hero-actions"><a class="btn" href="{href}">{html.escape(str(p.get("primaryCta", "Contact")))}</a><a class="btn secondary" href="#diensten">Bekijk diensten</a></div></div><aside class="service-summary" aria-label="Diensten in één oogopslag"><p class="summary-kicker">Diensten in één oogopslag</p><h2>Waarmee u terecht kunt</h2><div class="summary-list">{rows}</div>{f'<p class="summary-location">Vestiging: {location}</p>' if location else ''}</aside></section></div>'
     if t == "features":
         items = "".join(
-            f'<div class="service-row"><h3>{html.escape(str(i.get("title", "")))}</h3><p>{html.escape(str(i.get("description", "")))}</p></div>'
+            f'<div class="service-row"><h3>{html.escape(_clean_service(str(i.get("title", ""))))}</h3><p>{html.escape(str(i.get("description", "")))}</p></div>'
             for i in p.get("items", [])
         )
-        return f'<section id="diensten"><div class="wrap"><div class="section-head"><div class="section-label">{html.escape(str(p.get("label", "Diensten")))}</div><h2>{html.escape(str(p.get("title", "Diensten")))}</h2></div><div class="service-list">{items}</div></div></section>'
+        return f'<section id="diensten"><div class="wrap"><div class="section-head"><div class="section-label">{html.escape(str(p.get("label", "Diensten")))}</div><div><h2>{html.escape(str(p.get("title", "Diensten")))}</h2><p class="section-intro">{html.escape(str(p.get("intro", "")))}</p></div></div><div class="service-list">{items}</div></div></section>'
     if t == "stats" and variant == "proof_band":
         items = "".join(
             f'<div class="proof-item"><strong>{html.escape(str(i.get("value", "")))}</strong><span>{html.escape(str(i.get("label", "")))}</span></div>'
@@ -252,13 +280,15 @@ def _render_block(block: dict[str, Any]) -> str:
         return f'<div class="proof-band"><div class="wrap"><div class="proof-items">{items}</div></div></div>'
     if t == "cta":
         href = html.escape(str(p.get("buttonUrl") or "#"), quote=True)
-        return f'<div class="wrap cta-wrap" id="contact"><div class="cta"><div><p class="eyebrow">{html.escape(str(p.get("eyebrow", "")))}</p><h2>{html.escape(str(p.get("headline", "")))}</h2><p>{html.escape(str(p.get("subheadline", "")))}</p></div><a class="btn" href="{href}">{html.escape(str(p.get("buttonText", "Contact")))}</a></div></div>'
+        address = str(p.get("address") or "").strip()
+        address_html = f'<p class="address">{html.escape(address)}</p>' if address else ""
+        return f'<div class="wrap cta-wrap" id="contact"><div class="cta"><div><p class="cta-eyebrow">{html.escape(str(p.get("eyebrow", "Contact")))}</p><h2>{html.escape(str(p.get("headline", "")))}</h2><p>{html.escape(str(p.get("subheadline", "")))}</p>{address_html}</div><a class="btn" href="{href}">{html.escape(str(p.get("buttonText", "Contact")))}</a></div></div>'
     if t == "footer":
         return f'<div class="wrap"><footer><strong>{html.escape(str(p.get("logo", "")))}</strong><span>{html.escape(str(p.get("copyright", "")))}</span></footer></div>'
     return ""
 
 
-def _trust_items(facts: VerifiedFacts, brief: ConversionBrief) -> list[dict[str, str]]:
+def _trust_items(brief: ConversionBrief) -> list[dict[str, str]]:
     items: list[dict[str, str]] = []
     for point in brief.trust_points[:3]:
         if " op basis van " in point:
@@ -266,11 +296,37 @@ def _trust_items(facts: VerifiedFacts, brief: ConversionBrief) -> list[dict[str,
             items.append({"value": value, "label": f"op basis van {label}"})
         else:
             items.append({"value": point, "label": "geverifieerd"})
-    if len(items) < 3 and facts.city:
-        items.append({"value": facts.city, "label": "vestigingsplaats"})
-    if len(items) < 3 and facts.phone:
-        items.append({"value": "Direct", "label": "telefonisch contact"})
-    return items[:3]
+    return items
+
+
+def _service_description(service: str) -> str:
+    clean = _clean_service(service)
+    normalized = clean.lower()
+    if "warmtepomp" in normalized:
+        return "Voor vragen en werkzaamheden rond warmtepompen en de installatie daarvan."
+    if "verwarming" in normalized or "klimaat" in normalized:
+        return "Voor vragen en werkzaamheden aan verwarming en klimaatinstallaties."
+    if "groepenkast" in normalized:
+        return "Voor vragen en werkzaamheden rond de groepenkast en elektrische verdeling."
+    if "brandmeld" in normalized:
+        return "Voor vragen en werkzaamheden rond brandmeldinstallaties."
+    if "data" in normalized or "bekabel" in normalized:
+        return "Voor vragen en werkzaamheden rond databekabeling en aansluitingen."
+    if "elektr" in normalized:
+        return "Voor vragen en werkzaamheden aan elektrotechnische installaties."
+    if "sanitair" in normalized or "loodgiet" in normalized:
+        return "Voor vragen en werkzaamheden rond sanitair en leidingwerk."
+    return f"Voor vragen en werkzaamheden rond {clean.lower()}."
+
+
+def _contact_line(facts: VerifiedFacts) -> str:
+    if facts.phone:
+        return f"Bel {facts.company_name} rechtstreeks om uw vraag of project te bespreken."
+    return f"Neem rechtstreeks contact op met {facts.company_name} over uw vraag of project."
+
+
+def _clean_service(value: str) -> str:
+    return " ".join(value.replace("_", " ").split()).strip(" .")
 
 
 def _safe_color(value: Any, fallback: str) -> str:
