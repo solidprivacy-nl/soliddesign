@@ -190,7 +190,7 @@ h3{{margin:0;font-size:23px;line-height:1.18}}
 .summary-row span{{font-weight:650;overflow-wrap:anywhere}}
 .summary-location{{margin:20px 0 0;color:var(--muted);font-size:14px}}
 section{{padding:76px 0;border-top:1px solid var(--line)}}
-.proof-band{{background:var(--surface);padding:18px 0}}
+.proof-band{{padding:18px 0}}
 .proof-items{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:36px}}
 .proof-item{{padding:10px 0}}
 .proof-item strong{{display:block;font-family:var(--display);font-size:23px;line-height:1.2}}
