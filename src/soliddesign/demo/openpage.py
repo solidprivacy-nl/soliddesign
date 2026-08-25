@@ -265,7 +265,8 @@ def _render_block(block: dict[str, Any]) -> str:
             for service in services
         )
         location = html.escape(str(p.get("location") or ""))
-        return f'<div class="wrap"><section class="hero"><div class="hero-copy"><p class="hero-eyebrow">{html.escape(str(p.get("eyebrow", "Dienstverlening")))}</p><h1>{html.escape(str(p.get("headline", "")))}</h1><p class="lede">{html.escape(str(p.get("subheadline", "")))}</p><div class="hero-actions"><a class="btn" href="{href}">{html.escape(str(p.get("primaryCta", "Contact")))}</a><a class="btn secondary" href="#diensten">Bekijk diensten</a></div></div><aside class="service-summary" aria-label="Diensten in één oogopslag"><p class="summary-kicker">Diensten in één oogopslag</p><h2>Waarmee u terecht kunt</h2><div class="summary-list">{rows}</div>{f'<p class="summary-location">Vestiging: {location}</p>' if location else ''}</aside></section></div>'
+        location_html = f'<p class="summary-location">Vestiging: {location}</p>' if location else ""
+        return f'<div class="wrap"><section class="hero"><div class="hero-copy"><p class="hero-eyebrow">{html.escape(str(p.get("eyebrow", "Dienstverlening")))}</p><h1>{html.escape(str(p.get("headline", "")))}</h1><p class="lede">{html.escape(str(p.get("subheadline", "")))}</p><div class="hero-actions"><a class="btn" href="{href}">{html.escape(str(p.get("primaryCta", "Contact")))}</a><a class="btn secondary" href="#diensten">Bekijk diensten</a></div></div><aside class="service-summary" aria-label="Diensten in één oogopslag"><p class="summary-kicker">Diensten in één oogopslag</p><h2>Waarmee u terecht kunt</h2><div class="summary-list">{rows}</div>{location_html}</aside></section></div>'
     if t == "features":
         items = "".join(
             f'<div class="service-row"><h3>{html.escape(_clean_service(str(i.get("title", ""))))}</h3><p>{html.escape(str(i.get("description", "")))}</p></div>'
