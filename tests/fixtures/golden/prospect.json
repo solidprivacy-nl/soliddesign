@@ -1,0 +1,15 @@
+{
+  "id": "golden-prospect-001",
+  "name": "Voorbeeld Installatiebedrijf BV",
+  "category": "installatiebedrijf",
+  "city": "Utrecht",
+  "address": "Voorbeeldstraat 10, 3500 AA Utrecht",
+  "website_url": "https://example.invalid",
+  "phone": "030 123 45 67",
+  "rating": 4.7,
+  "review_count": 86,
+  "place_id": "fixture-place-001",
+  "observed_services": ["CV-installatie", "Warmtepompen", "Onderhoud"],
+  "brand_colors": ["#155EEF", "#101828"],
+  "approved_claims": ["Actief in Utrecht en omgeving"]
+}
