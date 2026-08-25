@@ -37,6 +37,7 @@ jobs:
           ! grep -Eqi 'linear-gradient|radial-gradient' /tmp/soliddesign-golden/preview.html
       - name: Impeccable deterministic design gate
         run: |
-          npx --yes impeccable@3.6.0 detect --json /tmp/soliddesign-golden/preview.html > /tmp/impeccable.json
+          npx --yes impeccable@3.6.0 detect --json /tmp/soliddesign-golden/preview.html > /tmp/impeccable.json || true
+          cat /tmp/impeccable.json
           test -s /tmp/impeccable.json
           test "$(cat /tmp/impeccable.json)" = "[]"
