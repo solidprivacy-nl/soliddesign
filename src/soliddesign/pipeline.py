@@ -6,6 +6,7 @@ from pathlib import Path
 from .audit.adapter import load_fixture_audit
 from .brief import build_conversion_brief
 from .demo.openpage import build_site_config, render_static_html
+from .design import derive_design_profile
 from .models import AuditResult, FactorScore, Prospect, QualificationInput
 from .print_pack.renderer import render_print_pack, write_print_pack
 from .qualification import qualify
@@ -37,7 +38,8 @@ def run_component_spike(prospect: Prospect, audit: AuditResult, qualification_in
 
     facts = build_verified_facts(prospect, audit)
     brief = build_conversion_brief(facts, audit)
-    site_config = build_site_config(facts, brief)
+    design_profile = derive_design_profile(facts, brief)
+    site_config = build_site_config(facts, brief, design_profile=design_profile)
     preview_html = render_static_html(site_config, prospect_name=prospect.name)
     pack_html = render_print_pack(prospect, audit, brief, site_config, preview_url=preview_url)
 
@@ -47,10 +49,12 @@ def run_component_spike(prospect: Prospect, audit: AuditResult, qualification_in
         "qualification": qualification.to_dict(),
         "verified_facts": facts.to_dict(),
         "conversion_brief": brief.to_dict(),
+        "design_profile": design_profile.to_dict(),
         "site_config": site_config.to_dict(),
     }
     (out / "pipeline.json").write_text(json.dumps(artifacts, indent=2, ensure_ascii=False), encoding="utf-8")
     (out / "site_config.json").write_text(site_config.to_json(), encoding="utf-8")
+    (out / "design_profile.json").write_text(json.dumps(design_profile.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
     (out / "preview.html").write_text(preview_html, encoding="utf-8")
     write_print_pack(out / "print_pack.html", pack_html)
     return {"output_dir": str(out), "qualification_score": qualification.total_score, "preview": str(out / "preview.html"), "print_pack": str(out / "print_pack.html")}

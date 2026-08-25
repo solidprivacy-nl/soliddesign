@@ -29,10 +29,13 @@ VERIFIED FACTS BOUNDARY
 CONVERSION BRIEF
     │
     ▼
-DEMO BUILDER
+DESIGN PROFILE
     │
     ▼
-REVIEW
+DEMO BUILDER / PREMIUM RENDERER
+    │
+    ▼
+DESIGN QA + HUMAN REVIEW
     │
     ▼
 STATIC PREVIEW
@@ -58,6 +61,10 @@ CUSTOMER / OUTCOME DATA
 
 SolidDesign owns the contracts between components. It does not import a vendor's entire business model.
 
+A second governing principle applies to design:
+
+> **Premium quality may increase craft, but it may not increase platform complexity without measured need.**
+
 ## Truth boundaries
 
 ### GitHub — software truth
@@ -69,6 +76,7 @@ GitHub stores:
 - code and tests;
 - discovery contract;
 - scoring rubrics;
+- design contracts and donor locks;
 - prompts safe to expose;
 - donor/provenance records;
 - decisions and roadmap.
@@ -197,17 +205,53 @@ Downstream generation receives structured verified facts, not raw external instr
 
 Structured artifact, initially ChatGPT-assisted and human-reviewed. No autonomous service required.
 
-### Demo
+The concept-facing message is customer-facing. Audit/opportunity language remains in the owner-facing print pack and does not leak into the concept website.
+
+### DesignProfile
+
+Owned thin deterministic contract.
+
+Purpose:
+
+```text
+VerifiedFacts + ConversionBrief
+→ bounded art direction
+→ SiteConfig
+```
+
+Phase 1 supports one strong `authority_service` composition. Category/brand signals may alter bounded tokens such as accent color, but do not create a template zoo.
+
+`DesignProfile` contains only design decisions such as palette, typography, radius, block variants, media strategy, motion level and anti-patterns.
+
+It contains no generated code, agent state or arbitrary CSS.
+
+Detailed contract: `PREMIUM_DESIGN.md`.
+
+### Demo / premium renderer
 
 OpenPage-compatible JSON-first SiteConfig remains the preferred pre-sale representation.
 
 Benefits:
 
 - deterministic rendering;
-- visual correction without source-code editing;
+- visual correction without free-form source generation;
 - portable JSON;
 - standalone HTML;
 - no universal production builder needed in Phase 1.
+
+SolidDesign owns a small renderer. It deliberately supports a limited premium block vocabulary rather than importing a second visual-builder runtime.
+
+### Design QA
+
+`pbakaus/impeccable` is used as a pinned CI-only deterministic design scanner.
+
+```text
+impeccable@3.6.0
+```
+
+It is not an application dependency and does not create an autonomous retry loop.
+
+Gate 3 keeps one short human visual acceptance step. Only repeated observed design failures justify new deterministic rules.
 
 ### Preview
 
@@ -230,7 +274,7 @@ Thin owned module. Produces current/concept proof, concise findings and personal
 
 ## Data model implications
 
-`Prospect` records now preserve discovery provenance:
+`Prospect` records preserve discovery provenance:
 
 ```text
 discovery_source
@@ -251,6 +295,8 @@ rating/review_count = null unless separately enriched
 
 The Supabase schema mirrors these fields.
 
+DesignProfile is an artifact, not operational relational state. It travels with the generated proof and can be persisted inside demo/site config JSON when useful; no new table is introduced.
+
 ## Deliberately absent
 
 Not architectural dependencies yet:
@@ -263,17 +309,33 @@ Not architectural dependencies yet:
 - Cloudflare Worker capability gateway;
 - ChatGPT MCP;
 - automated sales agent;
-- production-site factory.
+- production-site factory;
+- Figma integration;
+- design agent or reviewer agent;
+- design database/server;
+- image-to-code pipeline;
+- second website-builder runtime;
+- template marketplace/catalog.
 
 These become candidates only after a measured bottleneck.
 
 ## Change rule
 
-A provider can be replaced without changing the business model if it continues to satisfy the owned boundary:
+A provider can be replaced without changing the business model if it continues to satisfy the owned boundary.
+
+For discovery:
 
 ```text
 DiscoverySource
 → Prospect[]
 ```
 
-This is sufficient abstraction. Do not add a generalized plugin framework until two live discovery sources are actually required.
+For design:
+
+```text
+VerifiedFacts + ConversionBrief
+→ DesignProfile
+→ SiteConfig
+```
+
+These are sufficient abstractions. Do not add generalized plugin frameworks until two live implementations are actually required.
