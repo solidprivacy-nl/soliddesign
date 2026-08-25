@@ -1,0 +1,55 @@
+name: Gate 2 Cloudflare HTTP Diagnostic
+
+on:
+  push:
+    branches:
+      - gate2/cloudflare-http-diagnostic
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PROJECT_NAME: soliddesign-previews-solidprivacy
+      PATH_ID: 8f4d9c2e7a61b503
+    steps:
+      - name: Resolve canonical deployment URL
+        run: |
+          curl --fail-with-body -sS \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/${PROJECT_NAME}" \
+            > project.json
+          python - <<'PY'
+          import json, os
+          p=json.load(open('project.json',encoding='utf-8'))['result']
+          stable=f"https://{p['subdomain']}/p/{os.environ['PATH_ID']}/"
+          atomic=p.get('canonical_deployment',{}).get('url')
+          with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as f:
+              f.write(f"STABLE_URL={stable}\n")
+              if atomic:
+                  f.write(f"ATOMIC_URL={atomic}/p/{os.environ['PATH_ID']}/\n")
+          print('Stable host:', p['subdomain'])
+          print('Canonical deployment host:', atomic)
+          PY
+
+      - name: Test stable URL as browser
+        run: |
+          code=$(curl -L -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/150 Safari/537.36' -sS -o stable.html -D stable.headers -w '%{http_code}' "$STABLE_URL")
+          echo "stable_http_status=$code"
+          grep -Ei '^(HTTP/|server:|cf-ray:|x-robots-tag:|location:)' stable.headers || true
+          test "$code" = "200"
+          grep -qi 'concept redesign' stable.html
+
+      - name: Test canonical deployment URL as browser
+        if: env.ATOMIC_URL != ''
+        run: |
+          code=$(curl -L -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/150 Safari/537.36' -sS -o atomic.html -D atomic.headers -w '%{http_code}' "$ATOMIC_URL")
+          echo "atomic_http_status=$code"
+          grep -Ei '^(HTTP/|server:|cf-ray:|x-robots-tag:|location:)' atomic.headers || true
+          test "$code" = "200"
+          grep -qi 'concept redesign' atomic.html
