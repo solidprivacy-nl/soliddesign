@@ -1,0 +1,15 @@
+{
+  "url": "https://example.invalid",
+  "business_name": "Voorbeeld Installatiebedrijf BV",
+  "city": "Utrecht",
+  "has_website": true,
+  "score": 58,
+  "grade": "F",
+  "current_screenshot_data_uri": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCA4MDAgNTAwJz48cmVjdCB3aWR0aD0nODAwJyBoZWlnaHQ9JzUwMCcgZmlsbD0nI2VjZWNlYycvPjxyZWN0IHg9JzMwJyB5PScyNScgd2lkdGg9Jzc0MCcgaGVpZ2h0PSc1NScgZmlsbD0nIzY2NicvPjx0ZXh0IHg9JzU1JyB5PSc2MScgZm9udC1mYW1pbHk9J0FyaWFsJyBmb250LXNpemU9JzIyJyBmaWxsPSd3aGl0ZSc+Vm9vcmJlZWxkIEluc3RhbGxhdGllYmVkcmlqZiBCVjwvdGV4dD48cmVjdCB4PSczMCcgeT0nMTA1JyB3aWR0aD0nNzQwJyBoZWlnaHQ9JzMwMCcgZmlsbD0nd2hpdGUnLz48dGV4dCB4PSc3MCcgeT0nMTc1JyBmb250LWZhbWlseT0nQXJpYWwnIGZvbnQtc2l6ZT0nMzAnIGZpbGw9JyM1NTUnPldlbGtvbSBvcCBvbnplIHdlYnNpdGU8L3RleHQ+PHRleHQgeD0nNzAnIHk9JzIyMCcgZm9udC1mYW1pbHk9J0FyaWFsJyBmb250LXNpemU9JzE3JyBmaWxsPScjNzc3Jz5Wb29yIGluZm9ybWF0aWUga3VudCB1IGNvbnRhY3Qgb3BuZW1lbi48L3RleHQ+PHJlY3QgeD0nMzAnIHk9JzQzMCcgd2lkdGg9Jzc0MCcgaGVpZ2h0PSc0MCcgZmlsbD0nI2FhYScvPjwvc3ZnPg==",
+  "checks": [
+    {"id": "contact_friction", "name": "Contact friction", "severity": "critical", "evidence": ["Primary phone number is not presented as a prominent mobile CTA."], "impact": "Potential customers have to search for the next step instead of contacting immediately.", "recommendation": "Make the primary contact action persistent and obvious.", "screenshots": [], "not_applicable": false},
+    {"id": "mobile_rendering", "name": "Mobile rendering", "severity": "warning", "evidence": ["Navigation and contact actions require extra scrolling on small screens."], "impact": "Mobile visitors face unnecessary friction before reaching a conversion action.", "recommendation": "Prioritize mobile navigation and contact actions.", "screenshots": [], "not_applicable": false},
+    {"id": "user_experience", "name": "CTA clarity", "severity": "warning", "evidence": ["Homepage does not establish one clear primary action."], "impact": "Visitors must decide for themselves what the preferred next step is.", "recommendation": "Use one dominant CTA and repeat it at decision points.", "screenshots": [], "not_applicable": false},
+    {"id": "ssl", "name": "SSL / HTTPS", "severity": "ok", "evidence": ["HTTPS is enabled."], "impact": "", "recommendation": "", "screenshots": [], "not_applicable": false}
+  ]
+}

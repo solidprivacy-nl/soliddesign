@@ -1,0 +1,18 @@
+{
+  "hard_gates": {
+    "existing_website": true,
+    "active_business": true,
+    "economics_fit": true,
+    "existing_demand": true,
+    "conversion_opportunity": true,
+    "execution_fit": true,
+    "targeting_allowed": true
+  },
+  "factors": {
+    "customer_economics": {"score": 4, "evidence": ["Installation work has meaningful order value."]},
+    "existing_demand": {"score": 4, "evidence": ["4.7 rating with 86 reviews indicates active market interaction."]},
+    "conversion_opportunity": {"score": 4, "evidence": ["Audit shows CTA, mobile and contact friction."]},
+    "execution_fit": {"score": 5, "evidence": ["Standard services, pages and contact flow."]},
+    "competitive_context": {"score": 3, "evidence": ["Fixture assumes several stronger local digital experiences."]}
+  }
+}
