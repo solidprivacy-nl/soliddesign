@@ -88,3 +88,24 @@
 1. Overture;
 2. bounded OSM/Overpass if a specific coverage gap is proven;
 3. targeted commercial enrichment if economics justify it.
+
+## ADR-014 — Raw donor audit is evidence; prospect-facing audit is root-cause reviewed
+
+**Date:** 2026-08-25
+
+**Decision:** preserve the raw Pitch Doctor report unchanged, but require a human-reviewed `AuditResult` before audit findings become prospect-facing proof or sales copy.
+
+**Trigger:** the first live Utrecht audit showed a blocking expired TLS certificate. Because the page never loaded normally, the donor also emitted numerous downstream critical checks that were not independent verified defects.
+
+**Rule:** when a blocking root cause prevents normal page evaluation, cascading failed-load findings are suppressed/collapsed in the presentation layer rather than counted as separate opportunities.
+
+```text
+RAW DONOR AUDIT
+→ preserve
+→ identify root cause
+→ collapse cascading unknowns
+→ human-reviewed AuditResult
+→ brief / print pack
+```
+
+**Consequence:** SolidDesign favors fewer defensible findings over a larger, more dramatic list. This is both a trust requirement and a commercial-quality requirement.
