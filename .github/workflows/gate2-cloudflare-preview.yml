@@ -1,0 +1,209 @@
+name: Gate 2 Cloudflare Preview
+
+on:
+  push:
+    branches:
+      - gate2/cloudflare-preview
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      PROJECT_NAME: soliddesign-previews-solidprivacy
+      OPAQUE_ID: 8f4d9c2e7a61b503
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify deployment authorization is present
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+
+      - name: Install SolidDesign and Wrangler
+        run: |
+          python -m pip install -e .
+          npm install --no-save wrangler@latest
+          npx wrangler --version
+
+      - name: Get or create one shared Pages project
+        run: |
+          set -euo pipefail
+          api="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/${PROJECT_NAME}"
+          code=$(curl -sS -o project.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H 'Content-Type: application/json' "$api")
+          if [ "$code" = "404" ]; then
+            curl --fail-with-body -sS -X POST \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H 'Content-Type: application/json' \
+              --data "{\"name\":\"${PROJECT_NAME}\",\"production_branch\":\"main\"}" \
+              "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects" \
+              > project.json
+          elif [ "$code" != "200" ]; then
+            cat project.json
+            exit 1
+          fi
+          python - <<'PY'
+          import json, os
+          p=json.load(open('project.json', encoding='utf-8'))
+          if not p.get('success'):
+              raise SystemExit(p.get('errors'))
+          sub=p['result'].get('subdomain')
+          if not sub:
+              raise SystemExit('Pages project returned no subdomain')
+          url=f"https://{sub}/p/{os.environ['OPAQUE_ID']}/"
+          with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as f:
+              f.write(f"PAGES_SUBDOMAIN={sub}\nFINAL_PREVIEW_URL={url}\n")
+          print(f"Pages project ready: {sub}")
+          print(f"Opaque preview path: /p/{os.environ['OPAQUE_ID']}/")
+          PY
+
+      - name: Download the reviewed Gate 2 proof evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: gate2-overture-utrecht-proof-nl
+          path: gate2-source
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: solidprivacy-nl/soliddesign
+          run-id: 32885529646
+
+      - name: Reassemble proof with final opaque URL
+        run: |
+          set -euo pipefail
+          prospect=$(find gate2-source -type f -name 'prospect-*-reviewed.json' | head -1)
+          audit=$(find gate2-source -type f -name 'audit-*-reviewed.json' | head -1)
+          score=$(find gate2-source -type f -name 'score-*.json' | head -1)
+          test -n "$prospect" && test -n "$audit" && test -n "$score"
+          soliddesign assemble \
+            --prospect "$prospect" \
+            --audit "$audit" \
+            --score "$score" \
+            --preview-url "$FINAL_PREVIEW_URL" \
+            --out rebuilt \
+            > assemble.stdout
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('rebuilt/preview.html').read_text(encoding='utf-8').lower()
+          pack=Path('rebuilt/print_pack.html').read_text(encoding='utf-8').lower()
+          assert 'noindex' in p
+          assert '<form' not in p
+          assert 'testimonial' not in p
+          assert 'concept redesign' in p
+          assert 'pages.dev/p/' in pack
+          PY
+
+      - name: Prepare static preview directory
+        run: |
+          mkdir -p "deploy/p/${OPAQUE_ID}"
+          cp rebuilt/preview.html "deploy/p/${OPAQUE_ID}/index.html"
+          cat > deploy/index.html <<'HTML'
+          <!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive"><title>SolidDesign previews</title></head><body><p>Deze preview-omgeving gebruikt alleen persoonlijke, niet-geïndexeerde conceptlinks.</p></body></html>
+          HTML
+
+      - name: Publish live proof
+        run: |
+          npx wrangler pages deploy deploy \
+            --project-name "$PROJECT_NAME" \
+            --branch main \
+            --commit-hash "$GITHUB_SHA" \
+            --commit-message 'Gate 2 real proof'
+
+      - name: Verify public proof
+        run: |
+          python - <<'PY'
+          import os, time, urllib.request
+          url=os.environ['FINAL_PREVIEW_URL']
+          last=''
+          for _ in range(12):
+              try:
+                  with urllib.request.urlopen(url, timeout=10) as r:
+                      last=r.read().decode('utf-8','replace').lower()
+                  if 'concept redesign' in last and 'noindex' in last:
+                      print('Live proof verified')
+                      break
+              except Exception as e:
+                  last=str(e)
+              time.sleep(5)
+          else:
+              raise SystemExit(f'Live proof verification failed: {last[:300]}')
+          PY
+
+      - name: Prove disable lifecycle
+        run: |
+          mkdir -p "disabled/p/${OPAQUE_ID}"
+          cat > "disabled/p/${OPAQUE_ID}/index.html" <<'HTML'
+          <!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive"><title>Concept niet beschikbaar</title></head><body><main><h1>Concept niet beschikbaar</h1><p>Deze persoonlijke conceptlink is uitgeschakeld.</p></main></body></html>
+          HTML
+          cp deploy/index.html disabled/index.html
+          npx wrangler pages deploy disabled --project-name "$PROJECT_NAME" --branch main --commit-message 'Gate 2 disable lifecycle test'
+          python - <<'PY'
+          import os, time, urllib.request
+          url=os.environ['FINAL_PREVIEW_URL']
+          for _ in range(12):
+              try:
+                  body=urllib.request.urlopen(url, timeout=10).read().decode('utf-8','replace').lower()
+                  if 'concept niet beschikbaar' in body:
+                      print('Disable lifecycle verified')
+                      break
+              except Exception:
+                  pass
+              time.sleep(5)
+          else:
+              raise SystemExit('Disable lifecycle verification failed')
+          PY
+
+      - name: Restore live proof after lifecycle test
+        run: |
+          npx wrangler pages deploy deploy --project-name "$PROJECT_NAME" --branch main --commit-message 'Restore Gate 2 proof'
+          python - <<'PY'
+          import json, os, time, urllib.request
+          url=os.environ['FINAL_PREVIEW_URL']
+          for _ in range(12):
+              try:
+                  body=urllib.request.urlopen(url, timeout=10).read().decode('utf-8','replace').lower()
+                  if 'concept redesign' in body and 'noindex' in body:
+                      break
+              except Exception:
+                  pass
+              time.sleep(5)
+          else:
+              raise SystemExit('Restored proof verification failed')
+          evidence={
+              'project_name': os.environ['PROJECT_NAME'],
+              'pages_subdomain': os.environ['PAGES_SUBDOMAIN'],
+              'preview_url': url,
+              'opaque_path': f"/p/{os.environ['OPAQUE_ID']}/",
+              'noindex_verified': True,
+              'no_form_verified': True,
+              'disable_lifecycle_verified': True,
+              'restored_live_verified': True,
+          }
+          open('cloudflare-gate2-evidence.json','w',encoding='utf-8').write(json.dumps(evidence,indent=2))
+          print(json.dumps(evidence,indent=2))
+          PY
+
+      - name: Upload deployment evidence and final print pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: gate2-cloudflare-final
+          path: |
+            cloudflare-gate2-evidence.json
+            rebuilt/print_pack.html
+            rebuilt/site_config.json
+            rebuilt/pipeline.json
+          retention-days: 14
