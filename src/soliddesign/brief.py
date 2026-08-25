@@ -43,9 +43,9 @@ def build_conversion_brief(facts: VerifiedFacts, audit: AuditResult) -> Conversi
 
 
 def _customer_headline(facts: VerifiedFacts) -> str:
-    services = [_clean_service(s).lower() for s in facts.services if s.strip()]
+    services = [_headline_service_label(s) for s in facts.services if s.strip()]
     if not services:
-        services = [_clean_service(facts.category).lower()]
+        services = [_headline_service_label(facts.category)]
 
     if len(services) >= 2:
         subject = f"{services[0]} en {services[1]}"
@@ -62,6 +62,22 @@ def _customer_subheadline(facts: VerifiedFacts) -> str:
         extra = _join_nl(remaining)
         return f"Ook voor {extra}. Neem rechtstreeks contact op voor een vraag of project."
     return "Neem rechtstreeks contact op voor een vraag of project."
+
+
+def _headline_service_label(value: str) -> str:
+    """Short customer-readable label for the hero only; source facts stay unchanged."""
+    clean = _clean_service(value).lower()
+    if "warmtepomp" in clean:
+        return "warmtepompen"
+    if "elektrotechn" in clean:
+        return "elektrotechniek"
+    if "klimaatinstall" in clean:
+        return "klimaat"
+    if "loodgieter" in clean:
+        return "loodgieterswerk"
+    if "duurzame woninginstall" in clean:
+        return "duurzame installaties"
+    return clean
 
 
 def _clean_service(value: str) -> str:
