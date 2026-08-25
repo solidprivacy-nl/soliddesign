@@ -1,6 +1,6 @@
 # SolidDesign — Website Growth Engine
 
-**Status:** v0.3 composed MVP / Gate 2 live-integration baseline
+**Status:** v0.3 composed MVP / Gate 2 live discovery-audit-proof proven; public preview authorization pending
 
 SolidDesign identifies established local businesses with existing demand but measurable website/conversion leakage, creates an evidence-backed redesign proof, and tests acquisition through personalized physical mail.
 
@@ -69,6 +69,21 @@ Google Places is no longer required to enumerate prospects. It remains only an o
 
 See `docs/DISCOVERY_OVERTURE.md` for the full discovery contract, Netherlands validation plan, taxonomy model, release policy and fallback criteria.
 
+## Live Gate-2 evidence
+
+The first bounded Utrecht run on Overture release `2026-08-19.0` returned:
+
+- 996 service-business records with websites;
+- 930 unique website domains;
+- 740 records with locality Utrecht;
+- 83 installation-related keyword candidates.
+
+One real Utrecht electrical-services prospect then completed live audit, human root-cause review, five-factor qualification at **19/25**, concept assembly and print-pack generation. The raw audit is preserved separately from prospect-facing reviewed findings.
+
+See `docs/evidence/GATE2_OVERTURE_UTRECHT.md` for the evidence and limitations.
+
+The remaining Gate-2 external blocker is public static preview deployment: the repository currently has no Cloudflare API token/account ID configured.
+
 ## Operational state
 
 A dedicated **SolidDesign** Supabase project exists in `eu-west-1` on the free project tier. `supabase/schema.sql` is the canonical schema. Phase-1 tables are server-side only: RLS is enabled and `anon`/`authenticated` have no table grants.
@@ -129,6 +144,7 @@ See `docs/OPERATIONS.md`.
 - `docs/GUARDRAILS.md` — solid-but-simple / no-overengineering rules
 - `docs/ARCHITECTURE.md` — composed architecture and truth boundaries
 - `docs/DISCOVERY_OVERTURE.md` — canonical Overture discovery model
+- `docs/evidence/GATE2_OVERTURE_UTRECHT.md` — first real Dutch discovery/audit/proof evidence
 - `docs/ROADMAP.md` — evidence-gated roadmap
 - `docs/BUSINESS_MODEL.md` — offer, acquisition model and economics
 - `docs/SCORING_RUBRICS.md` — five-factor qualification model
