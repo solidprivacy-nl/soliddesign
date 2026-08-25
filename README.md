@@ -1,6 +1,6 @@
 # SolidDesign — Website Growth Engine
 
-**Status:** v0.3 composed MVP / Gate 2 live discovery-audit-proof proven; public preview authorization pending
+**Status:** v0.3 composed MVP / Gate 2 live single-prospect integration proven end-to-end
 
 SolidDesign identifies established local businesses with existing demand but measurable website/conversion leakage, creates an evidence-backed redesign proof, and tests acquisition through personalized physical mail.
 
@@ -78,15 +78,31 @@ The first bounded Utrecht run on Overture release `2026-08-19.0` returned:
 - 740 records with locality Utrecht;
 - 83 installation-related keyword candidates.
 
-One real Utrecht electrical-services prospect then completed live audit, human root-cause review, five-factor qualification at **19/25**, concept assembly and print-pack generation. The raw audit is preserved separately from prospect-facing reviewed findings.
+One real Utrecht electrical-services prospect then completed live audit, human root-cause review, five-factor qualification at **19/25**, concept assembly, print-pack generation and static Cloudflare Pages publication.
+
+The public preview milestone also proved:
+
+- a shared Cloudflare Pages preview area;
+- an opaque prospect path;
+- browser-accessible HTTP 200;
+- HTML `noindex`;
+- no form and no testimonial content;
+- disable lifecycle by replacing the proof with a neutral unavailable page;
+- restore lifecycle back to the verified concept;
+- minimal synthetic preview-visit event without fingerprinting;
+- operational preview URL/state persisted in the dedicated SolidDesign Supabase project.
+
+The raw audit remains preserved separately from prospect-facing reviewed findings.
 
 See `docs/evidence/GATE2_OVERTURE_UTRECHT.md` for the evidence and limitations.
 
-The remaining Gate-2 external blocker is public static preview deployment: the repository currently has no Cloudflare API token/account ID configured.
+The actual prospect preview URL is deliberately **not committed to this public repository**. It is operational state, not public source documentation.
 
 ## Operational state
 
 A dedicated **SolidDesign** Supabase project exists in `eu-west-1` on the free project tier. `supabase/schema.sql` is the canonical schema. Phase-1 tables are server-side only: RLS is enabled and `anon`/`authenticated` have no table grants.
+
+The first real prospect now has persisted prospect, reviewed audit, qualification, demo URL/status and preview events in Supabase.
 
 ## Quick start
 
@@ -169,4 +185,4 @@ See `docs/DONOR_REGISTER.md` and `docs/THIRD_PARTY_NOTICES.md`.
 
 ## Repository visibility
 
-This repository is **public**. Never commit secrets, real prospect/customer datasets, private e-mail content or intentionally proprietary prompt material. If opportunity scoring/prompts become meaningful proprietary IP, move them behind a private-core boundary rather than exposing them here.
+This repository is **public**. Never commit secrets, real prospect/customer datasets, private e-mail content, operational opaque preview URLs or intentionally proprietary prompt material. If opportunity scoring/prompts become meaningful proprietary IP, move them behind a private-core boundary rather than exposing them here.
