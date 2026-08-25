@@ -32,10 +32,10 @@ class DesignProfile:
 
 
 def derive_design_profile(facts: VerifiedFacts, brief: ConversionBrief) -> DesignProfile:
-    """Derive a premium but restrained profile from verified business context.
+    """Derive one restrained premium service-business profile.
 
-    Phase 1 deliberately supports one strong authority/service composition.
-    Category signals influence palette only; they do not create a template zoo.
+    Premium v2 intentionally keeps a single composition. The correction is better
+    hierarchy, copy and responsive robustness, not more templates.
     """
     accent = _first_valid_color(facts.brand_colors) or _category_accent(
         f"{facts.category} {' '.join(facts.services)}"
@@ -54,11 +54,11 @@ def derive_design_profile(facts: VerifiedFacts, brief: ConversionBrief) -> Desig
         },
         font_display='Georgia, "Times New Roman", serif',
         font_body='system-ui, -apple-system, "Segoe UI", sans-serif',
-        radius=8,
-        hero_variant="authority",
+        radius=6,
+        hero_variant="service_split",
         services_variant="editorial_list",
         trust_variant="proof_band",
-        cta_variant="contrast",
+        cta_variant="light",
         media_strategy="verified_company_image_else_editorial_no_photo",
         motion_level="low",
         anti_patterns=(
@@ -67,6 +67,8 @@ def derive_design_profile(facts: VerifiedFacts, brief: ConversionBrief) -> Desig
             "no_glowing_ai_aesthetic",
             "no_excessive_rounding",
             "no_repetitive_equal_card_grid",
+            "no_decorative_empty_hero_panel",
+            "no_placeholder_copy",
             "no_motion_without_function",
         ),
     )
