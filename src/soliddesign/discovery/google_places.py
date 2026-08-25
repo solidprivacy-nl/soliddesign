@@ -28,10 +28,15 @@ def search_businesses(
     language_code: str = "nl",
     region_code: str = "NL",
 ) -> list[Prospect]:
-    """Search Google Places V1 and retain businesses WITH websites."""
+    """Optional Google Places enrichment/fallback for businesses WITH websites.
+
+    This adapter is intentionally not the canonical Phase-1 discovery path.
+    Use Overture Maps first and activate Google only when a measured use case
+    justifies provider billing/credentials.
+    """
     key = api_key or os.getenv("GOOGLE_PLACES_API_KEY")
     if not key:
-        raise DiscoveryError("GOOGLE_PLACES_API_KEY is required for live discovery")
+        raise DiscoveryError("GOOGLE_PLACES_API_KEY is required for optional Google discovery")
 
     body = json.dumps(
         {
@@ -82,6 +87,8 @@ def search_businesses(
                 rating=raw.get("rating"),
                 review_count=raw.get("userRatingCount"),
                 place_id=raw.get("id"),
+                discovery_source="google_places",
+                discovery_version="v1",
             )
         )
         if len(results) >= limit:

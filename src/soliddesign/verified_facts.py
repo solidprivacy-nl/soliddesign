@@ -7,6 +7,10 @@ def build_verified_facts(prospect: Prospect, audit: AuditResult) -> VerifiedFact
     if audit.url != prospect.website_url:
         raise ValueError("Audit URL must match the prospect's verified website URL")
 
+    discovery_label = prospect.discovery_source or "manual"
+    if prospect.discovery_version:
+        discovery_label = f"{discovery_label} {prospect.discovery_version}"
+
     return VerifiedFacts(
         company_name=prospect.name,
         category=prospect.category,
@@ -20,10 +24,16 @@ def build_verified_facts(prospect: Prospect, audit: AuditResult) -> VerifiedFact
         brand_colors=prospect.brand_colors,
         approved_claims=prospect.approved_claims,
         evidence={
-            "identity": "prospect/discovery record",
+            "identity": f"structured discovery record ({discovery_label})",
             "website": "verified prospect website URL",
-            "rating": "structured discovery provider data" if prospect.rating is not None else "not observed",
-            "review_count": "structured discovery provider data" if prospect.review_count is not None else "not observed",
+            "source_confidence": (
+                f"source existence confidence={prospect.source_confidence}"
+                if prospect.source_confidence is not None
+                else "not supplied"
+            ),
+            "operating_status": prospect.operating_status or "not supplied",
+            "rating": "structured enrichment data" if prospect.rating is not None else "not observed",
+            "review_count": "structured enrichment data" if prospect.review_count is not None else "not observed",
             "services": "human/source-verified services" if prospect.observed_services else "not yet verified",
             "audit": f"normalized audit from {audit.source}",
         },

@@ -2,14 +2,29 @@
 
 The score is intentionally simple and explainable. No machine learning and no arbitrary weighted model until real outcome data exists.
 
+## Discovery versus qualification
+
+The canonical discovery source is Overture Maps Places.
+
+Critical semantic separation:
+
+```text
+Overture presence
+≠
+existing demand
+```
+
+Overture `confidence` indicates confidence that a place exists. `operating_status` helps with place activity/state. Neither is a commercial-demand score.
+
 ## Hard gates
 
 A prospect must pass all relevant gates before ranking:
 
 - existing website exists;
+- website/business identity appears to match;
 - business appears active;
 - customer economics plausibly support the offer;
-- sufficient evidence of existing demand;
+- sufficient independent evidence of existing demand;
 - website has meaningful improvement opportunity;
 - standard/acceptable delivery fit;
 - practical/legal targeting acceptable;
@@ -34,24 +49,40 @@ Each factor scores 0–5. Initial total is unweighted, maximum 25.
 
 ### 2. Existing Demand
 
-Evidence may include:
+This factor must be evidenced separately from Overture discovery.
 
-- Google/local visibility;
-- review volume relative to local peers;
+Possible evidence:
+
+- commercial-intent category/sector;
+- observed Google/local/search visibility from human research;
+- review/reputation volume relative to local peers where lawfully observed;
 - review recency/business activity;
-- commercial-intent category;
-- reputation/ratings.
+- established operating history if known;
+- active portfolio/cases/projects;
+- other sector-specific demand signals.
 
 | Score | Rubric |
 |---|---|
 | 0 | No credible demand evidence |
-| 1 | Very weak presence |
-| 2 | Clearly below relevant local peers |
-| 3 | Roughly local market average |
-| 4 | Above-average visibility/activity |
-| 5 | Strong visible market interaction and active demand evidence |
+| 1 | Very weak evidence of active market demand |
+| 2 | Some evidence, clearly below relevant local peers |
+| 3 | Credible normal-market demand |
+| 4 | Multiple above-average demand/activity signals |
+| 5 | Strong, corroborated evidence of active commercial demand |
 
-Prefer relative local comparison over universal review-count thresholds.
+Prefer relative local/sector comparison over universal thresholds.
+
+#### Evidence that does not suffice alone
+
+Do not score Existing Demand highly solely because:
+
+- Overture contains the business;
+- Overture confidence is high;
+- `operating_status` is open;
+- a website exists;
+- the website looks professional.
+
+For Phase 1, manual demand research is acceptable. Do not build automated Google scraping.
 
 ### 3. Conversion Opportunity
 
@@ -88,9 +119,22 @@ Based on audit evidence, not visual taste alone.
 | 4 | Large local digital gap |
 | 5 | Prospect visibly loses credibility/conversion potential to direct peers |
 
+## Discovery quality metadata
+
+Keep source metadata separate from score factors:
+
+```yaml
+discovery_source: overture
+discovery_version: 2026-07-22.0
+source_confidence: 0.87
+operating_status: open
+```
+
+These fields help audit source quality over time but are not automatically converted into scoring points.
+
 ## Score record
 
-Every score must store:
+Every factor must store:
 
 ```yaml
 factor:
@@ -100,7 +144,7 @@ reviewer:
 timestamp:
 ```
 
-Never store only the number. A score without evidence cannot later train or improve the model.
+Never store only the number. A score without evidence cannot later improve the model.
 
 ## Future calibration
 
@@ -114,4 +158,6 @@ After 100+ prospects, compare factors against:
 - delivery hours;
 - gross margin.
 
-Only then consider weights or predictive modeling.
+Also compare source/release metadata against invalid/stale rates.
+
+Only then consider weights, source-specific adjustments or predictive modeling.

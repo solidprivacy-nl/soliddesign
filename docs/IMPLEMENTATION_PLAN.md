@@ -1,13 +1,13 @@
-# Implementation Plan — Component Spike
+# Implementation Plan — Composed MVP
 
 ## Goal
 
-Prove one golden prospect can move through the complete internal pre-sale pipeline without relying on a large platform.
+Prove one real Dutch prospect can move through the complete internal pre-sale pipeline without importing a large platform or requiring a paid discovery API.
 
-## Vertical slice
+## Offline vertical slice — complete
 
 ```text
-fixture prospect
+fixture Prospect
 → qualification
 → normalized audit
 → verified facts
@@ -17,14 +17,19 @@ fixture prospect
 → print-pack HTML
 ```
 
-Then layer live integrations independently:
+## Live integration order
 
 ```text
-Google Places
-Pitch Doctor live audit
-Supabase
-Cloudflare static publishing
+Overture Places bounded discovery
+→ one selected real prospect
+→ Pitch Doctor live audit
+→ human score
+→ assemble proof
+→ Supabase state
+→ Cloudflare static publishing
 ```
+
+Each integration is proven independently.
 
 ## Repository modules
 
@@ -36,33 +41,81 @@ src/soliddesign/
 ├── verified_facts.py
 ├── brief.py
 ├── discovery/
-│   └── google_places.py
+│   ├── overture.py          # canonical Phase-1 source
+│   └── google_places.py     # optional future fallback/enrichment
 ├── audit/
 │   └── adapter.py
 ├── demo/
-│   ├── schema.py
-│   └── renderer.py
+│   └── openpage.py
 ├── print_pack/
 │   └── renderer.py
-├── storage/
-│   └── supabase.py
 └── cli.py
 ```
 
-## Definition of done for component spike
+## Discovery implementation
 
-- `python -m soliddesign.cli golden` succeeds without network credentials;
+Canonical implementation:
+
+```text
+explicit west,south,east,north
++
+current Overture taxonomy label(s)
++
+DuckDB
+→
+Overture cloud GeoParquet
+→
+Prospect[]
+```
+
+Requirements:
+
+- official STAC latest-release lookup or explicit release pin;
+- no arbitrary storage path input;
+- current `basic_category` / `taxonomy` fields;
+- existing website required;
+- `permanently_closed` excluded;
+- source/release/confidence/status recorded;
+- no Google key required.
+
+See `DISCOVERY_OVERTURE.md`.
+
+## Definition of done — offline component spike
+
+- `soliddesign golden` succeeds without network credentials;
 - deterministic fixture produces a score and decision;
-- verified-facts object contains only approved structured facts;
+- VerifiedFacts contains only approved structured facts;
 - demo config validates;
-- preview HTML contains `noindex` and concept banner;
-- print-pack HTML is generated;
-- tests cover scoring, trust boundary, preview and print pack;
-- CI executes tests.
+- preview contains `noindex` and concept banner;
+- print pack generated;
+- tests cover scoring/trust/preview/print pack;
+- CI green.
 
-## Live-integration definition of done
+## Definition of done — Overture live discovery
 
-- scoped Google Places key can discover one candidate;
-- Pitch Doctor adapter can audit one real URL;
-- Supabase migration and RLS are reviewed before live data use;
-- Cloudflare preview deployment is provider-specific only at the final static-publish step.
+- one bounded Dutch market query succeeds;
+- Overture release recorded;
+- source uses new taxonomy fields;
+- sample data quality manually measured;
+- one candidate with matching/reachable website reaches audit;
+- no Google Cloud project, billing or key required.
+
+## Definition of done — live proof
+
+- Pitch Doctor adapter audits one real URL;
+- human qualification stores evidence;
+- Supabase state reflects source provenance;
+- static preview deploys only at final provider-specific step;
+- preview can be deleted/disabled.
+
+## Deferred
+
+- geocoder;
+- OSM fallback;
+- Google enrichment;
+- queues;
+- dashboards;
+- agents;
+- production builder.
+
+Only measured failure or operator friction may promote them.

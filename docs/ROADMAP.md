@@ -2,26 +2,18 @@
 
 The roadmap is evidence-gated. Completing code is not success; closing learning gates is success.
 
-## Gate 0 — Documentation baseline
+## Gate 0 — Documentation baseline ✅
 
 **Goal:** one authoritative mission, architecture, guardrail, scoring, donor and business baseline.
 
-Exit criteria:
+Closed.
 
-- mission contract committed;
-- architecture committed;
-- guardrails committed;
-- business/pricing boundaries committed;
-- scoring rubrics committed;
-- donor provenance committed;
-- security baseline committed.
-
-## Gate 1 — Component spike
+## Gate 1 — Offline component spike ✅
 
 **Goal:** one golden prospect can travel through the composed path without external customer impact.
 
 ```text
-fixture/discovery
+fixture
 → audit adapter
 → qualification
 → verified facts
@@ -31,28 +23,57 @@ fixture/discovery
 → print pack
 ```
 
-Exit criteria:
-
-- deterministic golden fixture;
-- tests green;
-- preview renders;
-- print pack renders;
-- no raw external website content crosses the verified-facts boundary;
-- no secrets required for fixture run.
+Closed with CI safety invariants.
 
 ## Gate 2 — Live single-prospect technical test
 
-**Goal:** prove external integrations one by one.
+**Goal:** prove external integrations one by one using the lowest-cost discovery path.
+
+### 2A. Overture Netherlands discovery
 
 Required evidence:
 
-- Google Places discovery works with scoped key;
-- one real website can be audited safely;
-- audit normalizes correctly;
-- human-selected demo can be generated;
-- static preview can be published with noindex;
+- bounded Overture Places query works with no API key;
+- actual Overture release ID is recorded;
+- current `basic_category` / `taxonomy` fields are used;
+- businesses without websites are excluded;
+- `permanently_closed` is excluded;
+- one Dutch sector/geography sample is manually quality-checked;
+- stale/incorrect/duplicate rate is recorded;
+- operator cleanup minutes are recorded;
+- at least one candidate proceeds to audit.
+
+### 2B. Audit and proof
+
+Required evidence:
+
+- one real public website can be audited safely;
+- donor output normalizes to `AuditResult`;
+- human qualification is evidence-backed;
+- selected demo is generated from VerifiedFacts;
+- static preview is published with noindex and concept notice;
 - preview can be deleted/disabled;
-- visit event can be recorded without invasive tracking.
+- one minimal visit event can be recorded without invasive tracking.
+
+### 2C. Source decision
+
+After the sample:
+
+```text
+If Overture produces enough valid candidates
+→ keep Overture only.
+
+If Overture coverage is insufficient
+→ define the measured gap first,
+→ then test the smallest fallback.
+```
+
+Possible fallback order:
+
+1. bounded OSM/Overpass enrichment;
+2. targeted commercial enrichment such as Google Places only if justified.
+
+No multi-source framework is built in advance.
 
 ## Gate 3 — Five-prospect operational feasibility
 
@@ -60,13 +81,17 @@ Required evidence:
 
 Measure:
 
-- discovery time/cost;
-- audit time/cost;
+- Overture query/runtime effort;
+- raw candidates;
+- valid-record rate;
+- website/reachability yield;
+- audit time;
 - human selection minutes;
 - demo generation minutes;
 - manual correction minutes;
 - print-pack minutes;
-- failure/retry rate.
+- failure/retry rate;
+- total cost per qualified prospect.
 
 Do not interpret five mailings as business validation.
 
@@ -84,6 +109,14 @@ Measure:
 - human minutes;
 - concept-only versus live-demo delta where practical.
 
+Discovery-source quality must also be tracked:
+
+```text
+raw → valid → audited → qualified → mailed → responded
+```
+
+This lets us detect whether poor outcomes come from source quality or offer quality.
+
 ## Gate 5 — Pricing / first customer
 
 **Question:** will a suitable customer pay around the target price, and can we deliver profitably?
@@ -100,9 +133,18 @@ Measure:
 
 ## Gate 6 — 100+ prospect learning
 
-**Question:** do our pre-sale signals predict outcomes?
+**Question:** do pre-sale signals predict outcomes?
 
-Compare scores with:
+Compare:
+
+- Customer Economics;
+- independently evidenced Existing Demand;
+- Conversion Opportunity;
+- Execution Fit;
+- Competitive Context;
+- discovery source/release;
+
+against:
 
 - response;
 - meetings;
@@ -110,21 +152,33 @@ Compare scores with:
 - wins;
 - actual gross margin.
 
-Only then tune weights or consider statistical modeling.
+Only then tune weights or consider predictive modeling.
 
 ## Gate 7 — Automate proven bottlenecks
 
 Candidates only if evidence exists:
 
+- market-name → bbox helper;
+- OSM fallback;
+- targeted reputation enrichment;
 - operator gateway;
-- Cloudflare Access/Worker;
 - queues;
 - automated mailbox triage;
-- additional discovery sources;
 - production builder;
 - richer dashboard;
 - scheduled jobs;
 - agentic workflows.
+
+## Explicit non-roadmap items
+
+Do not build merely because they seem technically useful:
+
+- national Overture warehouse/mirror;
+- Elasticsearch/vector search for places;
+- multi-provider reconciliation engine;
+- discovery agent;
+- automated Google Maps scraping;
+- generalized geospatial platform.
 
 ## Roadmap rule
 
