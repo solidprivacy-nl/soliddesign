@@ -85,7 +85,7 @@ artifacts/golden/
 For live donor tooling:
 
 ```bash
-./scripts/bootstrap_donors.sh
+bash scripts/bootstrap_donors.sh
 ```
 
 See `docs/OPERATIONS.md` for live discovery, audit and assemble commands.
