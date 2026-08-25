@@ -14,15 +14,8 @@ def build_conversion_brief(facts: VerifiedFacts, audit: AuditResult) -> Conversi
         _plain_opportunity(f.title, f.business_impact) for f in ranked[:3]
     )
 
-    service = facts.services[0] if facts.services else facts.category
-    if facts.city:
-        headline = f"{facts.company_name}. {service} in {facts.city}."
-    else:
-        headline = f"{facts.company_name}. {service}."
-    subheadline = (
-        "Een helder overzicht van de dienstverlening en een directe route naar contact "
-        "voor uw project of vraag."
-    )
+    headline = _customer_headline(facts)
+    subheadline = _customer_subheadline(facts)
 
     if facts.phone:
         primary_cta = "Bel direct"
@@ -47,6 +40,42 @@ def build_conversion_brief(facts: VerifiedFacts, audit: AuditResult) -> Conversi
         trust_points=tuple(trust_points),
         sections=("hero", "services", "trust", "contact"),
     )
+
+
+def _customer_headline(facts: VerifiedFacts) -> str:
+    services = [_clean_service(s) for s in facts.services if s.strip()]
+    if not services:
+        services = [_clean_service(facts.category)]
+
+    if len(services) >= 2:
+        subject = f"{services[0]} en {services[1]}"
+    else:
+        subject = services[0]
+
+    subject = _sentence_case(subject)
+    return f"{subject} in {facts.city}." if facts.city else f"{subject}."
+
+
+def _customer_subheadline(facts: VerifiedFacts) -> str:
+    remaining = [_clean_service(s) for s in facts.services[2:4] if s.strip()]
+    if remaining:
+        extra = _join_nl(remaining)
+        return f"Ook voor {extra}. Neem rechtstreeks contact op voor een vraag of project."
+    return "Neem rechtstreeks contact op voor een vraag of project."
+
+
+def _clean_service(value: str) -> str:
+    return " ".join(value.replace("_", " ").split()).strip(" .")
+
+
+def _sentence_case(value: str) -> str:
+    return value[:1].upper() + value[1:] if value else value
+
+
+def _join_nl(items: list[str]) -> str:
+    if len(items) == 1:
+        return items[0]
+    return f"{', '.join(items[:-1])} en {items[-1]}"
 
 
 def _plain_opportunity(title: str, impact: str) -> str:
