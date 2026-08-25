@@ -67,7 +67,9 @@ create table if not exists public.events (
 create index if not exists audits_prospect_id_idx on public.audits(prospect_id);
 create index if not exists demos_prospect_id_idx on public.demos(prospect_id);
 create index if not exists mailings_prospect_id_idx on public.mailings(prospect_id);
+create index if not exists mailings_demo_id_idx on public.mailings(demo_id);
 create index if not exists events_prospect_id_created_at_idx on public.events(prospect_id, created_at desc);
+create index if not exists events_demo_id_idx on public.events(demo_id);
 
 alter table public.prospects enable row level security;
 alter table public.audits enable row level security;
