@@ -117,18 +117,18 @@ Repository: https://github.com/buildingopen/openpage
 
 License: MIT — verified in root `LICENSE`.
 
-Role: **PRE-SALE DEMO BUILDER CANDIDATE**
+Role: **PRE-SALE DEMO CONFIG CONTRACT**
 
-Status: `SPIKE / LIKELY ADOPT`
+Status: `ADAPT CONTRACT`
 
 Relevant capability:
 
 - typed JSON `SiteConfig`;
 - visual editing;
-- deterministic renderer;
-- standalone HTML export.
+- deterministic block model;
+- standalone HTML export patterns.
 
-Boundary: pre-sale proof only; production stack remains undecided.
+Boundary: SolidDesign owns the renderer and only keeps subset compatibility. OpenPage is not imported as a second application runtime.
 
 ## 6. JackInSightsV2/Automated-Agentic-AI-Web-Agency
 
@@ -201,6 +201,91 @@ Useful concepts:
 - SSRF protection;
 - evidence records;
 - untrusted-content boundary.
+
+## 11. nextlevelbuilder/ui-ux-pro-max-skill
+
+Repository: https://github.com/nextlevelbuilder/ui-ux-pro-max-skill  
+Reviewed revision: `e353a508767c6d39f0e7698b084dbfc8699fffd3`  
+License: MIT — verified in root `LICENSE`.
+
+Role: **DESIGN-INTELLIGENCE DONOR**
+
+Status: `IDEA / ADAPT CONTRACT`
+
+Useful reviewed concepts:
+
+- industry/product-aware design reasoning;
+- palette, typography and style selection as structured design decisions;
+- explicit design-system output instead of free-form generated code.
+
+SolidDesign adoption:
+
+- one small deterministic `DesignProfile` contract;
+- no donor runtime;
+- no copied design database;
+- no search engine or agent added;
+- category signals only influence bounded design tokens.
+
+## 12. TheMattBerman/landing-page-factory
+
+Repository: https://github.com/TheMattBerman/landing-page-factory  
+Reviewed revision: `e65fbf28662ae85aa7384d13441f0537ea08a9aa`  
+License: MIT — verified in root `LICENSE`.
+
+Role: **AUTHORITY/SERVICE ROUTING + COPY/PROOF DISCIPLINE DONOR**
+
+Status: `IDEA ONLY`
+
+Useful reviewed concepts:
+
+- evidence before synthesis;
+- page-type routing including authority/service pages;
+- proof discipline and claim control;
+- customer-facing copy separated from internal strategy/audit language;
+- mandatory anti-slop QA.
+
+SolidDesign adoption:
+
+- retain `VerifiedFacts` as claim authority;
+- make concept copy customer-facing rather than audit-facing;
+- keep one authority/service recipe in Phase 1;
+- do not import its orchestrator, provider stack, image pipeline or agent runtime.
+
+## 13. pbakaus/impeccable
+
+Repository: https://github.com/pbakaus/impeccable  
+Reviewed revision: `fcd7622cd2d8e2b09344ba8ede9fcac82cec4e70`  
+CLI: `impeccable@3.6.0`  
+License: Apache-2.0 — verified in root `LICENSE`.
+
+Role: **DETERMINISTIC DESIGN QA**
+
+Status: `ADOPT CI TOOL`
+
+Relevant capability:
+
+- static HTML/CSS design anti-pattern detection;
+- deterministic rules for AI-slop tells, typography, layout, spacing, motion, color and accessibility;
+- JSON output suitable for CI;
+- exit code `2` for findings.
+
+Boundary:
+
+- CI only;
+- pinned version;
+- not an application runtime dependency;
+- no AI provider or design-agent integration;
+- findings inform a bounded human/design acceptance gate before stricter automated thresholds are justified by evidence.
+
+## Reference-only design sources
+
+The following remain research/reference donors only and are **not** dependencies:
+
+- `Leonxlnx/taste-skill` — high-end visual/anti-slop heuristics;
+- `winchxyz/loupe` — reference-backed design tokens and reviewer-loop concepts;
+- `nexu-io/open-design` — structured design-system packaging/craft references.
+
+Do not add their runtimes, daemons, visual editors, agents or catalogs during Phase 1.
 
 ## Provenance template
 
