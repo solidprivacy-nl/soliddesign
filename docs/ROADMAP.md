@@ -25,65 +25,78 @@ fixture
 
 Closed with CI safety invariants.
 
-## Gate 2 — Live single-prospect technical test
+## Gate 2 — Live single-prospect technical test ✅
 
 **Goal:** prove external integrations one by one using the lowest-cost discovery path.
 
-### 2A. Overture Netherlands discovery
+Closed on 2026-08-25 with one real Utrecht service-business proof.
 
-Required evidence:
+### 2A. Overture Netherlands discovery — proven
 
-- bounded Overture Places query works with no API key;
-- actual Overture release ID is recorded;
-- current `basic_category` / `taxonomy` fields are used;
-- businesses without websites are excluded;
-- `permanently_closed` is excluded;
-- one Dutch sector/geography sample is manually quality-checked;
-- stale/incorrect/duplicate rate is recorded;
-- operator cleanup minutes are recorded;
-- at least one candidate proceeds to audit.
+Evidence:
 
-### 2B. Audit and proof
+- bounded Overture Places query worked with no API key;
+- release `2026-08-19.0` recorded;
+- current `basic_category` / `taxonomy` fields used;
+- canonical query requires an existing website and excludes `permanently_closed`;
+- refined Utrecht service query returned 996 website-bearing records / 930 unique domains;
+- 740 records reported locality Utrecht;
+- 83 installation-related candidates surfaced;
+- at least one candidate proceeded to live audit.
 
-Required evidence:
+A first broad `LIMIT` sample was shown to be geographically biased. Canonical operating rule is now `bbox + sector filter → limit`, not arbitrary first-N interpretation.
 
-- one real public website can be audited safely;
-- donor output normalizes to `AuditResult`;
-- human qualification is evidence-backed;
-- selected demo is generated from VerifiedFacts;
-- static preview is published with noindex and concept notice;
-- preview can be deleted/disabled;
-- one minimal visit event can be recorded without invasive tracking.
+A larger stale/incorrect-rate sample and operator-cleanup timing are **not Gate-2 blockers**. Those are repeatability/economics questions and are measured in Gate 3 instead of creating checklist work before repeated operation exists.
 
-### 2C. Source decision
+### 2B. Audit and proof — proven
 
-After the sample:
+Evidence:
+
+- one real public website was audited safely;
+- raw donor output normalized to `AuditResult`;
+- failed-load cascading findings were separated from verified root causes;
+- human qualification was evidence-backed at 19/25;
+- selected demo generated from VerifiedFacts;
+- static Cloudflare Pages preview published under an opaque path;
+- browser HTTP 200 verified;
+- HTML `noindex`, no form and no testimonials verified;
+- preview disable lifecycle proved with a neutral unavailable page;
+- original proof restored successfully;
+- one minimal synthetic preview-visit event recorded without fingerprinting;
+- selected operational state persisted in the dedicated SolidDesign Supabase project.
+
+### 2C. Source decision — closed
+
+Observed candidate volume is sufficient for the Phase-1 MVP.
+
+Decision:
 
 ```text
-If Overture produces enough valid candidates
-→ keep Overture only.
-
-If Overture coverage is insufficient
-→ define the measured gap first,
-→ then test the smallest fallback.
+Overture remains canonical primary source.
+No fallback source is activated.
 ```
 
-Possible fallback order:
+Fallback order remains available only after a measured gap:
 
 1. bounded OSM/Overpass enrichment;
 2. targeted commercial enrichment such as Google Places only if justified.
 
 No multi-source framework is built in advance.
 
-## Gate 3 — Five-prospect operational feasibility
+See `docs/evidence/GATE2_OVERTURE_UTRECHT.md`.
+
+## Gate 3 — Five-prospect operational feasibility ← CURRENT
 
 **Question:** can we repeatedly produce excellent prospect packs?
+
+Run five real prospects through the same path without broadening the architecture.
 
 Measure:
 
 - Overture query/runtime effort;
 - raw candidates;
 - valid-record rate;
+- stale/incorrect/duplicate rate on the working shortlist;
 - website/reachability yield;
 - audit time;
 - human selection minutes;
@@ -93,7 +106,11 @@ Measure:
 - failure/retry rate;
 - total cost per qualified prospect.
 
+Also record which steps actually required human judgment versus deterministic processing. Automate only observed repeated friction.
+
 Do not interpret five mailings as business validation.
+
+**Exit condition:** five prospect packs can be produced safely and consistently with measured effort/cost and no unresolved recurring technical blocker.
 
 ## Gate 4 — 30–50 physical-mail offer validation
 
