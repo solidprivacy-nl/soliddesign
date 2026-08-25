@@ -102,7 +102,7 @@ def build_site_config(
                 "variant": profile.cta_variant,
                 "props": {
                     "eyebrow": "Rechtstreeks contact",
-                    "headline": f"Een vraag over {_clean_service(primary_service)}?",
+                    "headline": f"Een vraag over {_display_service(primary_service).lower()}?",
                     "subheadline": _contact_line(facts),
                     "address": facts.address,
                     "buttonText": brief.primary_cta,
@@ -175,7 +175,7 @@ nav{{display:flex;justify-content:space-between;align-items:center;min-height:82
 .hero{{padding:88px 0 76px;display:grid;grid-template-columns:minmax(0,1.22fr) minmax(280px,.78fr);gap:72px;align-items:center}}
 .hero-copy,.service-summary{{min-width:0}}
 h1,h2,h3{{font-family:var(--display);font-weight:700;letter-spacing:-.035em}}
-h1{{max-width:760px;margin:0 0 24px;font-size:clamp(44px,5.8vw,74px);line-height:1.01;text-wrap:balance;overflow-wrap:break-word;hyphens:auto}}
+h1{{max-width:760px;margin:0 0 24px;font-size:clamp(44px,5.4vw,68px);line-height:1.02;text-wrap:balance;overflow-wrap:break-word;word-break:normal;hyphens:none}}
 h2{{margin:0 0 18px;font-size:clamp(34px,4vw,50px);line-height:1.06;text-wrap:balance}}
 h3{{margin:0;font-size:23px;line-height:1.18}}
 .section-label,.cta-eyebrow{{margin:0 0 16px;color:var(--accent);font-size:13px;font-weight:800}}
@@ -209,14 +209,14 @@ footer{{display:flex;justify-content:space-between;gap:24px;padding:32px 0 48px;
 footer strong{{color:var(--ink);font-family:var(--display);font-size:17px}}
 @media(max-width:900px){{
   .hero{{grid-template-columns:minmax(0,1fr) minmax(250px,.72fr);gap:40px}}
-  h1{{font-size:clamp(42px,7vw,62px)}}
+  h1{{font-size:clamp(40px,6.5vw,58px)}}
 }}
 @media(max-width:760px){{
   .wrap{{width:min(100% - 32px,1120px)}}
   nav{{min-height:72px}}
   .links>a:not(.btn){{display:none}}
   .hero{{grid-template-columns:1fr;gap:32px;padding:56px 0 60px}}
-  h1{{font-size:clamp(40px,12vw,58px);line-height:1.02}}
+  h1{{font-size:clamp(38px,11vw,52px);line-height:1.04}}
   .lede{{font-size:17px}}
   .service-summary{{padding:26px 24px}}
   .proof-items{{grid-template-columns:1fr;gap:8px}}
@@ -240,7 +240,7 @@ def render_snapshot_svg(config: SiteConfig) -> str:
     accent = _safe_color(config.theme.get("accent"), "#315E57")
     headline = html.escape(str(props.get("headline") or config.name)[:72])
     sub = html.escape(str(props.get("subheadline") or "")[:110])
-    services = [str(x) for x in props.get("services", [])][:3]
+    services = [_display_service(str(x)) for x in props.get("services", [])][:3]
     service_text = " · ".join(services)
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720"><rect width="1200" height="720" fill="#FBFAF7"/><rect y="0" width="1200" height="64" fill="#18201D"/><text x="55" y="41" font-family="Arial" font-size="15" fill="#F8F6F0">Concept redesign — niet de officiële website</text><text x="70" y="145" font-family="Georgia" font-size="25" font-weight="700" fill="#18201D">{html.escape(config.name[:60])}</text><line x1="70" y1="170" x2="1130" y2="170" stroke="#D9D5CC"/><text x="70" y="230" font-family="Arial" font-size="15" font-weight="700" fill="{accent}">Dienstverlening</text><text x="70" y="310" font-family="Georgia" font-size="43" font-weight="700" fill="#18201D">{headline}</text><text x="70" y="370" font-family="Arial" font-size="19" fill="#59625C">{sub}</text><rect x="735" y="225" width="395" height="240" rx="8" fill="#F1EEE7" stroke="#D9D5CC"/><text x="770" y="270" font-family="Arial" font-size="14" fill="#59625C">Diensten in één oogopslag</text><text x="770" y="325" font-family="Georgia" font-size="21" font-weight="700" fill="#18201D">{html.escape(service_text[:62])}</text><rect x="70" y="470" width="160" height="54" rx="6" fill="{accent}"/><text x="110" y="504" font-family="Arial" font-size="17" font-weight="700" fill="#fff">Bel direct</text></svg>'''
 
@@ -258,7 +258,7 @@ def _render_block(block: dict[str, Any]) -> str:
         href = html.escape(str(p.get("primaryCtaUrl") or "#"), quote=True)
         services = [str(x) for x in p.get("services", []) if str(x).strip()]
         rows = "".join(
-            f'<div class="summary-row"><span class="summary-dot" aria-hidden="true"></span><span>{html.escape(_clean_service(service))}</span></div>'
+            f'<div class="summary-row"><span class="summary-dot" aria-hidden="true"></span><span>{html.escape(_display_service(service))}</span></div>'
             for service in services
         )
         location = html.escape(str(p.get("location") or ""))
@@ -266,7 +266,7 @@ def _render_block(block: dict[str, Any]) -> str:
         return f'<div class="wrap"><section class="hero"><div class="hero-copy"><h1>{html.escape(str(p.get("headline", "")))}</h1><p class="lede">{html.escape(str(p.get("subheadline", "")))}</p><div class="hero-actions"><a class="btn" href="{href}">{html.escape(str(p.get("primaryCta", "Contact")))}</a><a class="btn secondary" href="#diensten">Bekijk diensten</a></div></div><aside class="service-summary" aria-label="Diensten in één oogopslag"><p class="summary-kicker">Diensten in één oogopslag</p><h2>Waarmee u terecht kunt</h2><div class="summary-list">{rows}</div>{location_html}</aside></section></div>'
     if t == "features":
         items = "".join(
-            f'<div class="service-row"><h3>{html.escape(_clean_service(str(i.get("title", ""))))}</h3><p>{html.escape(str(i.get("description", "")))}</p></div>'
+            f'<div class="service-row"><h3>{html.escape(_display_service(str(i.get("title", ""))))}</h3><p>{html.escape(str(i.get("description", "")))}</p></div>'
             for i in p.get("items", [])
         )
         return f'<section id="diensten"><div class="wrap"><div class="section-head"><div class="section-label">{html.escape(str(p.get("label", "Diensten")))}</div><div><h2>{html.escape(str(p.get("title", "Diensten")))}</h2><p class="section-intro">{html.escape(str(p.get("intro", "")))}</p></div></div><div class="service-list">{items}</div></div></section>'
@@ -325,6 +325,11 @@ def _contact_line(facts: VerifiedFacts) -> str:
 
 def _clean_service(value: str) -> str:
     return " ".join(value.replace("_", " ").split()).strip(" .")
+
+
+def _display_service(value: str) -> str:
+    clean = _clean_service(value).lower()
+    return clean[:1].upper() + clean[1:] if clean else clean
 
 
 def _safe_color(value: Any, fallback: str) -> str:
