@@ -46,7 +46,7 @@ def derive_design_profile(facts: VerifiedFacts, brief: ConversionBrief) -> Desig
         palette={
             "accent": accent,
             "ink": "#18201D",
-            "muted": "#66706A",
+            "muted": "#59625C",
             "paper": "#FBFAF7",
             "surface": "#F1EEE7",
             "line": "#D9D5CC",
