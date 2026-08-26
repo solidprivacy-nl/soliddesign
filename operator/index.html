@@ -6,6 +6,7 @@
   <meta name="robots" content="noindex,nofollow,noarchive" />
   <title>SolidDesign Operator</title>
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./discovery.css" />
 </head>
 <body>
   <div id="loginView" class="auth-shell">
@@ -37,15 +38,19 @@
     <header class="topbar">
       <div>
         <div class="brand">SolidDesign <span>Operator</span></div>
-        <div class="subtle">Prospects, bewijs en contactopvolging</div>
+        <div class="subtle">Prospects, discovery en contactopvolging</div>
       </div>
+      <nav class="main-nav" aria-label="Operator">
+        <button id="prospectsNav" type="button" class="nav-button active">Prospects</button>
+        <button id="discoveryNav" type="button" class="nav-button">Discovery</button>
+      </nav>
       <div class="top-actions">
         <span id="userEmail" class="user-email"></span>
         <button id="signoutBtn" class="ghost">Uitloggen</button>
       </div>
     </header>
 
-    <main class="layout">
+    <main id="prospectsView" class="layout">
       <section class="list-panel">
         <div class="panel-head">
           <div>
@@ -54,11 +59,21 @@
           </div>
           <button id="refreshBtn" class="ghost">Vernieuwen</button>
         </div>
-        <div class="filters">
-          <input id="searchInput" type="search" placeholder="Zoek bedrijf of plaats" />
-          <select id="statusFilter"><option value="">Alle statussen</option></select>
+        <div class="scope-tabs" aria-label="Prospectweergave">
+          <button id="activeScopeBtn" type="button" class="scope-button active">Actief</button>
+          <button id="archiveScopeBtn" type="button" class="scope-button">Archief</button>
         </div>
-        <div id="prospectList" class="prospect-list"></div>
+        <div id="activeProspectPane">
+          <div class="filters">
+            <input id="searchInput" type="search" placeholder="Zoek bedrijf of plaats" />
+            <select id="statusFilter"><option value="">Alle statussen</option></select>
+          </div>
+          <div id="prospectList" class="prospect-list"></div>
+        </div>
+        <div id="archiveProspectPane" class="hidden">
+          <p class="subtle pane-note">Gearchiveerde prospects blijven bewaard maar verdwijnen uit de actieve werkvoorraad.</p>
+          <div id="archiveProspectList" class="prospect-list"></div>
+        </div>
       </section>
 
       <section id="detailPanel" class="detail-panel empty-state">
@@ -66,6 +81,72 @@
           <h2>Selecteer een prospect</h2>
           <p class="muted">Bekijk website, mock-up, technisch dossier en werk de contactstatus bij.</p>
         </div>
+      </section>
+    </main>
+
+    <main id="discoveryView" class="discovery-layout hidden">
+      <section class="discovery-grid">
+        <div class="card discovery-card">
+          <div class="eyebrow">Gebied</div>
+          <h2>Zoek nieuwe prospects</h2>
+          <p class="subtle">Zoek bounded in Overture. Nieuwe vondsten komen eerst in de Discovery-inbox; kwalificatie blijft evidence-gated.</p>
+          <div class="discovery-form">
+            <label>Locatie
+              <input id="discoveryLocation" type="text" maxlength="120" placeholder="Bijv. Utrecht" />
+            </label>
+            <label>Keywords
+              <input id="discoveryKeywords" type="text" maxlength="240" placeholder="Bijv. elektricien, loodgieter" />
+            </label>
+            <label>Max. resultaten
+              <select id="discoveryLimit">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+              </select>
+            </label>
+          </div>
+          <div class="discovery-action">
+            <span class="subtle">Locatie wordt één keer gegeocodeerd naar een bbox; geen autocomplete of bulk-geocoding.</span>
+            <button id="runAreaDiscovery" type="button" class="primary">Start discovery</button>
+          </div>
+          <p class="source-note">Locatie: © OpenStreetMap contributors · Prospectdata: Overture Maps.</p>
+        </div>
+
+        <div class="card discovery-card">
+          <div class="eyebrow">Specifieke website</div>
+          <h2>Onderzoek website</h2>
+          <p class="subtle">Voert een veilige reachability/preflight uit en dedupliceert op domein. Dit is intake, geen vervanging van de volledige audit of commerciële kwalificatie.</p>
+          <label>Website
+            <input id="discoveryUrl" type="url" inputmode="url" placeholder="https://bedrijf.nl" />
+          </label>
+          <div class="discovery-action">
+            <span class="subtle">Onbereikbare sites kunnen objectief worden gediskwalificeerd; overige sites blijven DISCOVERED.</span>
+            <button id="runUrlDiscovery" type="button" class="primary">Onderzoek website</button>
+          </div>
+        </div>
+      </section>
+
+      <p id="discoveryMessage" class="message discovery-message" aria-live="polite"></p>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h3>Discovery-inbox</h3>
+            <p class="subtle">Gevonden of gediskwalificeerde kandidaten die nog niet in de actieve prospectwerkvoorraad horen.</p>
+          </div>
+          <button id="refreshDiscoveryBtn" type="button" class="ghost">Vernieuwen</button>
+        </div>
+        <div id="discoveryCandidates" class="candidate-list"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h3>Recente runs</h3>
+            <p class="subtle">Kleine audit trail van handmatig gestarte discovery-runs.</p>
+          </div>
+        </div>
+        <div id="discoveryRuns" class="run-list"></div>
       </section>
     </main>
   </div>
@@ -88,6 +169,7 @@
         <a data-link="website" target="_blank" rel="noopener">Huidige website ↗</a>
         <a data-link="preview" target="_blank" rel="noopener">Live mock-up ↗</a>
         <button data-action="report" class="link-button">Technisch rapport ↗</button>
+        <button data-ops-action="archive" class="link-button">Archiveer</button>
       </div>
 
       <section class="card" data-design-process>
@@ -187,5 +269,6 @@
   <script src="./config.js"></script>
   <script src="./app.js"></script>
   <script src="./design-process.js"></script>
+  <script type="module" src="./discovery.js"></script>
 </body>
 </html>
