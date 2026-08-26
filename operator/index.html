@@ -89,13 +89,13 @@
         <div class="card discovery-card">
           <div class="eyebrow">Gebied</div>
           <h2>Zoek nieuwe prospects</h2>
-          <p class="subtle">Zoek bounded in Overture. Nieuwe vondsten komen eerst in de Discovery-inbox; kwalificatie blijft evidence-gated.</p>
+          <p class="subtle">Zoek bounded in Overture. Nederlandse sectorwoorden worden eerst gecontroleerd gekoppeld aan de Overture-taxonomie; onbekende termen worden niet stil als nulresultaat behandeld.</p>
           <div class="discovery-form">
             <label>Locatie
               <input id="discoveryLocation" type="text" maxlength="120" placeholder="Bijv. Utrecht" />
             </label>
-            <label>Keywords
-              <input id="discoveryKeywords" type="text" maxlength="240" placeholder="Bijv. elektricien, loodgieter" />
+            <label>Sector(en)
+              <input id="discoveryKeywords" type="text" maxlength="240" placeholder="Bijv. stukadoor, loodgieter" />
             </label>
             <label>Max. resultaten
               <select id="discoveryLimit">
@@ -106,7 +106,7 @@
             </label>
           </div>
           <div class="discovery-action">
-            <span class="subtle">Locatie wordt één keer gegeocodeerd naar een bbox; geen autocomplete of bulk-geocoding.</span>
+            <span class="subtle">Locatie wordt één keer gegeocodeerd naar een bbox; sectoren worden deterministisch gevalideerd vóór de zoekopdracht.</span>
             <button id="runAreaDiscovery" type="button" class="primary">Start discovery</button>
           </div>
           <p class="source-note">Locatie: © OpenStreetMap contributors · Prospectdata: Overture Maps.</p>
@@ -269,6 +269,7 @@
   <script src="./config.js"></script>
   <script src="./app.js"></script>
   <script src="./design-process.js"></script>
+  <script src="./discovery-sectors.js"></script>
   <script type="module" src="./discovery.js"></script>
 </body>
 </html>
