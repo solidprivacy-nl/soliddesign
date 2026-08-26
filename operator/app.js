@@ -9,6 +9,7 @@
 
   const db = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
   const MOCKUP_BUCKET = 'mockup-sites';
+  const PREVIEW_GATEWAY = `${CONFIG.supabaseUrl}/functions/v1/mockup-preview`;
   const MAX_BUNDLE_FILES = 250;
   const MAX_BUNDLE_BYTES = 40 * 1024 * 1024;
   const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -119,12 +120,12 @@
     return rows.find((demo) => demo.status === 'LIVE') || rows.at(-1) || null;
   }
 
-  function publicStorageUrl(path) {
-    return db.storage.from(MOCKUP_BUCKET).getPublicUrl(path).data.publicUrl;
+  function versionPreviewUrl(prospectId, demoId) {
+    return `${PREVIEW_GATEWAY}/v/${prospectId}/${demoId}/`;
   }
 
   function stableLiveUrl(prospectId) {
-    return publicStorageUrl(`live/${prospectId}/index.html`);
+    return `${PREVIEW_GATEWAY}/p/${prospectId}/`;
   }
 
   async function isAuthorized() {
@@ -511,7 +512,7 @@
         uploadedPaths.push(storagePath);
       }
 
-      const previewUrl = publicStorageUrl(`${artifactPath}/index.html`);
+      const previewUrl = versionPreviewUrl(p.id, demoId);
       const note = noteInput.value.trim() || null;
       const { error: insertError } = await db.from('demos').insert({
         id: demoId,
@@ -564,22 +565,19 @@
     await loadData();
   }
 
-  function redirectHtml(targetUrl) {
-    const jsTarget = JSON.stringify(targetUrl).replaceAll('<', '\\u003c');
-    return `<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive"><title>SolidDesign concept</title></head><body><p>Concept laden…</p><script>location.replace(${jsTarget});<\/script><noscript><a href="${escapeHtml(targetUrl)}">Open concept</a></noscript></body></html>`;
-  }
-
   async function promoteDemo(p, demo, root, button) {
     if (!demo.preview_url) return setMockupMessage(root, 'Deze versie heeft geen preview URL.', true);
     button.disabled = true;
     setMockupMessage(root, 'Versie live zetten…');
     try {
-      const livePath = `live/${p.id}/index.html`;
-      const html = redirectHtml(demo.preview_url);
+      const livePath = `live/${p.id}/manifest.json`;
+      const manifest = demo.artifact_path
+        ? { artifact_path: demo.artifact_path }
+        : { external_url: demo.preview_url };
       const { error: uploadError } = await db.storage.from(MOCKUP_BUCKET).upload(
         livePath,
-        new Blob([html], { type: 'text/html;charset=utf-8' }),
-        { contentType: 'text/html;charset=utf-8', cacheControl: '60', upsert: true }
+        new Blob([JSON.stringify(manifest)], { type: 'application/json;charset=utf-8' }),
+        { contentType: 'application/json;charset=utf-8', cacheControl: '0', upsert: true }
       );
       if (uploadError) throw uploadError;
 
