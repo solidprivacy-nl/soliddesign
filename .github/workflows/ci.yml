@@ -39,14 +39,20 @@ jobs:
         run: |
           node --check operator/app.js
           node --check operator/design-process.js
+          node --check operator/discovery.js
+          node --check operator/functions/api/geocode.js
+          node --check operator/functions/api/site-check.js
           test -s operator/index.html
           test -s operator/start-design.html
           test -s operator/config.js
+          test -s operator/discovery.css
+          test -s supabase/migrations/20260826_discovery_archive_v01.sql
           test -s prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'noindex,nofollow,noarchive' operator/index.html
           grep -q 'noindex,nofollow,noarchive' operator/start-design.html
           grep -q 'supabasePublishableKey' operator/config.js
           grep -q 'prompts/SOLIDDESIGN_BOOTSTRAP.md' operator/start-design.html
+          grep -q 'operator_ingest_discovery_candidates' supabase/migrations/20260826_discovery_archive_v01.sql
           ! grep -R -E 'SUPABASE_(SERVICE_ROLE|SECRET)_KEY|service_role' operator/ --exclude=README.md
       - name: Operator Pages Function
         working-directory: operator
