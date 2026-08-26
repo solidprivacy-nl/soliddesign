@@ -39,6 +39,7 @@ jobs:
         run: |
           node --check operator/app.js
           node --check operator/design-process.js
+          node --check operator/discovery-sectors.js
           node --check operator/discovery.js
           node --check operator/functions/api/geocode.js
           node --check operator/functions/api/site-check.js
@@ -53,6 +54,9 @@ jobs:
           grep -q 'supabasePublishableKey' operator/config.js
           grep -q 'prompts/SOLIDDESIGN_BOOTSTRAP.md' operator/start-design.html
           grep -q 'operator_ingest_discovery_candidates' supabase/migrations/20260826_discovery_archive_v01.sql
+          grep -q "stukadoor: \['plasterer'\]" operator/discovery-sectors.js
+          grep -q "bakker: \['bakery'\]" operator/discovery-sectors.js
+          grep -q 'discovery-sectors.js' operator/index.html
           ! grep -R -E 'SUPABASE_(SERVICE_ROLE|SECRET)_KEY|service_role' operator/ --exclude=README.md
       - name: Operator Pages Function
         working-directory: operator
