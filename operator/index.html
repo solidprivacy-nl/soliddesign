@@ -90,6 +90,35 @@
         <button data-action="report" class="link-button">Technisch rapport ↗</button>
       </div>
 
+      <section class="card" data-design-process>
+        <h3>Designproces</h3>
+        <p class="subtle">Start één gedeeld ChatGPT-project voor deze prospect met de vaste SolidDesign-methodiek en deze klantspecifieke brief.</p>
+        <div class="link-row">
+          <a data-design-link="brief" target="_blank" rel="noopener">Prospect brief ↗</a>
+          <a data-design-link="workspace" target="_blank" rel="noopener" class="disabled">Nog geen ChatGPT workspace</a>
+        </div>
+        <div class="form-grid">
+          <label>ChatGPT workspace URL
+            <input data-design-input="workspace" type="url" inputmode="url" placeholder="https://chatgpt.com/…" />
+          </label>
+          <label>Prospect brief URL
+            <input data-design-field="briefUrl" type="text" readonly />
+          </label>
+        </div>
+        <label>Designnotitie
+          <textarea data-design-input="note" rows="4" placeholder="Alleen blijvende klantspecifieke designcontext; geen algemene promptregel"></textarea>
+        </label>
+        <div class="save-row">
+          <div class="subtle">Projectstart = <code>/start-design</code> + deze prospectbrief.</div>
+          <div>
+            <button data-design-action="openBrief" class="secondary">Ververs / open brief</button>
+            <button data-design-action="save" class="secondary">Opslaan</button>
+            <button data-design-action="copyStart" class="primary">Copy project start</button>
+          </div>
+        </div>
+        <p class="message" data-design-field="message" aria-live="polite"></p>
+      </section>
+
       <section class="card mockup-card">
         <h3>Mock-up versies</h3>
         <div data-field="liveMockup" class="mockup-live"></div>
@@ -157,5 +186,6 @@
   <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
   <script src="./config.js"></script>
   <script src="./app.js"></script>
+  <script src="./design-process.js"></script>
 </body>
 </html>
