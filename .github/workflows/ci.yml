@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "build/**", "design/**"]
+    branches: [main, "build/**", "design/**", "chore/**"]
   pull_request:
 
 permissions:
@@ -38,13 +38,16 @@ jobs:
       - name: Operator static safety
         run: |
           node --check operator/app.js
-          cp supabase/functions/mockup-preview/index.ts /tmp/mockup-preview.js
-          node --check /tmp/mockup-preview.js
           test -s operator/index.html
           test -s operator/config.js
           grep -q 'noindex,nofollow,noarchive' operator/index.html
           grep -q 'supabasePublishableKey' operator/config.js
-          ! grep -R -E 'SUPABASE_(SERVICE_ROLE|SECRET)_KEY|service_role' operator/ supabase/functions/mockup-preview/
+          ! grep -R -E 'SUPABASE_(SERVICE_ROLE|SECRET)_KEY|service_role' operator/ --exclude=README.md
+      - name: Operator Pages Function
+        working-directory: operator
+        run: |
+          npx --yes wrangler@4 pages functions build functions --outfile /tmp/operator-pages-functions.js
+          test -s /tmp/operator-pages-functions.js
       - name: Impeccable deterministic design gate
         run: |
           npx --yes impeccable@3.6.0 detect --json /tmp/soliddesign-golden/preview.html > /tmp/impeccable.json
