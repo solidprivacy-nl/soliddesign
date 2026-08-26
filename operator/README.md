@@ -29,15 +29,23 @@ ZIP contract:
 - no server-side code;
 - `file://` references are rejected.
 
-Files are stored under the public `mockup-sites` Supabase Storage bucket at an opaque version path. Public read is intentional for prospect previews; upload/update/delete remain protected by Operator RLS.
+Files are stored under the public `mockup-sites` Supabase Storage bucket at an opaque immutable version path. Public read is intentional for prospect previews; upload/update/delete remain protected by Operator RLS.
 
-`Maak live` writes one stable public redirect at:
+Supabase Storage intentionally does not render uploaded HTML as a website. One small public read-only Edge Function, `mockup-preview`, therefore serves the static artifacts with the correct content type. It has no write capability and no service-role credential.
+
+Immutable version preview:
 
 ```text
-live/<prospect-id>/index.html
+/functions/v1/mockup-preview/v/<prospect-id>/<demo-id>/
 ```
 
-That stable URL points to the selected immutable version. Old versions remain available and become `ARCHIVED`. This keeps future QR/print URLs stable while preserving design history.
+Stable prospect URL after `Maak live`:
+
+```text
+/functions/v1/mockup-preview/p/<prospect-id>/
+```
+
+`Maak live` only replaces `live/<prospect-id>/manifest.json`, which points to the selected immutable artifact bundle (or an external HTTPS preview). Previous versions remain untouched and become `ARCHIVED`. The public prospect URL therefore stays stable for future QR codes and print packs.
 
 An external HTTPS preview can also be added as a DRAFT version as a simple escape hatch.
 
@@ -49,6 +57,7 @@ The browser uses the Supabase publishable key. That key is public by design; acc
 2. The user's email must also exist as an active row in `public.operator_allowlist`.
 3. RLS policies check that allowlist for prospect, demo and mock-up artifact writes.
 4. Authenticated operators can update contact fields and manage demo versions; they do not receive service-role credentials.
+5. The preview Edge Function is intentionally public and read-only because the resulting prospect preview must be reachable from a QR/URL without login.
 
 Authorize an operator through a privileged SQL/admin route:
 
