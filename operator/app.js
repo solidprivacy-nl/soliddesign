@@ -304,7 +304,11 @@
     const password = el('password').value;
     if (!email || password.length < 8) return setAuthMessage('Vul e-mail en een wachtwoord van minimaal 8 tekens in.', true);
     setAuthMessage('Account aanmaken…');
-    const { data, error } = await db.auth.signUp({ email, password });
+    const { data, error } = await db.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: `${window.location.origin}/` }
+    });
     if (error) return setAuthMessage(error.message, true);
     if (data.session) {
       setAuthMessage('Account aangemaakt. Toegang wordt gecontroleerd…');
