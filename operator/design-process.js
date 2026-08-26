@@ -81,8 +81,8 @@
     const { prospect, audit, demos } = context;
     const live = demos.find((demo) => String(demo.status).toUpperCase() === 'LIVE') || null;
     const latest = demos.at(-1) || null;
-    const current = live || latest;
-    const currentIndex = current ? demos.findIndex((demo) => demo.id === current.id) + 1 : null;
+    const latestIndex = latest ? demos.length : null;
+    const liveIndex = live ? demos.findIndex((demo) => demo.id === live.id) + 1 : null;
     const generatedAt = new Date().toISOString();
     const location = [prospect.address, prospect.city].filter(Boolean).join(', ');
 
@@ -123,10 +123,12 @@ ${safeJson(audit?.findings)}
 ## Current design state
 
 - **Versions in CMS:** ${demos.length}
-- **Current version:** ${currentIndex ? `v${currentIndex}` : '_Geen mock-up vastgelegd._'}
-- **Current status:** ${current?.status ?? '_Geen mock-up vastgelegd._'}
-- **Current preview:** ${current?.preview_url ?? '_Geen preview vastgelegd._'}
-- **Current version note:** ${current?.version_note ?? '_Geen versienotitie._'}
+- **Latest version:** ${latestIndex ? `v${latestIndex}` : '_Geen mock-up vastgelegd._'}
+- **Latest status:** ${latest?.status ?? '_Geen mock-up vastgelegd._'}
+- **Latest preview:** ${latest?.preview_url ?? '_Geen preview vastgelegd._'}
+- **Latest version note:** ${latest?.version_note ?? '_Geen versienotitie._'}
+- **Live version:** ${liveIndex ? `v${liveIndex}` : '_Geen live versie._'}
+- **Live preview:** ${live?.preview_url ?? '_Geen live preview._'}
 
 ## Operator design note
 
@@ -207,7 +209,7 @@ Do not assume facts that are absent from this brief. In particular, do not inven
       noteInput.value = prospect.design_brief_note || '';
       briefLink.href = briefUrl;
       briefLink.textContent = 'Open prospect brief ↗';
-      root.querySelector('[data-design-field="briefUrl"]').textContent = briefUrl;
+      root.querySelector('[data-design-field="briefUrl"]').value = briefUrl;
       updateWorkspaceLink(prospect, root);
       setMessage(root, '');
 
@@ -227,14 +229,15 @@ Do not assume facts that are absent from this brief. In particular, do not inven
 
       root.querySelector('[data-design-action="openBrief"]').addEventListener('click', async () => {
         const button = root.querySelector('[data-design-action="openBrief"]');
-        const popup = window.open('', '_blank', 'noopener');
+        const popup = window.open('about:blank', '_blank');
+        if (popup) popup.opener = null;
         button.disabled = true;
         setMessage(root, 'Prospect brief verversen…');
         try {
           await saveMeta(context, root);
           const url = await publishBrief(context);
           if (popup) popup.location = url;
-          else window.location.href = url;
+          else window.open(url, '_blank', 'noopener');
           setMessage(root, 'Prospect brief ververst.');
         } catch (error) {
           if (popup) popup.close();
