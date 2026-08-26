@@ -45,21 +45,21 @@ Set the emitted `PITCH_DOCTOR_COMMAND` path. Vendor checkouts are pinned and ign
 
 ## 4. Select one market and sector
 
-Phase 1 uses an explicit Overture bounding box:
+The underlying discovery contract remains an explicit Overture bounding box:
 
 ```text
 west,south,east,north
 ```
 
-Do not build a geocoder to avoid choosing four coordinates.
+For CLI/reproducible batches, choose and record the bbox deliberately.
 
-Use Overture Explorer or a bounding-box tool to define the market deliberately and store the bbox with the experiment notes.
+For manual Operator runs, the CMS accepts one Dutch location string and performs one cached Nominatim lookup to obtain that bbox. This is a convenience adapter only: no autocomplete, bulk geocoding, background geocoding or general geocoder platform.
 
-Sector values should be Overture `basic_category` or taxonomy labels. Review the current Overture taxonomy when uncertain.
+Sector values should be Overture `basic_category` or taxonomy labels. Review the current Overture taxonomy when uncertain. The Operator contains only a few obvious Dutch aliases such as `elektricien → electrician`; unknown terms are normalized rather than guessed into a custom taxonomy.
 
-## 5. Discover candidates — canonical free path
+## 5. Discover candidates — canonical Overture path
 
-Example syntax:
+### CLI / reproducible batch
 
 ```bash
 soliddesign discover \
@@ -88,30 +88,37 @@ Optional business-name filtering:
 --name "<substring>"
 ```
 
-### Reproducible batch
+By default the official Overture STAC catalog supplies the latest release. Pin commercial experiments with `--release` or `OVERTURE_RELEASE` and record the release used.
 
-By default the official Overture STAC catalog supplies the latest release.
+### Operator / manual bounded run
 
-To pin a commercial experiment:
+The Operator's **Discovery** page accepts:
 
-```bash
-soliddesign discover \
-  --bbox "<west>,<south>,<east>,<north>" \
-  --category electrician \
-  --release 2026-07-22.0
+```text
+location + keyword(s) + max results
 ```
 
-or:
+It resolves the location to one bbox, then runs the same bounded Overture Places GeoParquet logic in DuckDB-Wasm in the operator's browser. Supabase stores only run metadata and resulting candidate records; there is no queue, scheduler or second discovery service.
 
-```bash
-export OVERTURE_RELEASE=2026-07-22.0
+A second intake box accepts one explicit website URL. That path performs only a guarded reachability/preflight check and domain dedupe. It does not replace Pitch Doctor or the full qualification rubric.
+
+## 6. Discovery inbox and output review
+
+Discovery is intentionally separated from the active prospect work queue while remaining one canonical `prospects` table.
+
+```text
+AREA / URL intake
+      ↓
+DISCOVERED / DISQUALIFIED
+      ↓
+Discovery inbox
+      ↓ evidence-backed qualification
+QUALIFIED and later states
+      ↓
+Active prospects
 ```
 
-Always record the release used.
-
-## 6. Discovery output review
-
-For the first market sample, manually record:
+For the first market samples, review:
 
 ```text
 raw records
@@ -132,6 +139,10 @@ Do not fill `rating` or `review_count` with invented proxies. They remain `null`
 
 Do not judge market coverage from an arbitrary first-N unfiltered Overture sample. Apply the intended geography and sector filters before interpreting `LIMIT` results.
 
+`DISCOVERED` is not `QUALIFIED`. Overture presence, website presence and reachability are insufficient evidence for commercial qualification.
+
+Cross-source duplicates are prevented on normalized website hostname because SolidDesign's commercial object is the website to improve. If multiple discovery runs find the same domain, keep one prospect record.
+
 ## 7. Review one prospect
 
 Add only verified downstream facts such as:
@@ -150,7 +161,7 @@ Verify that the Overture website actually belongs to the business before the aud
 soliddesign audit prospect.json --out audit.json
 ```
 
-The adapter validates the public URL, runs Pitch Doctor behind its CLI/JSON boundary and now writes two evidence layers:
+The adapter validates the public URL, runs Pitch Doctor behind its CLI/JSON boundary and writes two evidence layers:
 
 ```text
 raw_audit.json   = donor JSON preserved before normalization
@@ -193,7 +204,8 @@ Do not use these as sufficient demand evidence:
 
 - Overture presence;
 - Overture confidence;
-- website presence.
+- website presence;
+- successful URL preflight.
 
 Demand requires separate market evidence.
 
@@ -224,17 +236,7 @@ technical_report.md
 technical_report.html
 ```
 
-The report intentionally separates:
-
-```text
-reviewed findings
-→ suitable basis for prospect discussion
-
-raw donor checks
-→ traceability/depth only; review before turning into claims
-```
-
-The Markdown report is the easiest source for manually translating technical language. The HTML version is print-friendly and contains `noindex`.
+The report intentionally separates reviewed findings from raw donor traceability.
 
 ## 11. Human review before publication/mail
 
@@ -254,17 +256,22 @@ Verify:
 - QR points to the intended preview;
 - preview can be deleted.
 
-## 12. Supabase
+## 12. Supabase and Operator state
 
-A dedicated SolidDesign project exists.
+A dedicated SolidDesign project exists. `supabase/schema.sql` is the canonical current schema; `supabase/migrations/` records production upgrades.
 
-`supabase/schema.sql` is canonical.
+The Operator uses Supabase Auth + allowlist + RLS/narrow security-definer RPCs. No privileged key is exposed to browser code.
 
-Phase 1 remains server-only:
+Active/archive is not a lifecycle-state fork:
 
-- RLS enabled;
-- no `anon`/`authenticated` table grants;
-- privileged key never exposed to preview/client code.
+```text
+archived_at IS NULL     = active
+archived_at IS NOT NULL = archived
+```
+
+Archive preserves the original prospect state and history. Hard delete is an administrative correction path only and is blocked when demo or mailing history exists.
+
+`discovery_runs` is deliberately small: input, run status, counts, result metadata, timestamps and error. It is not a job engine.
 
 ## 13. Static publishing
 
@@ -301,11 +308,11 @@ Overture
 Do not introduce:
 
 - national Overture mirror;
-- geocoder service;
+- general geocoder service or autocomplete;
 - queue infrastructure;
 - agent scheduler;
 - autonomous outbound;
-- CRM frontend;
+- general CRM frontend;
 - capability gateway;
 - second demo stack;
 - production-site factory.
