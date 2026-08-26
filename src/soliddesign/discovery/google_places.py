@@ -41,7 +41,7 @@ def search_businesses(
     body = json.dumps(
         {
             "textQuery": query,
-            "maxResultCount": min(max(limit * 2, 1), 20),
+            "pageSize": min(max(limit * 2, 1), 20),
             "languageCode": language_code,
             "regionCode": region_code,
             "includePureServiceAreaBusinesses": True,
