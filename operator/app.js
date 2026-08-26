@@ -56,11 +56,20 @@
     return value ? new Date(value).toISOString() : null;
   }
 
+  function qualificationFactors(qualification) {
+    const factors = qualification?.factors;
+    if (Array.isArray(factors)) return factors;
+    if (!factors || typeof factors !== 'object') return [];
+    return Object.entries(factors)
+      .filter(([, factor]) => factor && typeof factor === 'object' && Number.isFinite(Number(factor.score)))
+      .map(([name, factor]) => ({ name, ...factor }));
+  }
+
   function scoreTotal(qualification) {
     if (!qualification) return null;
     if (Number.isFinite(qualification.total_score)) return qualification.total_score;
-    const factors = qualification.factors || [];
-    return factors.reduce((sum, factor) => sum + Number(factor.score || 0), 0) || null;
+    const total = qualificationFactors(qualification).reduce((sum, factor) => sum + Number(factor.score || 0), 0);
+    return total || null;
   }
 
   function latestByProspect(rows) {
@@ -223,7 +232,7 @@
     root.querySelector('[data-input="nextAction"]').value = toLocalInput(p.next_action_at);
 
     const factors = root.querySelector('[data-field="factors"]');
-    const rawFactors = p.qualification?.factors || [];
+    const rawFactors = qualificationFactors(p.qualification);
     factors.innerHTML = '';
     for (const factor of rawFactors) {
       const row = document.createElement('div');
@@ -245,7 +254,7 @@
 
   function buildFallbackReport(p) {
     const findings = p.audit?.findings || [];
-    const factors = p.qualification?.factors || [];
+    const factors = qualificationFactors(p.qualification);
     const findingHtml = findings.map((f, i) => `<section><h2>${i + 1}. ${escapeHtml(f.title || f.key || 'Bevinding')}</h2><p><strong>Severity:</strong> ${escapeHtml(f.severity || '—')}</p><h3>Technisch bewijs</h3>${(f.evidence || []).map(e => `<p>${escapeHtml(e)}</p>`).join('')}<h3>Business impact</h3><p>${escapeHtml(f.business_impact || '—')}</p><h3>Aanbeveling</h3><p>${escapeHtml(f.recommendation || '—')}</p></section>`).join('');
     const factorHtml = factors.map(f => `<tr><td>${escapeHtml(String(f.name || '').replaceAll('_',' '))}</td><td><strong>${Number(f.score || 0)}/5</strong></td></tr>`).join('');
     return `<!doctype html><html lang="nl"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>Technisch rapport — ${escapeHtml(p.name)}</title><style>body{font:16px/1.55 system-ui,sans-serif;color:#1d2822;max-width:900px;margin:40px auto;padding:0 24px}h1{font:700 42px/1.05 Georgia,serif}h2{margin-top:34px}h3{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:#5d6962}section{border-top:1px solid #ddd;padding-top:12px;margin-top:24px}table{width:100%;border-collapse:collapse}td{padding:10px;border-bottom:1px solid #eee}.meta{color:#68736d}.warn{background:#f5f1e9;padding:14px;border-radius:8px}</style></head><body><p class="meta">SolidDesign intern technisch dossier</p><h1>${escapeHtml(p.name)}</h1><p><strong>Website audit:</strong> ${p.audit?.score ?? '—'}/100 · Grade ${escapeHtml(p.audit?.grade || '—')}<br><strong>Kwalificatie:</strong> ${scoreTotal(p.qualification) ?? '—'}/25</p><p class="warn">Dit dossier toont de human-reviewed bevindingen die geschikt zijn als basis voor een prospectgesprek. Raw donor-evidence wordt apart bewaard.</p>${findingHtml}<h2>Kwalificatiecriteria</h2><table>${factorHtml}</table></body></html>`;
