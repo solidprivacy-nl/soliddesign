@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>SolidDesign Operator</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="loginView" class="auth-shell">
+    <section class="auth-card">
+      <div class="brand">SolidDesign <span>Operator</span></div>
+      <h1>Interne prospectwerkplek</h1>
+      <p class="muted">Log in met een geautoriseerd e-mailadres. Toegang wordt in Supabase gecontroleerd.</p>
+      <form id="loginForm" class="stack">
+        <label>E-mail<input id="email" type="email" autocomplete="email" required /></label>
+        <label>Wachtwoord<input id="password" type="password" autocomplete="current-password" minlength="8" required /></label>
+        <button type="submit" class="primary">Inloggen</button>
+      </form>
+      <button id="signupBtn" type="button" class="secondary full">Eerste keer? Account aanmaken</button>
+      <p id="authMessage" class="message" aria-live="polite"></p>
+    </section>
+  </div>
+
+  <div id="unauthorizedView" class="auth-shell hidden">
+    <section class="auth-card">
+      <div class="brand">SolidDesign <span>Operator</span></div>
+      <h1>Geen toegang</h1>
+      <p>Je bent wel ingelogd, maar dit e-mailadres staat niet op de Operator-allowlist.</p>
+      <p class="muted">Laat een beheerder je e-mailadres toevoegen aan <code>operator_allowlist</code>.</p>
+      <button id="unauthorizedSignout" class="secondary full">Uitloggen</button>
+    </section>
+  </div>
+
+  <div id="appView" class="app hidden">
+    <header class="topbar">
+      <div>
+        <div class="brand">SolidDesign <span>Operator</span></div>
+        <div class="subtle">Prospects, bewijs en contactopvolging</div>
+      </div>
+      <div class="top-actions">
+        <span id="userEmail" class="user-email"></span>
+        <button id="signoutBtn" class="ghost">Uitloggen</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="list-panel">
+        <div class="panel-head">
+          <div>
+            <h2>Prospects</h2>
+            <p id="countText" class="subtle"></p>
+          </div>
+          <button id="refreshBtn" class="ghost">Vernieuwen</button>
+        </div>
+        <div class="filters">
+          <input id="searchInput" type="search" placeholder="Zoek bedrijf of plaats" />
+          <select id="statusFilter"><option value="">Alle statussen</option></select>
+        </div>
+        <div id="prospectList" class="prospect-list"></div>
+      </section>
+
+      <section id="detailPanel" class="detail-panel empty-state">
+        <div>
+          <h2>Selecteer een prospect</h2>
+          <p class="muted">Bekijk website, mock-up, technisch dossier en werk de contactstatus bij.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="detailTemplate">
+    <div class="detail-content">
+      <div class="detail-head">
+        <div>
+          <div class="eyebrow" data-field="category"></div>
+          <h1 data-field="name"></h1>
+          <div class="subtle" data-field="location"></div>
+        </div>
+        <div class="score-boxes">
+          <div class="score-box"><span>Website audit</span><strong data-field="auditScore">—</strong><small data-field="auditGrade"></small></div>
+          <div class="score-box"><span>Kwalificatie</span><strong data-field="qualification">—</strong><small>/ 25</small></div>
+        </div>
+      </div>
+
+      <div class="link-row">
+        <a data-link="website" target="_blank" rel="noopener">Huidige website ↗</a>
+        <a data-link="preview" target="_blank" rel="noopener">Nieuwe mock-up ↗</a>
+        <button data-action="report" class="link-button">Technisch rapport ↗</button>
+      </div>
+
+      <section class="card">
+        <h3>Contactopvolging</h3>
+        <div class="form-grid">
+          <label>Status<select data-input="status"></select></label>
+          <label>Volgende actie<input data-input="nextAction" type="datetime-local" /></label>
+        </div>
+        <label>Notitie<textarea data-input="note" rows="5" placeholder="Korte notitie over contact, bezwaren of vervolgactie"></textarea></label>
+        <div class="save-row">
+          <div class="subtle" data-field="lastContact"></div>
+          <div>
+            <button data-action="markContact" class="secondary">Contactmoment nu</button>
+            <button data-action="save" class="primary">Opslaan</button>
+          </div>
+        </div>
+        <p class="message" data-field="saveMessage" aria-live="polite"></p>
+      </section>
+
+      <section class="card">
+        <h3>Onderzoeksbewijs</h3>
+        <div class="evidence-grid">
+          <div><span>Website</span><strong data-field="websiteUrl"></strong></div>
+          <div><span>Telefoon</span><strong data-field="phone"></strong></div>
+          <div><span>Audit grade</span><strong data-field="auditSummary"></strong></div>
+          <div><span>Mock-up status</span><strong data-field="demoStatus"></strong></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Kwalificatiecriteria</h3>
+        <div data-field="factors" class="factor-list"></div>
+      </section>
+    </div>
+  </template>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

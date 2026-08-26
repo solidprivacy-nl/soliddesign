@@ -1,5 +1,6 @@
--- SolidDesign Phase-1 operational schema.
--- Server-side only initially: no anon/authenticated access is granted.
+-- SolidDesign operational schema.
+-- Public preview generation stays server-side. The small internal Operator frontend
+-- uses Supabase Auth + an explicit email allowlist + RLS.
 -- Apply only to the dedicated SolidDesign Supabase project.
 
 create extension if not exists pgcrypto;
@@ -25,6 +26,12 @@ create table if not exists public.prospects (
   state text not null default 'DISCOVERED',
   qualification jsonb,
   verified_facts jsonb,
+  contact_status text not null default 'qualified' check (contact_status in (
+    'qualified','ready_to_mail','mailed','follow_up','contacted','meeting','proposal','won','lost','no_response'
+  )),
+  contact_note text,
+  next_action_at timestamptz,
+  last_contact_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -38,6 +45,8 @@ create table if not exists public.audits (
   grade text,
   findings jsonb not null default '[]'::jsonb,
   screenshot_ref text,
+  technical_report_html text,
+  technical_report_md text,
   created_at timestamptz not null default now()
 );
 
@@ -70,6 +79,12 @@ create table if not exists public.events (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.operator_allowlist (
+  email text primary key,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
 create unique index if not exists prospects_source_place_id_uidx
   on public.prospects(discovery_source, place_id)
   where place_id is not null;
@@ -85,16 +100,84 @@ alter table public.audits enable row level security;
 alter table public.demos enable row level security;
 alter table public.mailings enable row level security;
 alter table public.events enable row level security;
+alter table public.operator_allowlist enable row level security;
 
 revoke all on table public.prospects from anon, authenticated;
 revoke all on table public.audits from anon, authenticated;
 revoke all on table public.demos from anon, authenticated;
 revoke all on table public.mailings from anon, authenticated;
 revoke all on table public.events from anon, authenticated;
+revoke all on table public.operator_allowlist from anon, authenticated;
 
 grant select, insert, update, delete on table public.prospects to service_role;
 grant select, insert, update, delete on table public.audits to service_role;
 grant select, insert, update, delete on table public.demos to service_role;
 grant select, insert, update, delete on table public.mailings to service_role;
 grant select, insert, update, delete on table public.events to service_role;
+grant select, insert, update, delete on table public.operator_allowlist to service_role;
 grant usage, select on sequence public.events_id_seq to service_role;
+
+grant select on table public.prospects to authenticated;
+grant update (contact_status, contact_note, next_action_at, last_contact_at, updated_at) on table public.prospects to authenticated;
+grant select on table public.audits to authenticated;
+grant select on table public.demos to authenticated;
+grant select on table public.operator_allowlist to authenticated;
+
+drop policy if exists operator_read_self on public.operator_allowlist;
+create policy operator_read_self on public.operator_allowlist
+  for select to authenticated
+  using (
+    active = true
+    and lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+  );
+
+drop policy if exists operator_read_prospects on public.prospects;
+create policy operator_read_prospects on public.prospects
+  for select to authenticated
+  using (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
+
+drop policy if exists operator_update_contact on public.prospects;
+create policy operator_update_contact on public.prospects
+  for update to authenticated
+  using (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
+
+drop policy if exists operator_read_audits on public.audits;
+create policy operator_read_audits on public.audits
+  for select to authenticated
+  using (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
+
+drop policy if exists operator_read_demos on public.demos;
+create policy operator_read_demos on public.demos
+  for select to authenticated
+  using (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
