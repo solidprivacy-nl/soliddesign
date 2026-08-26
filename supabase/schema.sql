@@ -1,5 +1,5 @@
 -- SolidDesign operational schema.
--- Public preview generation stays server-side. The small internal Operator frontend
+-- Public previews are static artifacts. The small internal Operator frontend
 -- uses Supabase Auth + an explicit email allowlist + RLS.
 -- Apply only to the dedicated SolidDesign Supabase project.
 
@@ -56,9 +56,14 @@ create table if not exists public.demos (
   site_config jsonb not null,
   preview_url text,
   status text not null default 'DRAFT',
+  artifact_path text,
+  version_note text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.demos add column if not exists artifact_path text;
+alter table public.demos add column if not exists version_note text;
 
 create table if not exists public.mailings (
   id uuid primary key default gen_random_uuid(),
@@ -120,7 +125,8 @@ grant usage, select on sequence public.events_id_seq to service_role;
 grant select on table public.prospects to authenticated;
 grant update (contact_status, contact_note, next_action_at, last_contact_at, updated_at) on table public.prospects to authenticated;
 grant select on table public.audits to authenticated;
-grant select on table public.demos to authenticated;
+grant select, insert on table public.demos to authenticated;
+grant update (status, preview_url, site_config, artifact_path, version_note, updated_at) on table public.demos to authenticated;
 grant select on table public.operator_allowlist to authenticated;
 
 drop policy if exists operator_read_self on public.operator_allowlist;
@@ -176,6 +182,99 @@ create policy operator_read_demos on public.demos
   for select to authenticated
   using (
     exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
+
+drop policy if exists operator_insert_demos on public.demos;
+create policy operator_insert_demos on public.demos
+  for insert to authenticated
+  with check (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
+
+drop policy if exists operator_update_demos on public.demos;
+create policy operator_update_demos on public.demos
+  for update to authenticated
+  using (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
+
+-- Mock-up bundles are static public artifacts. Public read is intentional;
+-- uploads and mutation remain restricted to allowlisted authenticated operators.
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('mockup-sites', 'mockup-sites', true, 10485760)
+on conflict (id) do update
+set public = excluded.public,
+    file_size_limit = excluded.file_size_limit;
+
+drop policy if exists operator_mockup_select on storage.objects;
+create policy operator_mockup_select on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'mockup-sites'
+    and exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
+
+drop policy if exists operator_mockup_insert on storage.objects;
+create policy operator_mockup_insert on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'mockup-sites'
+    and exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
+
+drop policy if exists operator_mockup_update on storage.objects;
+create policy operator_mockup_update on storage.objects
+  for update to authenticated
+  using (
+    bucket_id = 'mockup-sites'
+    and exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  )
+  with check (
+    bucket_id = 'mockup-sites'
+    and exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
+
+drop policy if exists operator_mockup_delete on storage.objects;
+create policy operator_mockup_delete on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'mockup-sites'
+    and exists (
       select 1 from public.operator_allowlist a
       where a.active = true
         and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))

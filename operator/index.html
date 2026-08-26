@@ -86,9 +86,38 @@
 
       <div class="link-row">
         <a data-link="website" target="_blank" rel="noopener">Huidige website ↗</a>
-        <a data-link="preview" target="_blank" rel="noopener">Nieuwe mock-up ↗</a>
+        <a data-link="preview" target="_blank" rel="noopener">Live mock-up ↗</a>
         <button data-action="report" class="link-button">Technisch rapport ↗</button>
       </div>
+
+      <section class="card mockup-card">
+        <h3>Mock-up versies</h3>
+        <div data-field="liveMockup" class="mockup-live"></div>
+
+        <div class="mockup-upload-grid">
+          <label>Nieuwe versie (.html of .zip)
+            <input data-input="mockupFile" type="file" accept=".html,.zip,text/html,application/zip" />
+          </label>
+          <label>Versienotitie
+            <input data-input="mockupNote" type="text" maxlength="240" placeholder="Bijv. hero, CTA en mobiel verbeterd" />
+          </label>
+        </div>
+        <div class="mockup-action-row">
+          <p class="subtle">ZIP: <code>index.html</code> in de root; CSS, JS en afbeeldingen mogen in submappen staan.</p>
+          <button data-action="uploadMockup" class="primary">Upload als DRAFT</button>
+        </div>
+
+        <div class="mockup-external">
+          <label>Externe preview als nieuwe versie
+            <input data-input="externalPreview" type="url" inputmode="url" placeholder="https://…" />
+          </label>
+          <button data-action="addExternalPreview" class="secondary">URL toevoegen als DRAFT</button>
+        </div>
+
+        <p class="message" data-field="mockupMessage" aria-live="polite"></p>
+        <div class="version-heading"><h4>Versiehistorie</h4><span data-field="versionCount" class="subtle"></span></div>
+        <div data-field="versionList" class="version-list"></div>
+      </section>
 
       <section class="card">
         <h3>Contactopvolging</h3>
@@ -125,6 +154,7 @@
   </template>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
   <script src="./config.js"></script>
   <script src="./app.js"></script>
 </body>
