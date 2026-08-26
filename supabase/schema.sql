@@ -117,46 +117,67 @@ grant select, insert, update, delete on table public.events to service_role;
 grant select, insert, update, delete on table public.operator_allowlist to service_role;
 grant usage, select on sequence public.events_id_seq to service_role;
 
-create or replace function public.operator_is_allowed()
-returns boolean
-language sql
-stable
-security definer
-set search_path = public, pg_temp
-as $$
-  select exists (
-    select 1
-    from public.operator_allowlist a
-    where a.active = true
-      and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
-  );
-$$;
-
-revoke all on function public.operator_is_allowed() from public;
-grant execute on function public.operator_is_allowed() to authenticated;
-
 grant select on table public.prospects to authenticated;
 grant update (contact_status, contact_note, next_action_at, last_contact_at, updated_at) on table public.prospects to authenticated;
 grant select on table public.audits to authenticated;
 grant select on table public.demos to authenticated;
+grant select on table public.operator_allowlist to authenticated;
+
+drop policy if exists operator_read_self on public.operator_allowlist;
+create policy operator_read_self on public.operator_allowlist
+  for select to authenticated
+  using (
+    active = true
+    and lower(email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+  );
 
 drop policy if exists operator_read_prospects on public.prospects;
 create policy operator_read_prospects on public.prospects
   for select to authenticated
-  using (public.operator_is_allowed());
+  using (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
 
 drop policy if exists operator_update_contact on public.prospects;
 create policy operator_update_contact on public.prospects
   for update to authenticated
-  using (public.operator_is_allowed())
-  with check (public.operator_is_allowed());
+  using (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
 
 drop policy if exists operator_read_audits on public.audits;
 create policy operator_read_audits on public.audits
   for select to authenticated
-  using (public.operator_is_allowed());
+  using (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
 
 drop policy if exists operator_read_demos on public.demos;
 create policy operator_read_demos on public.demos
   for select to authenticated
-  using (public.operator_is_allowed());
+  using (
+    exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );

@@ -72,9 +72,9 @@
   }
 
   async function isAuthorized() {
-    const { data, error } = await db.rpc('operator_is_allowed');
+    const { data, error } = await db.from('operator_allowlist').select('email').limit(1);
     if (error) throw error;
-    return data === true;
+    return Array.isArray(data) && data.length === 1;
   }
 
   async function bootstrap() {
