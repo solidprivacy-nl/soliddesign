@@ -1,6 +1,8 @@
 const SUPABASE_URL = 'https://grderdhnjkeucaaehgqy.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_fRXRtDIHJ98LIN3cfQHtpA_WJ0yPPRh';
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
+const MAX_LONGITUDE_SPAN = 2;
+const MAX_LATITUDE_SPAN = 1.5;
 
 async function authorize(request) {
   const authorization = request.headers.get('Authorization') || '';
@@ -78,6 +80,9 @@ export async function onRequestGet(context) {
   const [south, north, west, east] = bbox.map(Number);
   if (![south, north, west, east].every(Number.isFinite) || west >= east || south >= north) {
     return json({ error: 'Locatieservice gaf een ongeldige bounding box.' }, 502);
+  }
+  if ((east - west) > MAX_LONGITUDE_SPAN || (north - south) > MAX_LATITUDE_SPAN) {
+    return json({ error: 'Locatie is te groot voor een handmatige discovery-run. Gebruik een stad, gemeente of kleiner gebied.' }, 400);
   }
 
   const payload = {
