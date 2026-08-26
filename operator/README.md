@@ -5,7 +5,11 @@ Small internal operator frontend for the human commercial/design workflow.
 ## Scope
 
 Only:
-- prospect list/search/filter;
+- active prospect list/search/filter;
+- archive + restore, with guarded hard delete for administrative corrections;
+- manual discovery runs by location + keyword(s);
+- one-URL intake/preflight;
+- Discovery inbox for `DISCOVERED` / `DISQUALIFIED` candidates;
 - current website link;
 - technical report;
 - audit + qualification score;
@@ -14,7 +18,78 @@ Only:
 - two-URL design-project bootstrap;
 - mock-up version upload, preview, history and explicit LIVE promotion.
 
-Explicitly not a general CRM or website builder. No pipelines, task engine, dashboards, mailer or autonomous design agent.
+Explicitly not a general CRM or website builder. No pipeline builder, task engine, scheduler, queue, mailer or autonomous design agent.
+
+## Discovery workflow
+
+Discovery and active prospect work are intentionally separated in the UI while remaining one canonical `prospects` model in Supabase.
+
+```text
+AREA / URL intake
+      ↓
+DISCOVERED / DISQUALIFIED
+      ↓
+Discovery inbox
+      ↓ evidence-backed qualification
+QUALIFIED and later states
+      ↓
+Active prospect work queue
+```
+
+`DISCOVERED` does **not** mean qualified. Overture presence, website presence and reachability are discovery evidence only. The existing SolidDesign qualification rubric still requires independent demand, economics, conversion-opportunity, execution-fit and competitive-context evidence before promotion to `QUALIFIED`.
+
+### Area discovery
+
+The Operator accepts:
+- one Dutch location;
+- one or more comma-separated sector/category keywords;
+- a small result limit (10/25/50).
+
+One explicit operator action performs:
+
+```text
+location
+→ cached Nominatim lookup
+→ bbox
+→ bounded Overture GeoParquet query in DuckDB-Wasm
+→ domain dedupe
+→ Discovery inbox
+```
+
+Nominatim is only used for explicit single-query location-to-bbox conversion. There is no autocomplete, bulk geocoding or background geocoding. The UI includes OpenStreetMap attribution.
+
+Overture remains the canonical Phase-1 business discovery source. The browser query uses the same current Overture Places fields and category semantics as the existing Python CLI; no Google scraping or second discovery model is introduced.
+
+### Specific URL intake
+
+The URL path performs a small authenticated Pages Function preflight:
+- HTTP(S) only;
+- local/private literal addresses are rejected;
+- redirects are bounded and revalidated;
+- response reading is bounded;
+- title/description are collected only as intake metadata;
+- normalized hostname is the cross-source dedupe key.
+
+A clearly unreachable root website may be marked `DISQUALIFIED` on that objective hard gate. A reachable website stays `DISCOVERED`; this preflight does not replace Pitch Doctor or the full commercial qualification rubric.
+
+### Run history
+
+`discovery_runs` stores only a small operator audit trail: input, state, counts, result metadata, timestamps and any error. There is no job scheduler or orchestration layer.
+
+## Active work queue and archive
+
+The normal prospect query exposes only non-archived prospects that have progressed beyond `DISCOVERED` / `DISQUALIFIED`.
+
+Archiving is orthogonal to lifecycle state:
+
+```text
+archived_at IS NULL     = active
+archived_at IS NOT NULL = archived
+```
+
+Archive preserves the original state and history. Restore clears `archived_at`.
+
+Hard delete is intentionally narrow. It is only available for discovery/archived administrative corrections and is blocked when demo or mailing history exists. Real commercial history should be archived, not erased.
 
 ## Design project workflow
 
@@ -82,12 +157,12 @@ An external HTTPS preview can also be added as a DRAFT version as a simple escap
 
 ## Access
 
-The browser uses the Supabase publishable key. That key is public by design; access is enforced by RLS.
+The browser uses the Supabase publishable key. That key is public by design; access is enforced by RLS and narrow security-definer RPCs that re-check `operator_allowlist`.
 
 1. User creates/signs into a Supabase Auth email/password account.
 2. The user's email must also exist as an active row in `public.operator_allowlist`.
-3. RLS policies check that allowlist for prospect, demo, design-brief and mock-up artifact writes.
-4. Authenticated operators can update contact/design metadata and manage demo versions; they do not receive service-role credentials.
+3. RLS/RPC checks gate prospect, discovery, demo, design-brief and mock-up operations.
+4. Authenticated operators do not receive service-role credentials.
 5. Public prospect previews and design briefs are intentionally read-only and reachable without login through opaque URLs.
 
 Authorize an operator through a privileged SQL/admin route:
