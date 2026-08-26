@@ -53,7 +53,7 @@ function decodePath(pathname) {
 function safeAssetPath(parts, directoryRequest) {
   const assetParts = [...parts];
   if (!assetParts.length || directoryRequest) assetParts.push('index.html');
-  if (assetParts.some((part) => !part || part === '.' || part === '..' || part.includes('\\') || part.includes('\0'))) {
+  if (assetParts.some((part) => !part || part === '.' || part === '..' || part.includes('/') || part.includes('\\') || part.includes('\0'))) {
     return null;
   }
   return assetParts.join('/');
