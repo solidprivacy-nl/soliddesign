@@ -15,7 +15,7 @@ export async function onRequest({ request, params }) {
 
   const headers = new Headers(upstream.headers);
   headers.delete('set-cookie');
-  headers.set('Content-Type', 'text/markdown; charset=utf-8');
+  headers.set('Content-Type', 'text/plain; charset=utf-8');
   headers.set('Cache-Control', 'no-store');
   headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
 
