@@ -32,9 +32,19 @@ create table if not exists public.prospects (
   contact_note text,
   next_action_at timestamptz,
   last_contact_at timestamptz,
+  design_brief_token uuid not null default gen_random_uuid(),
+  design_workspace_url text,
+  design_brief_note text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.prospects add column if not exists design_brief_token uuid;
+alter table public.prospects add column if not exists design_workspace_url text;
+alter table public.prospects add column if not exists design_brief_note text;
+update public.prospects set design_brief_token = gen_random_uuid() where design_brief_token is null;
+alter table public.prospects alter column design_brief_token set default gen_random_uuid();
+alter table public.prospects alter column design_brief_token set not null;
 
 create table if not exists public.audits (
   id uuid primary key default gen_random_uuid(),
@@ -93,6 +103,8 @@ create table if not exists public.operator_allowlist (
 create unique index if not exists prospects_source_place_id_uidx
   on public.prospects(discovery_source, place_id)
   where place_id is not null;
+create unique index if not exists prospects_design_brief_token_uidx
+  on public.prospects(design_brief_token);
 create index if not exists audits_prospect_id_idx on public.audits(prospect_id);
 create index if not exists demos_prospect_id_idx on public.demos(prospect_id);
 create index if not exists mailings_prospect_id_idx on public.mailings(prospect_id);
@@ -123,7 +135,7 @@ grant select, insert, update, delete on table public.operator_allowlist to servi
 grant usage, select on sequence public.events_id_seq to service_role;
 
 grant select on table public.prospects to authenticated;
-grant update (contact_status, contact_note, next_action_at, last_contact_at, updated_at) on table public.prospects to authenticated;
+grant update (contact_status, contact_note, next_action_at, last_contact_at, design_workspace_url, design_brief_note, updated_at) on table public.prospects to authenticated;
 grant select on table public.audits to authenticated;
 grant select, insert on table public.demos to authenticated;
 grant update (status, preview_url, site_config, artifact_path, version_note, updated_at) on table public.demos to authenticated;
@@ -274,6 +286,58 @@ create policy operator_mockup_delete on storage.objects
   for delete to authenticated
   using (
     bucket_id = 'mockup-sites'
+    and exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
+
+-- Design briefs are small public Markdown snapshots behind opaque UUID URLs.
+-- Public read is intentional; only allowlisted operators may create or refresh them.
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('design-briefs', 'design-briefs', true, 262144)
+on conflict (id) do update
+set public = excluded.public,
+    file_size_limit = excluded.file_size_limit;
+
+drop policy if exists operator_design_brief_select on storage.objects;
+create policy operator_design_brief_select on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'design-briefs'
+    and exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
+
+drop policy if exists operator_design_brief_insert on storage.objects;
+create policy operator_design_brief_insert on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'design-briefs'
+    and exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  );
+
+drop policy if exists operator_design_brief_update on storage.objects;
+create policy operator_design_brief_update on storage.objects
+  for update to authenticated
+  using (
+    bucket_id = 'design-briefs'
+    and exists (
+      select 1 from public.operator_allowlist a
+      where a.active = true
+        and lower(a.email) = lower(coalesce(auth.jwt() ->> 'email', ''))
+    )
+  )
+  with check (
+    bucket_id = 'design-briefs'
     and exists (
       select 1 from public.operator_allowlist a
       where a.active = true
