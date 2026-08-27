@@ -36,7 +36,7 @@
     const text = value.trim();
     if (!text) return null;
     const url = new URL(text);
-    if (url.protocol !== 'https:') throw new Error('Gebruik een https:// URL voor de ChatGPT workspace.');
+    if (url.protocol !== 'https:') throw new Error('Gebruik een https:// link voor het ChatGPT-project.');
     return url.toString();
   }
 
@@ -186,11 +186,11 @@ Do not assume facts that are absent from this brief. In particular, do not inven
     if (prospect.design_workspace_url) {
       link.href = prospect.design_workspace_url;
       link.classList.remove('disabled');
-      link.textContent = 'Open ChatGPT workspace ↗';
+      link.textContent = 'Open ChatGPT-project ↗';
     } else {
       link.removeAttribute('href');
       link.classList.add('disabled');
-      link.textContent = 'Nog geen ChatGPT workspace';
+      link.textContent = 'Geen ChatGPT-project gekoppeld';
     }
   }
 
@@ -215,7 +215,7 @@ Do not assume facts that are absent from this brief. In particular, do not inven
       workspaceInput.value = prospect.design_workspace_url || '';
       noteInput.value = prospect.design_brief_note || '';
       briefLink.href = briefUrl;
-      briefLink.textContent = 'Open prospect brief ↗';
+      briefLink.textContent = 'Open designbrief ↗';
       root.querySelector('[data-design-field="briefUrl"]').value = briefUrl;
       updateWorkspaceLink(prospect, root);
       setMessage(root, '');
@@ -239,13 +239,13 @@ Do not assume facts that are absent from this brief. In particular, do not inven
         const popup = window.open('about:blank', '_blank');
         if (popup) popup.opener = null;
         button.disabled = true;
-        setMessage(root, 'Prospect brief verversen…');
+        setMessage(root, 'Actuele designbrief maken…');
         try {
           await saveMeta(context, root);
           const url = await publishBrief(context);
           if (popup) popup.location = url;
           else window.open(url, '_blank', 'noopener');
-          setMessage(root, 'Prospect brief ververst.');
+          setMessage(root, 'Actuele designbrief geopend.');
         } catch (error) {
           if (popup) popup.close();
           setMessage(root, error.message || String(error), true);
@@ -257,12 +257,12 @@ Do not assume facts that are absent from this brief. In particular, do not inven
       root.querySelector('[data-design-action="copyStart"]').addEventListener('click', async () => {
         const button = root.querySelector('[data-design-action="copyStart"]');
         button.disabled = true;
-        setMessage(root, 'Projectstart voorbereiden…');
+        setMessage(root, 'ChatGPT-start voorbereiden…');
         try {
           await saveMeta(context, root);
           const briefUrlNow = await publishBrief(context);
           await navigator.clipboard.writeText(`${START_URL}\n${briefUrlNow}`);
-          setMessage(root, 'Twee project-URL’s gekopieerd. Plak ze in een nieuw gedeeld ChatGPT-project.');
+          setMessage(root, 'ChatGPT-start gekopieerd. Plak hem in een nieuwe designchat.');
         } catch (error) {
           setMessage(root, error.message || String(error), true);
         } finally {
@@ -273,12 +273,12 @@ Do not assume facts that are absent from this brief. In particular, do not inven
       root.querySelector('[data-design-action="copySectorUpgrade"]').addEventListener('click', async () => {
         const button = root.querySelector('[data-design-action="copySectorUpgrade"]');
         button.disabled = true;
-        setMessage(root, 'Sector Intelligence verbeterstart voorbereiden…');
+        setMessage(root, 'Verbeteropdracht voorbereiden…');
         try {
           await saveMeta(context, root);
           const briefUrlNow = await publishBrief(context);
           await navigator.clipboard.writeText(sectorUpgradeStart(briefUrlNow));
-          setMessage(root, 'SI-verbeterstart gekopieerd. Plak hem in het bestaande ChatGPT-project of een nieuwe designchat.');
+          setMessage(root, 'Verbeteropdracht met sectorinzichten gekopieerd. Plak hem in het ChatGPT-project voor deze prospect.');
         } catch (error) {
           setMessage(root, error.message || String(error), true);
         } finally {
