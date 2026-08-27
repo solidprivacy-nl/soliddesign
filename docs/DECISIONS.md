@@ -109,3 +109,54 @@ RAW DONOR AUDIT
 ```
 
 **Consequence:** SolidDesign favors fewer defensible findings over a larger, more dramatic list. This is both a trust requirement and a commercial-quality requirement.
+
+## ADR-015 — Sector Intelligence uses ChatGPT + GitHub, not a new subsystem
+
+**Date:** 2026-08-27
+
+### Problem
+
+Future designs should reuse what SolidDesign learns from strong websites in the same market without repeating expensive research per prospect.
+
+### Hard requirements
+
+- research follows actual market language, not only the technical Overture taxonomy term;
+- external inspiration remains subordinate to verified prospect facts;
+- knowledge is reviewable, versioned and reusable;
+- missing Sector Intelligence must never block design production;
+- a later Sector Intelligence publication must be able to improve an existing mock-up without replacing the current LIVE version automatically.
+
+### Simplest viable solution
+
+Use the ordinary ChatGPT client for extensive web research, synthesis and GitHub writing. Store one reviewed Markdown file per canonical sector under `sector-intelligence/`.
+
+The Overture key is the stable filename/identity; the human discovery term and market geography guide research vocabulary.
+
+The design bootstrap conditionally loads the matching published sector file when it exists.
+
+### Existing solution reused
+
+- ChatGPT: research, synthesis, self-review and design refinement;
+- GitHub: Markdown storage, branches, PR review, history and rollback;
+- existing CMS demos: DRAFT/LIVE versioning and promotion.
+
+### Added complexity
+
+One GitHub directory, one conditional bootstrap lookup and one CMS clipboard action for a Sector Intelligence improvement pass. No new database table, service, queue, crawler, screenshot store or lifecycle is introduced.
+
+### Failure modes
+
+- taxonomy term skews research → use human market language and location;
+- external inspiration becomes pseudo-policy → keep Sector Intelligence below Prospect Design Brief / verified facts in source priority;
+- late research silently changes a mailed/live proof → create a new DRAFT and require the existing human `Maak live` step;
+- deterministic baseline becomes a template zoo → do not inject unstructured Sector Intelligence into the baseline renderer.
+
+### Reversibility
+
+High. Sector Intelligence is Markdown and the CMS addition is a thin launch action. No operational data migration is required.
+
+### Verdict
+
+Adopt. The deterministic automatic baseline remains unchanged. Sector Intelligence enriches the ChatGPT design/refinement layer. If Sector Intelligence exists before design refinement, it is used immediately; if it arrives later, the CMS can launch one SI-informed improvement pass that returns a new DRAFT for normal review and LIVE promotion.
+
+Canonical method: `sector-intelligence/README.md`.
