@@ -116,6 +116,113 @@
   border: 1px solid #ead0ca;
 }
 .danger:hover { background: #f2dfda; }
+
+/* Discovery inbox is a decision surface, not a raw record list. */
+.candidate-list { gap: 20px; }
+.triage-group { display: grid; gap: 8px; }
+.triage-group-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 3px;
+}
+.triage-group-heading > div { display: grid; gap: 2px; }
+.triage-group-heading strong {
+  font-size: 11px;
+  letter-spacing: .07em;
+  font-weight: 850;
+}
+.triage-group-heading span { color: var(--muted); font-size: 10px; }
+.triage-group-heading b {
+  min-width: 25px;
+  text-align: center;
+  border-radius: 999px;
+  padding: 3px 7px;
+  background: #efefec;
+  color: #626b66;
+  font-size: 10px;
+}
+.triage-group.recommended .triage-group-heading strong { color: #285c40; }
+.triage-group.review .triage-group-heading strong { color: #775b20; }
+.triage-group.low .triage-group-heading strong { color: #8a4b33; }
+.triage-group.disqualified .triage-group-heading strong { color: #8a3a32; }
+.triage-group-list { display: grid; gap: 8px; }
+.triage-candidate {
+  padding: 15px 16px;
+  background: #fffefb;
+}
+.triage-candidate .candidate-main { gap: 7px; }
+.candidate-source { color: #858c88 !important; font-size: 9px !important; }
+.triage-decision {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+  margin-top: 1px;
+}
+.triage-verdict, .triage-score, .triage-gates {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 25px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 10px !important;
+  font-weight: 800;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+.triage-verdict { letter-spacing: .035em; }
+.triage-verdict.strong { background: #e8f3eb; color: #285c40; border-color: #cce2d3; }
+.triage-verdict.possible, .triage-verdict.unassessed { background: #f7f0dc; color: #775b20; border-color: #eadcad; }
+.triage-verdict.weak { background: #f8e9e2; color: #8a4b33; border-color: #edd0c4; }
+.triage-verdict.disqualified { background: #f5e5e3; color: #8a3a32; border-color: #e7c9c5; }
+.triage-score span { color: inherit !important; font-size: 9px !important; font-weight: 650; }
+.triage-score strong { font-size: 11px !important; }
+.triage-score.good { background: #e8f3eb; color: #285c40; border-color: #cce2d3; }
+.triage-score.medium { background: #f7f0dc; color: #775b20; border-color: #eadcad; }
+.triage-score.weak { background: #f8e9e2; color: #8a4b33; border-color: #edd0c4; }
+.triage-score.unknown { background: #efefec; color: #69716d; border-color: #dfdfda; }
+.triage-gates.pass { background: #e8f3eb; color: #285c40; border-color: #cce2d3; }
+.triage-gates.fail { background: #f5e5e3; color: #8a3a32; border-color: #e7c9c5; }
+.triage-gates.unknown { background: #efefec; color: #69716d; border-color: #dfdfda; }
+.triage-context { color: #8a3a32 !important; max-width: 620px; }
+.candidate-website { order: 2; }
+.promote-prospect, .candidate-reopen { order: 1; }
+.candidate-more { order: 3; position: relative; }
+.candidate-more summary {
+  list-style: none;
+  cursor: pointer;
+  min-width: 38px;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 850;
+  letter-spacing: .08em;
+}
+.candidate-more summary::-webkit-details-marker { display: none; }
+.candidate-more[open] summary { border-color: #aab7af; }
+.candidate-more-panel {
+  position: absolute;
+  z-index: 8;
+  right: 0;
+  top: calc(100% + 5px);
+  min-width: 150px;
+  display: grid;
+  gap: 5px;
+  padding: 7px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(29, 40, 34, .12);
+}
+.candidate-more-panel button { width: 100%; text-align: left; white-space: nowrap; }
+
 @media (max-width: 900px) {
   .topbar { flex-wrap: wrap; }
   .main-nav { order: 3; width: 100%; margin-left: 0; }
@@ -128,4 +235,6 @@
     flex-direction: column;
   }
   .compact-actions { flex-wrap: wrap; }
+  .triage-group-heading { align-items: flex-start; }
+  .candidate-more-panel { right: auto; left: 0; }
 }
