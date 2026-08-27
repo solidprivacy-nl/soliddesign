@@ -68,6 +68,10 @@ jobs:
           grep -q 'discovery-triage.js' operator/discovery-sectors.js
           grep -q 'discovery-triage-v1' operator/functions/api/site-check.js
           grep -q 'Naar prospects' operator/discovery-triage.js
+          grep -q 'AANBEVOLEN' operator/discovery-triage.js
+          grep -q 'LAGE PRIORITEIT' operator/discovery-triage.js
+          grep -q 'triage-score' operator/discovery.css
+          grep -q 'candidate-more-panel' operator/discovery.css
           grep -q 'overture_categories.csv' operator/functions/api/resolve-sector.js
           grep -q 'workers_ai_validated' operator/functions/api/resolve-sector.js
           grep -q '"binding": "AI"' operator/wrangler.jsonc
