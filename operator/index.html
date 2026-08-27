@@ -13,7 +13,7 @@
     <section class="auth-card">
       <div class="brand">SolidDesign <span>Operator</span></div>
       <h1>Interne prospectwerkplek</h1>
-      <p class="muted">Log in met een geautoriseerd e-mailadres. Toegang wordt in Supabase gecontroleerd.</p>
+      <p class="muted">Log in met je geautoriseerde e-mailadres.</p>
       <form id="loginForm" class="stack">
         <label>E-mail<input id="email" type="email" autocomplete="email" required /></label>
         <label>Wachtwoord<input id="password" type="password" autocomplete="current-password" minlength="8" required /></label>
@@ -28,8 +28,8 @@
     <section class="auth-card">
       <div class="brand">SolidDesign <span>Operator</span></div>
       <h1>Geen toegang</h1>
-      <p>Je bent wel ingelogd, maar dit e-mailadres staat niet op de Operator-allowlist.</p>
-      <p class="muted">Laat een beheerder je e-mailadres toevoegen aan <code>operator_allowlist</code>.</p>
+      <p>Dit account heeft geen toegang tot SolidDesign Operator.</p>
+      <p class="muted">Vraag een beheerder om toegang.</p>
       <button id="unauthorizedSignout" class="secondary full">Uitloggen</button>
     </section>
   </div>
@@ -38,11 +38,11 @@
     <header class="topbar">
       <div>
         <div class="brand">SolidDesign <span>Operator</span></div>
-        <div class="subtle">Prospects, discovery en contactopvolging</div>
+        <div class="subtle">Prospects zoeken, beoordelen en opvolgen</div>
       </div>
       <nav class="main-nav" aria-label="Operator">
         <button id="prospectsNav" type="button" class="nav-button active">Prospects</button>
-        <button id="discoveryNav" type="button" class="nav-button">Discovery</button>
+        <button id="discoveryNav" type="button" class="nav-button">Bedrijven zoeken</button>
       </nav>
       <div class="top-actions">
         <span id="userEmail" class="user-email"></span>
@@ -87,9 +87,9 @@
     <main id="discoveryView" class="discovery-layout hidden">
       <section class="discovery-grid">
         <div class="card discovery-card">
-          <div class="eyebrow">Gebied</div>
+          <div class="eyebrow">Zoeken op gebied</div>
           <h2>Zoek nieuwe prospects</h2>
-          <p class="subtle">Zoek bounded in Overture. Nederlandse sectorwoorden worden eerst gecontroleerd gekoppeld aan de Overture-taxonomie; onbekende termen worden niet stil als nulresultaat behandeld.</p>
+          <p class="subtle">Zoek bedrijven binnen een plaats en sector. Nederlandse sectornamen worden automatisch gekoppeld aan de juiste Overture-categorie.</p>
           <div class="discovery-form">
             <label>Locatie
               <input id="discoveryLocation" type="text" maxlength="120" placeholder="Bijv. Utrecht" />
@@ -106,22 +106,22 @@
             </label>
           </div>
           <div class="discovery-action">
-            <span class="subtle">Locatie wordt één keer gegeocodeerd naar een bbox; sectoren worden deterministisch gevalideerd vóór de zoekopdracht.</span>
-            <button id="runAreaDiscovery" type="button" class="primary">Start discovery</button>
+            <span class="subtle">SolidDesign bepaalt automatisch het zoekgebied en controleert de gekozen sector vóór het zoeken.</span>
+            <button id="runAreaDiscovery" type="button" class="primary">Zoek bedrijven</button>
           </div>
           <p class="source-note">Locatie: © OpenStreetMap contributors · Prospectdata: Overture Maps.</p>
         </div>
 
         <div class="card discovery-card">
           <div class="eyebrow">Specifieke website</div>
-          <h2>Onderzoek website</h2>
-          <p class="subtle">Voert een veilige reachability/preflight uit en dedupliceert op domein. Dit is intake, geen vervanging van de volledige audit of commerciële kwalificatie.</p>
+          <h2>Controleer een website</h2>
+          <p class="subtle">Controleert of de website bereikbaar is en voorkomt dubbele prospects. Dit is een snelle eerste check, geen volledige websitebeoordeling.</p>
           <label>Website
             <input id="discoveryUrl" type="url" inputmode="url" placeholder="https://bedrijf.nl" />
           </label>
           <div class="discovery-action">
-            <span class="subtle">Onbereikbare sites kunnen objectief worden gediskwalificeerd; overige sites blijven DISCOVERED.</span>
-            <button id="runUrlDiscovery" type="button" class="primary">Onderzoek website</button>
+            <span class="subtle">Onbereikbare websites kunnen direct worden afgewezen; bereikbare websites worden toegevoegd aan de beoordelingslijst.</span>
+            <button id="runUrlDiscovery" type="button" class="primary">Controleer website</button>
           </div>
         </div>
       </section>
@@ -131,8 +131,8 @@
       <section class="card">
         <div class="section-heading">
           <div>
-            <h3>Discovery-inbox</h3>
-            <p class="subtle">Gevonden of gediskwalificeerde kandidaten die nog niet in de actieve prospectwerkvoorraad horen.</p>
+            <h3>Gevonden bedrijven</h3>
+            <p class="subtle">Beoordeel gevonden bedrijven en voeg geschikte kandidaten toe aan Prospects.</p>
           </div>
           <button id="refreshDiscoveryBtn" type="button" class="ghost">Vernieuwen</button>
         </div>
@@ -142,8 +142,8 @@
       <section class="card">
         <div class="section-heading">
           <div>
-            <h3>Recente runs</h3>
-            <p class="subtle">Kleine audit trail van handmatig gestarte discovery-runs.</p>
+            <h3>Recente zoekopdrachten</h3>
+            <p class="subtle">Overzicht van recent uitgevoerde zoekopdrachten.</p>
           </div>
         </div>
         <div id="discoveryRuns" class="run-list"></div>
@@ -160,7 +160,7 @@
           <div class="subtle" data-field="location"></div>
         </div>
         <div class="score-boxes">
-          <div class="score-box"><span>Website audit</span><strong data-field="auditScore">—</strong><small data-field="auditGrade"></small></div>
+          <div class="score-box"><span>Websitebeoordeling</span><strong data-field="auditScore">—</strong><small data-field="auditGrade"></small></div>
           <div class="score-box"><span>Kwalificatie</span><strong data-field="qualification">—</strong><small>/ 25</small></div>
         </div>
       </div>
@@ -174,29 +174,29 @@
 
       <section class="card" data-design-process>
         <h3>Designproces</h3>
-        <p class="subtle">Start één gedeeld ChatGPT-project voor deze prospect. Gepubliceerde Sector Intelligence wordt automatisch als advisory designcontext geladen wanneer die voor de canonical sector bestaat.</p>
+        <p class="subtle">Gebruik ChatGPT om de mock-up verder te ontwerpen. Beschikbare sectorinzichten worden automatisch meegenomen.</p>
         <div class="link-row">
-          <a data-design-link="brief" target="_blank" rel="noopener">Prospect brief ↗</a>
-          <a data-design-link="workspace" target="_blank" rel="noopener" class="disabled">Nog geen ChatGPT workspace</a>
-          <button type="button" data-design-action="copySectorUpgrade" class="link-button">Copy SI-verbeterstart</button>
+          <a data-design-link="brief" target="_blank" rel="noopener">Open designbrief ↗</a>
+          <a data-design-link="workspace" target="_blank" rel="noopener" class="disabled">Geen ChatGPT-project gekoppeld</a>
+          <button type="button" data-design-action="copySectorUpgrade" class="link-button">Verbeter met sectorinzichten</button>
         </div>
         <div class="form-grid">
-          <label>ChatGPT workspace URL
+          <label>ChatGPT-projectlink
             <input data-design-input="workspace" type="url" inputmode="url" placeholder="https://chatgpt.com/…" />
           </label>
-          <label>Prospect brief URL
+          <label>Designbrieflink
             <input data-design-field="briefUrl" type="text" readonly />
           </label>
         </div>
-        <label>Designnotitie
-          <textarea data-design-input="note" rows="4" placeholder="Alleen blijvende klantspecifieke designcontext; geen algemene promptregel"></textarea>
+        <label>Extra designinstructie
+          <textarea data-design-input="note" rows="4" placeholder="Bijv. stijlvoorkeur of blijvende klantspecifieke wens"></textarea>
         </label>
         <div class="save-row">
-          <div class="subtle">Projectstart = <code>/start-design</code> + deze prospectbrief.</div>
+          <div class="subtle">Voor een nieuwe designchat: kopieer de ChatGPT-start en plak die in ChatGPT.</div>
           <div>
-            <button data-design-action="openBrief" class="secondary">Ververs / open brief</button>
+            <button data-design-action="openBrief" class="secondary">Open actuele designbrief</button>
             <button data-design-action="save" class="secondary">Opslaan</button>
-            <button data-design-action="copyStart" class="primary">Copy project start</button>
+            <button data-design-action="copyStart" class="primary">Kopieer ChatGPT-start</button>
           </div>
         </div>
         <p class="message" data-design-field="message" aria-live="polite"></p>
@@ -207,23 +207,23 @@
         <div data-field="liveMockup" class="mockup-live"></div>
 
         <div class="mockup-upload-grid">
-          <label>Nieuwe versie (.html of .zip)
+          <label>Nieuwe mock-up (.html of .zip)
             <input data-input="mockupFile" type="file" accept=".html,.zip,text/html,application/zip" />
           </label>
-          <label>Versienotitie
+          <label>Wat is er gewijzigd?
             <input data-input="mockupNote" type="text" maxlength="240" placeholder="Bijv. hero, CTA en mobiel verbeterd" />
           </label>
         </div>
         <div class="mockup-action-row">
-          <p class="subtle">ZIP: <code>index.html</code> in de root; CSS, JS en afbeeldingen mogen in submappen staan.</p>
-          <button data-action="uploadMockup" class="primary">Upload als DRAFT</button>
+          <p class="subtle">ZIP: <code>index.html</code> in de hoofdmap; CSS, JS en afbeeldingen mogen in submappen staan.</p>
+          <button data-action="uploadMockup" class="primary">Upload als conceptversie</button>
         </div>
 
         <div class="mockup-external">
-          <label>Externe preview als nieuwe versie
+          <label>Mock-up via externe link
             <input data-input="externalPreview" type="url" inputmode="url" placeholder="https://…" />
           </label>
-          <button data-action="addExternalPreview" class="secondary">URL toevoegen als DRAFT</button>
+          <button data-action="addExternalPreview" class="secondary">Voeg toe als conceptversie</button>
         </div>
 
         <p class="message" data-field="mockupMessage" aria-live="polite"></p>
@@ -241,7 +241,7 @@
         <div class="save-row">
           <div class="subtle" data-field="lastContact"></div>
           <div>
-            <button data-action="markContact" class="secondary">Contactmoment nu</button>
+            <button data-action="markContact" class="secondary">Registreer contactmoment</button>
             <button data-action="save" class="primary">Opslaan</button>
           </div>
         </div>
@@ -249,12 +249,12 @@
       </section>
 
       <section class="card">
-        <h3>Onderzoeksbewijs</h3>
+        <h3>Brongegevens</h3>
         <div class="evidence-grid">
           <div><span>Website</span><strong data-field="websiteUrl"></strong></div>
           <div><span>Telefoon</span><strong data-field="phone"></strong></div>
-          <div><span>Audit grade</span><strong data-field="auditSummary"></strong></div>
-          <div><span>Mock-up status</span><strong data-field="demoStatus"></strong></div>
+          <div><span>Websitebeoordeling</span><strong data-field="auditSummary"></strong></div>
+          <div><span>Mock-up</span><strong data-field="demoStatus"></strong></div>
         </div>
       </section>
 
