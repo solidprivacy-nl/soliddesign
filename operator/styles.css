@@ -53,8 +53,19 @@ button:disabled { cursor: default; opacity: .55; }
 .row-main { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
 .row-main strong { font-size: 15px; }
 .row-main span { color: var(--muted); font-size: 12px; white-space: nowrap; }
-.row-meta { margin-top: 9px; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
-.pill { background: var(--accent-soft); color: var(--accent-strong); border-radius: 999px; padding: 4px 7px; }
+.prospect-signals { margin-top: 9px; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.prospect-signal { display: inline-flex; align-items: center; min-height: 24px; border: 1px solid transparent; border-radius: 999px; padding: 4px 7px; font-size: 10px; font-weight: 800; line-height: 1; }
+.prospect-signal.priority { letter-spacing: .025em; }
+.prospect-signal.priority.recommended { background: #e8f3eb; color: #285c40; border-color: #cce2d3; }
+.prospect-signal.priority.review { background: #f7f0dc; color: #775b20; border-color: #eadcad; }
+.prospect-signal.priority.low { background: #f8e9e2; color: #8a4b33; border-color: #edd0c4; }
+.prospect-signal.score.good { background: #e8f3eb; color: #285c40; border-color: #cce2d3; }
+.prospect-signal.score.medium { background: #f7f0dc; color: #775b20; border-color: #eadcad; }
+.prospect-signal.score.weak { background: #f8e9e2; color: #8a4b33; border-color: #edd0c4; }
+.prospect-signal.score.unknown { background: #efefec; color: #69716d; border-color: #dfdfda; }
+.prospect-signal.warning { background: #f5e5e3; color: #8a3a32; border-color: #e7c9c5; }
+.row-meta { margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 11px; }
+.pill { background: #efefec; color: #626b66; border-radius: 999px; padding: 4px 7px; }
 .list-empty { padding: 24px 12px; color: var(--muted); }
 .detail-panel { min-width: 0; padding: clamp(22px, 4vw, 54px); }
 .empty-state { display: grid; place-items: center; min-height: 65vh; text-align: center; }
