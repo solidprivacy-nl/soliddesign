@@ -10,6 +10,8 @@ SolidDesign identifies established local businesses with existing demand but mea
 
 ## Governing principles
 
+**`ENGINEERING_CONSTITUTION.md` is TOP-LEVEL / MANDATORY for all architecture, software, data, infrastructure, agents, workflows, refactors, reviews and technical decisions.**
+
 1. **Solid but simple. No overengineering.** Complexity must solve an observed problem.
 2. **First principles before patterns.** Optimize for trustworthy commercial learning, not architectural elegance.
 3. **Lowest total change wins.** Reuse when semantic fit is high; otherwise build the smallest correct component.
@@ -156,6 +158,7 @@ See `docs/OPERATIONS.md`.
 
 ## Key documentation
 
+- `ENGINEERING_CONSTITUTION.md` — top-level mandatory engineering decision standard
 - `docs/MISSION_CONTRACT.md` — authoritative mission and non-goals
 - `docs/GUARDRAILS.md` — solid-but-simple / no-overengineering rules
 - `docs/ARCHITECTURE.md` — composed architecture and truth boundaries
