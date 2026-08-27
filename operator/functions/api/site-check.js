@@ -105,15 +105,148 @@ async function readBoundedText(response) {
   return new TextDecoder('utf-8', { fatal: false }).decode(bytes);
 }
 
+function cleanText(value, max = 240) {
+  return value
+    ? value.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim().slice(0, max)
+    : null;
+}
+
 function extractMeta(html) {
   const titleMatch = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
   const descriptionMatch = html.match(/<meta\b[^>]*(?:name=["']description["'][^>]*content=["']([^"']*)["']|content=["']([^"']*)["'][^>]*name=["']description["'])[^>]*>/i);
-  const clean = (value) => value
-    ? value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240)
-    : null;
   return {
-    title: clean(titleMatch?.[1]),
-    description: clean(descriptionMatch?.[1] || descriptionMatch?.[2])
+    title: cleanText(titleMatch?.[1]),
+    description: cleanText(descriptionMatch?.[1] || descriptionMatch?.[2])
+  };
+}
+
+function htmlSignals(html) {
+  const lower = html.toLowerCase();
+  const text = html
+    .replace(/<script\b[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style\b[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z0-9#]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const actionText = text.toLowerCase();
+
+  const hasViewport = /<meta\b[^>]*name=["']viewport["']/i.test(html);
+  const hasDescription = /<meta\b[^>]*name=["']description["']/i.test(html);
+  const hasH1 = /<h1\b/i.test(html);
+  const hasTel = /href\s*=\s*["']tel:/i.test(html);
+  const hasMailto = /href\s*=\s*["']mailto:/i.test(html);
+  const hasForm = /<form\b/i.test(html);
+  const hasCta = /(contact|offerte|afspraak|bel\s|bellen|boek|boeken|reserveer|reserveren|plan\s|maak een afspraak|get a quote|book now|contact us|call now)/i.test(actionText);
+  const hasEcommerce = /(shopify|woocommerce|\/cart\b|\/checkout\b|winkelmand|shopping cart|add to cart)/i.test(lower);
+  const hasPortal = /(\/login\b|\/signin\b|client portal|customer portal|mijn account|dashboard)/i.test(lower);
+  const hasExternalBooking = /(treatwell|salonized|fresha|calendly|simplybook|booksy|shore\.com|timify)/i.test(lower);
+  const scriptCount = (html.match(/<script\b/gi) || []).length;
+  const renderingLimited = text.length < 350 && scriptCount >= 4;
+
+  return {
+    has_viewport: hasViewport,
+    has_meta_description: hasDescription,
+    has_h1: hasH1,
+    has_tel: hasTel,
+    has_mailto: hasMailto,
+    has_form: hasForm,
+    has_cta_language: hasCta,
+    has_ecommerce: hasEcommerce,
+    has_portal: hasPortal,
+    has_external_booking: hasExternalBooking,
+    rendering_limited: renderingLimited,
+    visible_text_chars: Math.min(text.length, 100000),
+    script_count: scriptCount
+  };
+}
+
+function buildTriage({ reachable, contentType, finalUrl, html, error, status }) {
+  const checkedAt = new Date().toISOString();
+  const htmlResponse = Boolean(contentType?.toLowerCase().includes('html') && html);
+  const hardGates = {
+    website_reachable: Boolean(reachable),
+    html_response: htmlResponse
+  };
+
+  if (!reachable || !htmlResponse) {
+    return {
+      version: 'discovery-triage-v1',
+      verdict: 'WEAK',
+      checked_at: checkedAt,
+      hard_gates: hardGates,
+      conversion_opportunity: { score: null, evidence: [] },
+      execution_fit: { score: null, evidence: [] },
+      unknown_factors: ['customer_economics', 'existing_demand', 'competitive_context'],
+      evidence: [error || `Website gaf geen bruikbare HTML-response (${status || 'onbekend'}).`]
+    };
+  }
+
+  const signals = htmlSignals(html);
+  if (signals.rendering_limited) {
+    return {
+      version: 'discovery-triage-v1',
+      verdict: 'POSSIBLE',
+      checked_at: checkedAt,
+      hard_gates: hardGates,
+      conversion_opportunity: {
+        score: null,
+        evidence: ['Server-HTML bevat te weinig zichtbare inhoud voor betrouwbare lichte beoordeling.']
+      },
+      execution_fit: {
+        score: signals.has_ecommerce || signals.has_portal ? 2 : 4,
+        evidence: [signals.has_ecommerce || signals.has_portal ? 'Complexe commerce/portal-signalen aangetroffen.' : 'Geen duidelijke complexe commerce/portal-signalen aangetroffen.']
+      },
+      unknown_factors: ['customer_economics', 'existing_demand', 'competitive_context'],
+      signals
+    };
+  }
+
+  const issues = [];
+  if (!signals.has_viewport) issues.push('Geen viewport-meta aangetroffen.');
+  if (!signals.has_meta_description) issues.push('Geen meta description aangetroffen.');
+  if (!signals.has_h1) issues.push('Geen H1 aangetroffen.');
+  if (!signals.has_cta_language) issues.push('Geen duidelijke CTA-taal aangetroffen.');
+  if (!(signals.has_tel || signals.has_mailto || signals.has_form || signals.has_external_booking)) {
+    issues.push('Geen direct contact-, formulier- of boekingspad aangetroffen.');
+  }
+
+  const opportunityScore = issues.length >= 4 ? 5 : issues.length === 3 ? 4 : issues.length === 2 ? 3 : issues.length === 1 ? 2 : 1;
+  let executionScore = 5;
+  const executionEvidence = [];
+  if (signals.has_ecommerce && signals.has_portal) {
+    executionScore = 1;
+    executionEvidence.push('Commerce én portal/login-signalen wijzen op hoge uitvoeringscomplexiteit.');
+  } else if (signals.has_ecommerce || signals.has_portal) {
+    executionScore = 2;
+    executionEvidence.push(signals.has_ecommerce ? 'Commerce-signalen wijzen op integratiecomplexiteit.' : 'Portal/login-signalen wijzen op integratiecomplexiteit.');
+  } else if (signals.has_external_booking) {
+    executionScore = 4;
+    executionEvidence.push('Externe boekingsdienst aangetroffen; doorgaans eenvoudig als link/embeddable flow te behouden.');
+  } else {
+    executionEvidence.push('Geen duidelijke commerce-, portal- of complexe app-signalen aangetroffen.');
+  }
+
+  let verdict = 'POSSIBLE';
+  if (executionScore <= 2 || opportunityScore <= 1) verdict = 'WEAK';
+  else if (opportunityScore >= 3 && executionScore >= 3) verdict = 'STRONG';
+
+  return {
+    version: 'discovery-triage-v1',
+    verdict,
+    checked_at: checkedAt,
+    hard_gates: hardGates,
+    conversion_opportunity: {
+      score: opportunityScore,
+      evidence: issues.length ? issues : ['Basale on-page conversiesignalen zijn aanwezig; lichte preflight ziet weinig evidente frictie.']
+    },
+    execution_fit: {
+      score: executionScore,
+      evidence: executionEvidence
+    },
+    unknown_factors: ['customer_economics', 'existing_demand', 'competitive_context'],
+    evidence: [`HTTP ${status} op ${finalUrl}`],
+    signals
   };
 }
 
@@ -127,12 +260,12 @@ async function fetchWebsite(initialUrl) {
         redirect: 'manual',
         headers: {
           Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5',
-          'User-Agent': 'SolidDesign-Website-Preflight/0.1'
+          'User-Agent': 'SolidDesign-Website-Preflight/0.2'
         },
         signal: AbortSignal.timeout(15000)
       });
     } catch (error) {
-      return {
+      const result = {
         input_url: initialUrl.toString(),
         final_url: url.toString(),
         website_key: websiteKey(url),
@@ -144,6 +277,7 @@ async function fetchWebsite(initialUrl) {
         checked_at: new Date().toISOString(),
         error: `Fetch mislukt: ${error.message || error}`
       };
+      return { ...result, triage: buildTriage({ ...result, finalUrl: result.final_url, contentType: result.content_type, html: '' }) };
     }
 
     if ([301, 302, 303, 307, 308].includes(response.status)) {
@@ -164,7 +298,7 @@ async function fetchWebsite(initialUrl) {
       response.status === 403 ||
       response.status === 429
     );
-    return {
+    const result = {
       input_url: initialUrl.toString(),
       final_url: url.toString(),
       website_key: websiteKey(url),
@@ -176,9 +310,20 @@ async function fetchWebsite(initialUrl) {
       checked_at: new Date().toISOString(),
       error: reachable ? null : `Website gaf HTTP ${response.status}.`
     };
+    return {
+      ...result,
+      triage: buildTriage({
+        reachable,
+        contentType,
+        finalUrl: result.final_url,
+        html,
+        error: result.error,
+        status: response.status
+      })
+    };
   }
 
-  return {
+  const result = {
     input_url: initialUrl.toString(),
     final_url: url.toString(),
     website_key: websiteKey(url),
@@ -190,6 +335,7 @@ async function fetchWebsite(initialUrl) {
     checked_at: new Date().toISOString(),
     error: 'Te veel of ongeldige redirects.'
   };
+  return { ...result, triage: buildTriage({ ...result, finalUrl: result.final_url, contentType: result.content_type, html: '' }) };
 }
 
 export async function onRequestPost(context) {
