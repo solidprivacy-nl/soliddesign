@@ -149,10 +149,14 @@
 .triage-group.disqualified .triage-group-heading strong { color: #8a3a32; }
 .triage-group-list { display: grid; gap: 8px; }
 .triage-candidate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   padding: 15px 16px;
   background: #fffefb;
 }
-.triage-candidate .candidate-main { gap: 7px; }
+.triage-candidate .candidate-main { grid-column: 1; gap: 7px; }
+.triage-candidate .compact-actions { grid-column: 2; }
 .candidate-source { color: #858c88 !important; font-size: 9px !important; }
 .triage-decision {
   display: flex !important;
@@ -188,9 +192,57 @@
 .triage-gates.fail { background: #f5e5e3; color: #8a3a32; border-color: #e7c9c5; }
 .triage-gates.unknown { background: #efefec; color: #69716d; border-color: #dfdfda; }
 .triage-context { color: #8a3a32 !important; max-width: 620px; }
-.candidate-website { order: 2; }
+
+.triage-assessment {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #ebe9e1;
+}
+.triage-assessment.hidden { display: none; }
+.triage-assessment-intro {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 2px;
+}
+.triage-assessment-intro strong { font-size: 12px; }
+.triage-assessment-intro span { color: var(--muted); font-size: 10px; }
+.triage-assessment-section {
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid #ebe9e1;
+  border-radius: 9px;
+  background: #faf9f5;
+}
+.triage-assessment-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.triage-assessment-heading strong { font-size: 11px; }
+.triage-assessment-heading b { font-size: 11px; }
+.triage-assessment-section ul {
+  margin: 0;
+  padding-left: 17px;
+  color: #525b56;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.triage-assessment-section p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
 .promote-prospect, .candidate-reopen { order: 1; }
-.candidate-more { order: 3; position: relative; }
+.candidate-assessment-toggle { order: 2; }
+.candidate-website { order: 3; }
+.candidate-more { order: 4; position: relative; }
 .candidate-more summary {
   list-style: none;
   cursor: pointer;
@@ -227,6 +279,7 @@
   .topbar { flex-wrap: wrap; }
   .main-nav { order: 3; width: 100%; margin-left: 0; }
   .discovery-grid { grid-template-columns: 1fr; }
+  .triage-assessment { grid-template-columns: 1fr; }
 }
 @media (max-width: 700px) {
   .discovery-form { grid-template-columns: 1fr; }
@@ -234,6 +287,9 @@
     align-items: stretch;
     flex-direction: column;
   }
+  .triage-candidate { grid-template-columns: 1fr; }
+  .triage-candidate .candidate-main,
+  .triage-candidate .compact-actions { grid-column: 1; }
   .compact-actions { flex-wrap: wrap; }
   .triage-group-heading { align-items: flex-start; }
   .candidate-more-panel { right: auto; left: 0; }
