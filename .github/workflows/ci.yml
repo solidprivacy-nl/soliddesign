@@ -80,8 +80,8 @@ jobs:
           grep -q 'workers_ai_validated' operator/functions/api/resolve-sector.js
           grep -q '"binding": "AI"' operator/wrangler.jsonc
           grep -q 'discovery-sectors.js' operator/index.html
-          grep -q 'Verbeter met sectorinzichten' operator/index.html
-          grep -q 'Kopieer ChatGPT-start' operator/index.html
+          grep -q 'Kopieer verbeteropdracht met sectorinzichten' operator/index.html
+          grep -q 'Kopieer startinstructie voor ChatGPT' operator/index.html
           grep -q 'copySectorUpgrade' operator/index.html
           grep -q 'sectorUpgradeStart' operator/design-process.js
           grep -q 'Canonical sector key' operator/design-process.js
