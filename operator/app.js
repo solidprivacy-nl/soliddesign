@@ -234,6 +234,60 @@
     return CONTACT_STATUSES.find(([v]) => v === value)?.[1] || value || 'Gekwalificeerd';
   }
 
+  function finiteScore(value) {
+    return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
+  }
+
+  function fullFactorScore(qualification, name) {
+    const factor = qualificationFactors(qualification).find((item) => item.name === name);
+    return finiteScore(factor?.score) ? Number(factor.score) : null;
+  }
+
+  function triageScore(qualification, name) {
+    const value = qualification?.triage?.[name]?.score;
+    return finiteScore(value) ? Number(value) : null;
+  }
+
+  function prospectDecisionSignals(qualification) {
+    const factors = qualificationFactors(qualification);
+    const hasFullQualification = factors.length >= 5 && typeof qualification?.eligible === 'boolean';
+    const triage = qualification?.triage;
+    const opportunity = fullFactorScore(qualification, 'conversion_opportunity') ?? triageScore(qualification, 'conversion_opportunity');
+    const fit = fullFactorScore(qualification, 'execution_fit') ?? triageScore(qualification, 'execution_fit');
+
+    let priority = 'review';
+    if (hasFullQualification) priority = qualification.eligible ? 'recommended' : 'low';
+    else if (triage?.verdict === 'STRONG') priority = 'recommended';
+    else if (triage?.verdict === 'WEAK') priority = 'low';
+
+    const failedFullGates = Array.isArray(qualification?.failed_gates) && qualification.failed_gates.length > 0;
+    const failedTriageGate = Object.values(triage?.hard_gates || {}).some((value) => value === false);
+    return {
+      priority,
+      opportunity,
+      fit,
+      gateProblem: hasFullQualification ? failedFullGates : failedTriageGate
+    };
+  }
+
+  function prospectPriorityLabel(value) {
+    return ({ recommended: 'AANBEVOLEN', review: 'BEOORDELEN', low: 'LAGE PRIORITEIT' })[value] || 'BEOORDELEN';
+  }
+
+  function prospectScoreClass(value) {
+    if (!finiteScore(value)) return 'unknown';
+    if (Number(value) >= 4) return 'good';
+    if (Number(value) >= 2) return 'medium';
+    return 'weak';
+  }
+
+  function prospectScoreChip(label, value) {
+    const chip = document.createElement('span');
+    chip.className = `prospect-signal score ${prospectScoreClass(value)}`;
+    chip.textContent = `${label} ${Number(value)}/5`;
+    return chip;
+  }
+
   function renderList() {
     const rows = filteredProspects();
     el('countText').textContent = `${rows.length} van ${state.prospects.length}`;
@@ -249,12 +303,29 @@
       button.type = 'button';
       const audit = p.audit?.score == null ? '—' : `${p.audit.score}/100`;
       const qual = scoreTotal(p.qualification);
+      const signals = prospectDecisionSignals(p.qualification);
       button.innerHTML = `
         <div class="row-main"><strong></strong><span></span></div>
+        <div class="prospect-signals"></div>
         <div class="row-meta"><span class="pill"></span><span>Website ${audit}</span><span>Kwalificatie ${qual ?? '—'}/25</span></div>`;
       button.querySelector('strong').textContent = p.name;
       button.querySelector('.row-main span').textContent = p.city || '';
       button.querySelector('.pill').textContent = statusLabel(p.contact_status || 'qualified');
+
+      const signalRow = button.querySelector('.prospect-signals');
+      const priority = document.createElement('span');
+      priority.className = `prospect-signal priority ${signals.priority}`;
+      priority.textContent = prospectPriorityLabel(signals.priority);
+      signalRow.appendChild(priority);
+      if (finiteScore(signals.opportunity)) signalRow.appendChild(prospectScoreChip('Verbeterkans', signals.opportunity));
+      if (finiteScore(signals.fit)) signalRow.appendChild(prospectScoreChip('Uitvoerbaarheid', signals.fit));
+      if (signals.gateProblem) {
+        const warning = document.createElement('span');
+        warning.className = 'prospect-signal warning';
+        warning.textContent = '⚠ Basischeck probleem';
+        signalRow.appendChild(warning);
+      }
+
       button.addEventListener('click', () => {
         state.selectedId = p.id;
         renderList();
@@ -628,7 +699,7 @@
   }
 
   function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    return String(value ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   }
 
   function openReport(p) {
