@@ -40,6 +40,10 @@
     return url.toString();
   }
 
+  function sectorUpgradeStart(briefUrl) {
+    return `${START_URL}\n${briefUrl}\n\nSECTOR INTELLIGENCE IMPROVEMENT PASS\nReload the current SolidDesign design context. Open and critique the current LIVE mock-up from the Prospect Design Brief. Load the currently published Sector Intelligence for the Canonical sector key if it exists. Use it only as advisory design evidence. Produce one materially improved next version while preserving verified facts, prospect-specific requirements and conversion intent. Return an HTML or ZIP artifact ready to upload as a new CMS DRAFT. Do not overwrite or promote the current LIVE version automatically.`;
+  }
+
   async function resolveProspect(root) {
     const name = root.querySelector('[data-field="name"]')?.textContent?.trim() || '';
     const website = root.querySelector('[data-field="websiteUrl"]')?.textContent?.trim() || '';
@@ -88,7 +92,7 @@
 
     return `# SolidDesign Prospect Design Brief
 
-**Brief format version:** 0.1  
+**Brief format version:** 0.2  
 **Generated:** ${generatedAt}  
 **Prospect ID:** ${prospect.id}
 
@@ -98,9 +102,12 @@ This document is the customer-specific context for a SolidDesign design project.
 
 - **Name:** ${valueOrUnknown(prospect.name)}
 - **Category:** ${valueOrUnknown(prospect.category)}
+- **Canonical sector key:** ${valueOrUnknown(prospect.category)}
 - **Location:** ${valueOrUnknown(location)}
 - **Current website:** ${valueOrUnknown(prospect.website_url)}
 - **Phone:** ${valueOrUnknown(prospect.phone)}
+
+The Canonical sector key is a machine-facing identity used to locate optional published Sector Intelligence in GitHub. It is not by itself the market-language research query.
 
 ## Verified facts
 
@@ -256,6 +263,22 @@ Do not assume facts that are absent from this brief. In particular, do not inven
           const briefUrlNow = await publishBrief(context);
           await navigator.clipboard.writeText(`${START_URL}\n${briefUrlNow}`);
           setMessage(root, 'Twee project-URL’s gekopieerd. Plak ze in een nieuw gedeeld ChatGPT-project.');
+        } catch (error) {
+          setMessage(root, error.message || String(error), true);
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      root.querySelector('[data-design-action="copySectorUpgrade"]').addEventListener('click', async () => {
+        const button = root.querySelector('[data-design-action="copySectorUpgrade"]');
+        button.disabled = true;
+        setMessage(root, 'Sector Intelligence verbeterstart voorbereiden…');
+        try {
+          await saveMeta(context, root);
+          const briefUrlNow = await publishBrief(context);
+          await navigator.clipboard.writeText(sectorUpgradeStart(briefUrlNow));
+          setMessage(root, 'SI-verbeterstart gekopieerd. Plak hem in het bestaande ChatGPT-project of een nieuwe designchat.');
         } catch (error) {
           setMessage(root, error.message || String(error), true);
         } finally {
