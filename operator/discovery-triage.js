@@ -27,7 +27,7 @@
   }
 
   function verdictLabel(value) {
-    return ({ STRONG: 'STERK', POSSIBLE: 'MOGELIJK', WEAK: 'ZWAK', UNASSESSED: 'NIET BEOORDEELD' })[value] || 'NIET BEOORDEELD';
+    return ({ STRONG: 'STERK', POSSIBLE: 'MOGELIJK', WEAK: 'LAGE PRIORITEIT', UNASSESSED: 'NIET BEOORDEELD' })[value] || 'NIET BEOORDEELD';
   }
 
   function stateLabel(value) {
@@ -64,6 +64,13 @@
     if (values.some((value) => value === false)) return { label: 'Basischeck mislukt', symbol: '✕', css: 'fail' };
     if (values.length && values.every(Boolean)) return { label: 'Basischeck OK', symbol: '✓', css: 'pass' };
     return { label: 'Basischeck —', symbol: '·', css: 'unknown' };
+  }
+
+  function hardGateLabel(key) {
+    return ({
+      website_reachable: 'Website bereikbaar',
+      html_response: 'Bruikbare webpagina ontvangen'
+    })[key] || String(key || '').replaceAll('_', ' ');
   }
 
   async function sessionOrThrow() {
@@ -181,6 +188,109 @@
     return chip;
   }
 
+  function evidenceBlock(title, score, evidence) {
+    const section = document.createElement('section');
+    section.className = 'triage-assessment-section';
+    const heading = document.createElement('div');
+    heading.className = 'triage-assessment-heading';
+    const strong = document.createElement('strong');
+    strong.textContent = title;
+    const value = document.createElement('b');
+    value.textContent = hasScore(score) ? `${Number(score)}/5` : '—';
+    heading.append(strong, value);
+    section.appendChild(heading);
+
+    const items = Array.isArray(evidence) ? evidence.filter(Boolean) : [];
+    if (items.length) {
+      const list = document.createElement('ul');
+      for (const item of items) {
+        const li = document.createElement('li');
+        li.textContent = item;
+        list.appendChild(li);
+      }
+      section.appendChild(list);
+    } else {
+      const empty = document.createElement('p');
+      empty.textContent = 'Geen extra toelichting beschikbaar.';
+      section.appendChild(empty);
+    }
+    return section;
+  }
+
+  function renderAssessment(node, triage) {
+    let panel = node.querySelector('.triage-assessment');
+    if (!triage) {
+      panel?.remove();
+      return null;
+    }
+
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.className = 'triage-assessment hidden';
+      node.appendChild(panel);
+    }
+    panel.replaceChildren();
+
+    const intro = document.createElement('div');
+    intro.className = 'triage-assessment-intro';
+    const title = document.createElement('strong');
+    title.textContent = 'Snelle websitebeoordeling';
+    const note = document.createElement('span');
+    note.textContent = 'Selectiecheck voor Discovery. Het volledige technisch rapport volgt pas nadat het bedrijf aan Prospects is toegevoegd.';
+    intro.append(title, note);
+    panel.appendChild(intro);
+
+    panel.appendChild(evidenceBlock('Verbeterkans', triage.conversion_opportunity?.score, triage.conversion_opportunity?.evidence));
+    panel.appendChild(evidenceBlock('Uitvoerbaarheid', triage.execution_fit?.score, triage.execution_fit?.evidence));
+
+    const gates = document.createElement('section');
+    gates.className = 'triage-assessment-section';
+    const gateHeading = document.createElement('div');
+    gateHeading.className = 'triage-assessment-heading';
+    const gateTitle = document.createElement('strong');
+    gateTitle.textContent = 'Basischeck';
+    gateHeading.appendChild(gateTitle);
+    gates.appendChild(gateHeading);
+    const gateList = document.createElement('ul');
+    const entries = Object.entries(triage.hard_gates || {});
+    if (entries.length) {
+      for (const [key, value] of entries) {
+        const li = document.createElement('li');
+        const symbol = value === true ? '✓' : value === false ? '✕' : '·';
+        li.textContent = `${symbol} ${hardGateLabel(key)}`;
+        gateList.appendChild(li);
+      }
+    } else {
+      const li = document.createElement('li');
+      li.textContent = '· Geen basischeck beschikbaar.';
+      gateList.appendChild(li);
+    }
+    gates.appendChild(gateList);
+    panel.appendChild(gates);
+
+    const generalEvidence = Array.isArray(triage.evidence) ? triage.evidence.filter(Boolean) : [];
+    if (generalEvidence.length) {
+      const context = document.createElement('section');
+      context.className = 'triage-assessment-section';
+      const contextHeading = document.createElement('div');
+      contextHeading.className = 'triage-assessment-heading';
+      const contextTitle = document.createElement('strong');
+      contextTitle.textContent = 'Controle';
+      contextHeading.appendChild(contextTitle);
+      context.appendChild(contextHeading);
+      const list = document.createElement('ul');
+      for (const item of generalEvidence) {
+        const li = document.createElement('li');
+        li.textContent = item;
+        list.appendChild(li);
+      }
+      context.appendChild(list);
+      panel.appendChild(context);
+    }
+
+    return panel;
+  }
+
   function arrangeActions(node, row) {
     const actions = node.querySelector('.compact-actions');
     if (!actions || actions.dataset.arranged === 'true') return;
@@ -217,6 +327,22 @@
       primary.textContent = 'Opnieuw beoordelen';
     }
 
+    let assessmentButton = null;
+    const assessment = node.querySelector('.triage-assessment');
+    if (assessment) {
+      assessmentButton = document.createElement('button');
+      assessmentButton.type = 'button';
+      assessmentButton.className = 'secondary candidate-assessment-toggle';
+      assessmentButton.textContent = 'Bekijk beoordeling';
+      assessmentButton.setAttribute('aria-expanded', 'false');
+      assessmentButton.addEventListener('click', () => {
+        const opening = assessment.classList.contains('hidden');
+        assessment.classList.toggle('hidden', !opening);
+        assessmentButton.setAttribute('aria-expanded', String(opening));
+        assessmentButton.textContent = opening ? 'Sluit beoordeling' : 'Bekijk beoordeling';
+      });
+    }
+
     const menu = document.createElement('details');
     menu.className = 'candidate-more';
     const summary = document.createElement('summary');
@@ -232,6 +358,7 @@
 
     actions.replaceChildren();
     if (primary) actions.appendChild(primary);
+    if (assessmentButton) actions.appendChild(assessmentButton);
     if (website) actions.appendChild(website);
     if (panel.children.length) actions.appendChild(menu);
   }
@@ -260,6 +387,7 @@
       verdict.className = 'triage-verdict unassessed';
       verdict.textContent = 'BEOORDELING LOOPT';
       decision.appendChild(verdict);
+      renderAssessment(node, null);
       arrangeActions(node, row);
       return;
     }
@@ -290,6 +418,7 @@
       context?.remove();
     }
 
+    renderAssessment(node, triage);
     arrangeActions(node, row);
   }
 
