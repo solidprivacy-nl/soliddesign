@@ -40,6 +40,7 @@ jobs:
           node --check operator/app.js
           node --check operator/design-process.js
           node --check operator/discovery-sectors.js
+          node --check operator/discovery-triage.js
           node --check operator/discovery.js
           node --check operator/functions/api/geocode.js
           node --check operator/functions/api/site-check.js
@@ -50,16 +51,23 @@ jobs:
           test -s operator/discovery.css
           test -s operator/wrangler.jsonc
           test -s docs/DISCOVERY_SECTOR_RESOLUTION.md
+          test -s docs/DISCOVERY_TRIAGE.md
           test -s supabase/migrations/20260826_discovery_archive_v01.sql
+          test -s supabase/migrations/20260827_discovery_triage_v01.sql
           test -s prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'noindex,nofollow,noarchive' operator/index.html
           grep -q 'noindex,nofollow,noarchive' operator/start-design.html
           grep -q 'supabasePublishableKey' operator/config.js
           grep -q 'prompts/SOLIDDESIGN_BOOTSTRAP.md' operator/start-design.html
           grep -q 'operator_ingest_discovery_candidates' supabase/migrations/20260826_discovery_archive_v01.sql
+          grep -q 'operator_promote_discovery_candidate' supabase/migrations/20260827_discovery_triage_v01.sql
+          grep -q 'operator_set_discovery_triage' supabase/migrations/20260827_discovery_triage_v01.sql
           grep -q "stukadoor: \['plasterer'\]" operator/discovery-sectors.js
           grep -q "bakker: \['bakery'\]" operator/discovery-sectors.js
           grep -q '/api/resolve-sector' operator/discovery-sectors.js
+          grep -q 'discovery-triage.js' operator/discovery-sectors.js
+          grep -q 'discovery-triage-v1' operator/functions/api/site-check.js
+          grep -q 'Naar prospects' operator/discovery-triage.js
           grep -q 'overture_categories.csv' operator/functions/api/resolve-sector.js
           grep -q 'workers_ai_validated' operator/functions/api/resolve-sector.js
           grep -q '"binding": "AI"' operator/wrangler.jsonc
