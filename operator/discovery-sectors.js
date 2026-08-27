@@ -148,4 +148,10 @@
 
   window.SOLIDDESIGN_DISCOVERY_SECTORS = SECTORS;
   window.SOLIDDESIGN_RESOLVE_DISCOVERY_SECTORS = resolveKnown;
+
+  // Keep the main discovery module unchanged: triage is a thin enhancement layer.
+  const triageScript = document.createElement('script');
+  triageScript.src = './discovery-triage.js';
+  triageScript.defer = true;
+  document.head.appendChild(triageScript);
 })();
