@@ -9,8 +9,8 @@
   const GROUPS = Object.freeze([
     { key: 'recommended', label: 'AANBEVOLEN', hint: 'Sterke kandidaten om als eerste te beoordelen.' },
     { key: 'review', label: 'BEOORDELEN', hint: 'Mogelijke kandidaten of nog niet volledig beoordeeld.' },
-    { key: 'low', label: 'LAGE PRIORITEIT', hint: 'Weinig zichtbare opportunity of beperkte execution fit.' },
-    { key: 'disqualified', label: 'GEDISKWALIFICEERD', hint: 'Kandidaten met een objectieve uitsluiting.' }
+    { key: 'low', label: 'LAGE PRIORITEIT', hint: 'Weinig zichtbare verbeterkans of minder eenvoudig overtuigend te verbeteren.' },
+    { key: 'disqualified', label: 'AFGEWEZEN', hint: 'Kandidaten die niet door de basiscontrole kwamen.' }
   ]);
 
   let decorateTimer = null;
@@ -28,6 +28,10 @@
 
   function verdictLabel(value) {
     return ({ STRONG: 'STERK', POSSIBLE: 'MOGELIJK', WEAK: 'ZWAK', UNASSESSED: 'NIET BEOORDEELD' })[value] || 'NIET BEOORDEELD';
+  }
+
+  function stateLabel(value) {
+    return ({ DISCOVERED: 'Gevonden', DISQUALIFIED: 'Afgewezen' })[value] || value || '—';
   }
 
   function hasScore(value) {
@@ -57,14 +61,14 @@
 
   function gateState(triage) {
     const values = Object.values(triage?.hard_gates || {});
-    if (values.some((value) => value === false)) return { label: 'Gates FAIL', symbol: '✕', css: 'fail' };
-    if (values.length && values.every(Boolean)) return { label: 'Gates PASS', symbol: '✓', css: 'pass' };
-    return { label: 'Gates —', symbol: '·', css: 'unknown' };
+    if (values.some((value) => value === false)) return { label: 'Basischeck mislukt', symbol: '✕', css: 'fail' };
+    if (values.length && values.every(Boolean)) return { label: 'Basischeck OK', symbol: '✓', css: 'pass' };
+    return { label: 'Basischeck —', symbol: '·', css: 'unknown' };
   }
 
   async function sessionOrThrow() {
     const { data: { session } } = await db.auth.getSession();
-    if (!session?.access_token) throw new Error('Log opnieuw in om Discovery te beoordelen.');
+    if (!session?.access_token) throw new Error('Log opnieuw in om gevonden bedrijven te beoordelen.');
     return session;
   }
 
@@ -131,7 +135,7 @@
           conversion_opportunity: { score: null, evidence: [] },
           execution_fit: { score: null, evidence: [] },
           unknown_factors: ['customer_economics', 'existing_demand', 'competitive_context'],
-          evidence: [`Automatische triage niet beschikbaar: ${error.message || error}`]
+          evidence: [`Automatische beoordeling niet beschikbaar: ${error.message || error}`]
         };
       }
 
@@ -193,12 +197,12 @@
       primary.type = 'button';
       primary.className = 'primary promote-prospect';
       primary.dataset.triageAction = 'promote';
-      primary.textContent = 'Naar prospects';
+      primary.textContent = 'Voeg toe aan Prospects';
       primary.addEventListener('click', async () => {
         primary.disabled = true;
         try {
           const changed = await rpc('operator_promote_discovery_candidate', { p_id: row.id });
-          if (!changed) throw new Error('Kandidaat kon niet naar Prospects worden gezet.');
+          if (!changed) throw new Error('Bedrijf kon niet aan Prospects worden toegevoegd.');
           document.getElementById('refreshDiscoveryBtn')?.click();
           document.getElementById('refreshBtn')?.click();
         } catch (error) {
@@ -206,9 +210,11 @@
           primary.disabled = false;
         }
       });
+      if (stateButton) stateButton.textContent = 'Afwijzen';
     } else if (stateButton) {
       primary = stateButton;
       primary.className = 'secondary candidate-reopen';
+      primary.textContent = 'Opnieuw beoordelen';
     }
 
     const menu = document.createElement('details');
@@ -239,7 +245,7 @@
     node.classList.add('triage-candidate');
     node.dataset.group = groupKey(row);
     meta.className = 'candidate-source';
-    meta.textContent = `${row.state} · ${row.discovery_source || '—'}`;
+    meta.textContent = `${stateLabel(row.state)} · ${row.discovery_source || '—'}`;
 
     let decision = main.querySelector('.triage-decision');
     if (!decision) {
@@ -261,7 +267,7 @@
     const verdict = document.createElement('span');
     const verdictCss = row.state === 'DISQUALIFIED' ? 'disqualified' : String(triage.verdict || 'UNASSESSED').toLowerCase();
     verdict.className = `triage-verdict ${verdictCss}`;
-    verdict.textContent = row.state === 'DISQUALIFIED' ? 'GEDISKWALIFICEERD' : verdictLabel(triage.verdict);
+    verdict.textContent = row.state === 'DISQUALIFIED' ? 'AFGEWEZEN' : verdictLabel(triage.verdict);
 
     const opportunity = triage.conversion_opportunity?.score;
     const fit = triage.execution_fit?.score;
@@ -270,7 +276,7 @@
     gateChip.className = `triage-gates ${gates.css}`;
     gateChip.textContent = `${gates.symbol} ${gates.label}`;
 
-    decision.append(verdict, scoreChip('Opportunity', opportunity), scoreChip('Fit', fit), gateChip);
+    decision.append(verdict, scoreChip('Verbeterkans', opportunity), scoreChip('Uitvoerbaarheid', fit), gateChip);
 
     let context = main.querySelector('.triage-context');
     if (triage.verdict === 'UNASSESSED') {
