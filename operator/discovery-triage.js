@@ -6,7 +6,15 @@
 
   const db = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
   const inFlight = new Set();
+  const GROUPS = Object.freeze([
+    { key: 'recommended', label: 'AANBEVOLEN', hint: 'Sterke kandidaten om als eerste te beoordelen.' },
+    { key: 'review', label: 'BEOORDELEN', hint: 'Mogelijke kandidaten of nog niet volledig beoordeeld.' },
+    { key: 'low', label: 'LAGE PRIORITEIT', hint: 'Weinig zichtbare opportunity of beperkte execution fit.' },
+    { key: 'disqualified', label: 'GEDISKWALIFICEERD', hint: 'Kandidaten met een objectieve uitsluiting.' }
+  ]);
+
   let decorateTimer = null;
+  let candidateObserver = null;
 
   function normalizeUrl(value) {
     try {
@@ -20,6 +28,34 @@
 
   function verdictLabel(value) {
     return ({ STRONG: 'STERK', POSSIBLE: 'MOGELIJK', WEAK: 'ZWAK', UNASSESSED: 'NIET BEOORDEELD' })[value] || 'NIET BEOORDEELD';
+  }
+
+  function groupKey(row) {
+    if (row.state === 'DISQUALIFIED') return 'disqualified';
+    const verdict = row.qualification?.triage?.verdict;
+    if (verdict === 'STRONG') return 'recommended';
+    if (verdict === 'WEAK') return 'low';
+    return 'review';
+  }
+
+  function scoreValue(row, key) {
+    const value = row.qualification?.triage?.[key]?.score;
+    return Number.isFinite(Number(value)) ? Number(value) : -1;
+  }
+
+  function scoreClass(value) {
+    if (!Number.isFinite(Number(value))) return 'unknown';
+    const score = Number(value);
+    if (score >= 4) return 'good';
+    if (score >= 2) return 'medium';
+    return 'weak';
+  }
+
+  function gateState(triage) {
+    const values = Object.values(triage?.hard_gates || {});
+    if (values.some((value) => value === false)) return { label: 'Gates FAIL', symbol: '✕', css: 'fail' };
+    if (values.length && values.every(Boolean)) return { label: 'Gates PASS', symbol: '✓', css: 'pass' };
+    return { label: 'Gates —', symbol: '·', css: 'unknown' };
   }
 
   async function sessionOrThrow() {
@@ -121,13 +157,73 @@
     return true;
   }
 
-  function rowByWebsite() {
+  function rowByWebsite(container) {
     const map = new Map();
-    document.querySelectorAll('#discoveryCandidates .candidate-row').forEach((node) => {
+    container.querySelectorAll('.candidate-row').forEach((node) => {
       const href = node.querySelector('a[href]')?.href;
       if (href) map.set(normalizeUrl(href), node);
     });
     return map;
+  }
+
+  function scoreChip(label, score) {
+    const chip = document.createElement('span');
+    chip.className = `triage-score ${scoreClass(score)}`;
+    chip.innerHTML = `<span>${label}</span><strong>${Number.isFinite(Number(score)) ? `${Number(score)}/5` : '—'}</strong>`;
+    return chip;
+  }
+
+  function arrangeActions(node, row) {
+    const actions = node.querySelector('.compact-actions');
+    if (!actions || actions.dataset.arranged === 'true') return;
+    actions.dataset.arranged = 'true';
+
+    const website = actions.querySelector('a[href]');
+    const stateButton = actions.querySelector('[data-action="reject"], [data-action="reopen"]');
+    const deleteButton = actions.querySelector('[data-action="delete"]');
+    if (website) website.classList.add('candidate-website');
+
+    let primary = null;
+    if (row.state === 'DISCOVERED') {
+      primary = document.createElement('button');
+      primary.type = 'button';
+      primary.className = 'primary promote-prospect';
+      primary.dataset.triageAction = 'promote';
+      primary.textContent = 'Naar prospects';
+      primary.addEventListener('click', async () => {
+        primary.disabled = true;
+        try {
+          const changed = await rpc('operator_promote_discovery_candidate', { p_id: row.id });
+          if (!changed) throw new Error('Kandidaat kon niet naar Prospects worden gezet.');
+          document.getElementById('refreshDiscoveryBtn')?.click();
+          document.getElementById('refreshBtn')?.click();
+        } catch (error) {
+          window.alert(error.message || String(error));
+          primary.disabled = false;
+        }
+      });
+    } else if (stateButton) {
+      primary = stateButton;
+      primary.className = 'secondary candidate-reopen';
+    }
+
+    const menu = document.createElement('details');
+    menu.className = 'candidate-more';
+    const summary = document.createElement('summary');
+    summary.setAttribute('aria-label', 'Meer acties');
+    summary.title = 'Meer acties';
+    summary.textContent = '•••';
+    const panel = document.createElement('div');
+    panel.className = 'candidate-more-panel';
+
+    if (row.state === 'DISCOVERED' && stateButton) panel.appendChild(stateButton);
+    if (deleteButton) panel.appendChild(deleteButton);
+    menu.append(summary, panel);
+
+    actions.replaceChildren();
+    if (primary) actions.appendChild(primary);
+    if (website) actions.appendChild(website);
+    if (panel.children.length) actions.appendChild(menu);
   }
 
   function decorateRow(node, row) {
@@ -136,53 +232,102 @@
     const meta = main?.querySelector('small');
     if (!main || !meta) return;
 
+    node.classList.add('triage-candidate');
+    node.dataset.group = groupKey(row);
+    meta.className = 'candidate-source';
+    meta.textContent = `${row.state} · ${row.discovery_source || '—'}`;
+
+    let decision = main.querySelector('.triage-decision');
+    if (!decision) {
+      decision = document.createElement('div');
+      decision.className = 'triage-decision';
+      meta.before(decision);
+    }
+    decision.replaceChildren();
+
     if (!triage) {
-      meta.textContent = `${row.state} · ${row.discovery_source || '—'} · beoordeling loopt…`;
+      const verdict = document.createElement('span');
+      verdict.className = 'triage-verdict unassessed';
+      verdict.textContent = 'BEOORDELING LOOPT';
+      decision.appendChild(verdict);
+      arrangeActions(node, row);
       return;
     }
 
+    const verdict = document.createElement('span');
+    const verdictCss = row.state === 'DISQUALIFIED' ? 'disqualified' : String(triage.verdict || 'UNASSESSED').toLowerCase();
+    verdict.className = `triage-verdict ${verdictCss}`;
+    verdict.textContent = row.state === 'DISQUALIFIED' ? 'GEDISKWALIFICEERD' : verdictLabel(triage.verdict);
+
     const opportunity = triage.conversion_opportunity?.score;
     const fit = triage.execution_fit?.score;
-    const gateValues = Object.values(triage.hard_gates || {});
-    const gates = gateValues.length && gateValues.every(Boolean) ? 'gates PASS' : gateValues.some((value) => value === false) ? 'gates FAIL' : 'gates —';
-    meta.textContent = `${row.state} · ${row.discovery_source || '—'} · TRIAGE ${verdictLabel(triage.verdict)} · Opportunity ${Number.isFinite(Number(opportunity)) ? `${opportunity}/5` : '—'} · Fit ${Number.isFinite(Number(fit)) ? `${fit}/5` : '—'} · ${gates}`;
+    const gates = gateState(triage);
+    const gateChip = document.createElement('span');
+    gateChip.className = `triage-gates ${gates.css}`;
+    gateChip.textContent = `${gates.symbol} ${gates.label}`;
+
+    decision.append(verdict, scoreChip('Opportunity', opportunity), scoreChip('Fit', fit), gateChip);
 
     let context = main.querySelector('.triage-context');
-    if (!context) {
-      context = document.createElement('small');
-      context.className = 'triage-context';
-      main.appendChild(context);
-    }
-    context.textContent = triage.verdict === 'UNASSESSED'
-      ? (triage.evidence?.[0] || 'Automatische beoordeling niet beschikbaar.')
-      : 'Customer economics, demand en competitive context worden pas verdiept nadat je de kandidaat naar Prospects zet.';
-
-    const actions = node.querySelector('.compact-actions');
-    if (!actions || row.state !== 'DISCOVERED' || actions.querySelector('[data-triage-action="promote"]')) return;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'primary promote-prospect';
-    button.dataset.triageAction = 'promote';
-    button.textContent = 'Naar prospects';
-    button.addEventListener('click', async () => {
-      button.disabled = true;
-      try {
-        const changed = await rpc('operator_promote_discovery_candidate', { p_id: row.id });
-        if (!changed) throw new Error('Kandidaat kon niet naar Prospects worden gezet.');
-        document.getElementById('refreshDiscoveryBtn')?.click();
-        document.getElementById('refreshBtn')?.click();
-      } catch (error) {
-        window.alert(error.message || String(error));
-        button.disabled = false;
+    if (triage.verdict === 'UNASSESSED') {
+      if (!context) {
+        context = document.createElement('small');
+        context.className = 'triage-context';
+        main.appendChild(context);
       }
-    });
-    const stateButton = actions.querySelector('[data-action="reject"], [data-action="reopen"]');
-    actions.insertBefore(button, stateButton || actions.querySelector('.danger'));
+      context.textContent = triage.evidence?.[0] || 'Automatische beoordeling niet beschikbaar.';
+    } else {
+      context?.remove();
+    }
+
+    arrangeActions(node, row);
+  }
+
+  function renderGroups(container, rows) {
+    const nodes = rowByWebsite(container);
+    if (!nodes.size) return;
+
+    const grouped = new Map(GROUPS.map((group) => [group.key, []]));
+    for (const row of rows) {
+      const node = nodes.get(normalizeUrl(row.website_url));
+      if (!node) continue;
+      grouped.get(groupKey(row))?.push({ row, node });
+    }
+
+    const fragment = document.createDocumentFragment();
+    for (const group of GROUPS) {
+      const items = grouped.get(group.key) || [];
+      if (!items.length) continue;
+
+      items.sort((a, b) => {
+        const opportunityDelta = scoreValue(b.row, 'conversion_opportunity') - scoreValue(a.row, 'conversion_opportunity');
+        if (opportunityDelta) return opportunityDelta;
+        const fitDelta = scoreValue(b.row, 'execution_fit') - scoreValue(a.row, 'execution_fit');
+        if (fitDelta) return fitDelta;
+        return String(a.row.name || '').localeCompare(String(b.row.name || ''), 'nl');
+      });
+
+      const section = document.createElement('section');
+      section.className = `triage-group ${group.key}`;
+      const heading = document.createElement('div');
+      heading.className = 'triage-group-heading';
+      heading.innerHTML = `<div><strong>${group.label}</strong><span>${group.hint}</span></div><b>${items.length}</b>`;
+      const list = document.createElement('div');
+      list.className = 'triage-group-list';
+      for (const item of items) list.appendChild(item.node);
+      section.append(heading, list);
+      fragment.appendChild(section);
+    }
+
+    candidateObserver?.disconnect();
+    container.replaceChildren(fragment);
+    candidateObserver?.observe(container, { childList: true, subtree: true });
   }
 
   async function decorateAndTriage() {
     const container = document.getElementById('discoveryCandidates');
     if (!container || container.closest('.hidden')) return;
+
     let rows;
     try {
       rows = await loadCandidates();
@@ -190,11 +335,12 @@
       return;
     }
 
-    const map = rowByWebsite();
+    const map = rowByWebsite(container);
     for (const row of rows) {
       const node = map.get(normalizeUrl(row.website_url));
       if (node) decorateRow(node, row);
     }
+    renderGroups(container, rows);
 
     try {
       const changed = await triageMissing(rows);
@@ -210,7 +356,10 @@
   }
 
   const container = document.getElementById('discoveryCandidates');
-  if (container) new MutationObserver(scheduleDecorate).observe(container, { childList: true, subtree: true });
+  if (container) {
+    candidateObserver = new MutationObserver(scheduleDecorate);
+    candidateObserver.observe(container, { childList: true, subtree: true });
+  }
   document.getElementById('discoveryNav')?.addEventListener('click', scheduleDecorate);
   document.getElementById('refreshDiscoveryBtn')?.addEventListener('click', scheduleDecorate);
   scheduleDecorate();
