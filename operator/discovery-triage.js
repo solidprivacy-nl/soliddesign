@@ -30,6 +30,10 @@
     return ({ STRONG: 'STERK', POSSIBLE: 'MOGELIJK', WEAK: 'ZWAK', UNASSESSED: 'NIET BEOORDEELD' })[value] || 'NIET BEOORDEELD';
   }
 
+  function hasScore(value) {
+    return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
+  }
+
   function groupKey(row) {
     if (row.state === 'DISQUALIFIED') return 'disqualified';
     const verdict = row.qualification?.triage?.verdict;
@@ -40,11 +44,11 @@
 
   function scoreValue(row, key) {
     const value = row.qualification?.triage?.[key]?.score;
-    return Number.isFinite(Number(value)) ? Number(value) : -1;
+    return hasScore(value) ? Number(value) : -1;
   }
 
   function scoreClass(value) {
-    if (!Number.isFinite(Number(value))) return 'unknown';
+    if (!hasScore(value)) return 'unknown';
     const score = Number(value);
     if (score >= 4) return 'good';
     if (score >= 2) return 'medium';
@@ -169,7 +173,7 @@
   function scoreChip(label, score) {
     const chip = document.createElement('span');
     chip.className = `triage-score ${scoreClass(score)}`;
-    chip.innerHTML = `<span>${label}</span><strong>${Number.isFinite(Number(score)) ? `${Number(score)}/5` : '—'}</strong>`;
+    chip.innerHTML = `<span>${label}</span><strong>${hasScore(score) ? `${Number(score)}/5` : '—'}</strong>`;
     return chip;
   }
 
