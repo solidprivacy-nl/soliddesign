@@ -43,10 +43,13 @@ jobs:
           node --check operator/discovery.js
           node --check operator/functions/api/geocode.js
           node --check operator/functions/api/site-check.js
+          node --check operator/functions/api/resolve-sector.js
           test -s operator/index.html
           test -s operator/start-design.html
           test -s operator/config.js
           test -s operator/discovery.css
+          test -s operator/wrangler.jsonc
+          test -s docs/DISCOVERY_SECTOR_RESOLUTION.md
           test -s supabase/migrations/20260826_discovery_archive_v01.sql
           test -s prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'noindex,nofollow,noarchive' operator/index.html
@@ -56,6 +59,10 @@ jobs:
           grep -q 'operator_ingest_discovery_candidates' supabase/migrations/20260826_discovery_archive_v01.sql
           grep -q "stukadoor: \['plasterer'\]" operator/discovery-sectors.js
           grep -q "bakker: \['bakery'\]" operator/discovery-sectors.js
+          grep -q '/api/resolve-sector' operator/discovery-sectors.js
+          grep -q 'overture_categories.csv' operator/functions/api/resolve-sector.js
+          grep -q 'workers_ai_validated' operator/functions/api/resolve-sector.js
+          grep -q '"binding": "AI"' operator/wrangler.jsonc
           grep -q 'discovery-sectors.js' operator/index.html
           ! grep -R -E 'SUPABASE_(SERVICE_ROLE|SECRET)_KEY|service_role' operator/ --exclude=README.md
       - name: Operator Pages Function
