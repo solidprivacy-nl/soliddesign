@@ -85,36 +85,40 @@ No multi-source framework is built in advance.
 
 See `docs/evidence/GATE2_OVERTURE_UTRECHT.md`.
 
-## Gate 3 — Five-prospect operational feasibility ← CURRENT
+## Gate 3 — Five-prospect operational feasibility ✅
 
 **Question:** can we repeatedly produce excellent prospect packs?
 
-Run five real prospects through the same path without broadening the architecture.
+Closed on 2026-08-25.
 
-Measure:
+Five real prospects were selected from the Overture candidate universe using independent demand evidence plus human root-cause review. Raw Pitch Doctor score was not used as an automatic qualification decision; several low-scoring sites were rejected because their real current website was already materially stronger or the audit was unreliable.
 
-- Overture query/runtime effort;
-- raw candidates;
-- valid-record rate;
-- stale/incorrect/duplicate rate on the working shortlist;
-- website/reachability yield;
-- audit time;
-- human selection minutes;
-- demo generation minutes;
-- manual correction minutes;
-- print-pack minutes;
-- failure/retry rate;
-- total cost per qualified prospect.
+Final proof:
 
-Also record which steps actually required human judgment versus deterministic processing. Automate only observed repeated friction.
+- 5 qualified prospects;
+- qualification scores: 24, 21, 23, 21 and 23 out of 25;
+- all 5 premium-v1 concepts assembled successfully;
+- all 5 passed `noindex`, no-form and no-gradient safety checks;
+- all 5 returned zero Impeccable findings;
+- desktop and mobile proof screenshots completed;
+- one existing Cloudflare Pages project / one static deployment tree used;
+- all 5 opaque live preview paths verified HTTP 200;
+- total deterministic concept assembly time: 0.564 seconds;
+- no recurring technical blocker required new architecture.
 
-Do not interpret five mailings as business validation.
+Human selection/research/root-cause review remains the meaningful labour component. No fabricated human-time metric is recorded where a reliable measurement was not captured.
 
-**Exit condition:** five prospect packs can be produced safely and consistently with measured effort/cost and no unresolved recurring technical blocker.
+Repeated design observation: the five concepts are visually homogeneous when viewed side by side. This is recorded as a limitation, not as justification for a template catalogue or second builder. Commercial evidence must show that more variation matters before adding a second deterministic composition.
 
-## Gate 4 — 30–50 physical-mail offer validation
+See `docs/evidence/GATE3_FIVE_PROSPECT_RUN.md`.
 
-**Question:** do prospects pay attention and respond?
+## Gate 4 — 30–50 physical-mail offer validation ← CURRENT
+
+**Question:** do qualified prospects pay attention and respond?
+
+This is now the primary uncertainty. Do not add architecture before measuring it.
+
+Start with the five already-qualified Gate-3 prospects as the first bounded outbound batch, then expand toward 30–50 only after the physical-mail/follow-up workflow is operationally clear.
 
 Measure:
 
@@ -132,7 +136,18 @@ Discovery-source quality must also be tracked:
 raw → valid → audited → qualified → mailed → responded
 ```
 
-This lets us detect whether poor outcomes come from source quality or offer quality.
+This lets us detect whether poor outcomes come from source quality, qualification quality, offer quality or execution.
+
+Gate-4 guardrails:
+
+- physical direct mail remains human-approved;
+- human sales follow-up remains human-executed;
+- no autonomous outbound;
+- no new queue, CRM, orchestration layer or dashboard unless repeated measured friction requires it;
+- use the existing previews and print-pack path first;
+- record outcomes before changing qualification weights or design architecture.
+
+**Exit condition:** enough mailed prospects and follow-up outcomes exist to estimate whether the offer gets attention and creates qualified conversations. Five mailings alone are an operational first batch, not business validation.
 
 ## Gate 5 — Pricing / first customer
 
