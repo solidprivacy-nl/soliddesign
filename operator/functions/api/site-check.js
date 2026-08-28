@@ -3,6 +3,17 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_fRXRtDIHJ98LIN3cfQHtpA_WJ0yPPRh
 const MAX_REQUEST_BYTES = 4096;
 const MAX_RESPONSE_BYTES = 262144;
 const MAX_REDIRECTS = 5;
+const LINKHUB_HOSTS = new Set([
+  'linktr.ee',
+  'beacons.ai',
+  'bio.link',
+  'linkin.bio',
+  'solo.to',
+  'campsite.bio',
+  'hoo.be',
+  'lnk.bio',
+  'taplink.cc'
+]);
 
 async function authorize(request) {
   const authorization = request.headers.get('Authorization') || '';
@@ -73,6 +84,18 @@ function normalizeUrl(value) {
 
 function websiteKey(url) {
   return url.hostname.toLowerCase().replace(/^www\./, '');
+}
+
+function siteKindFromUrl(value) {
+  try {
+    const host = new URL(value).hostname.toLowerCase().replace(/^www\./, '');
+    for (const candidate of LINKHUB_HOSTS) {
+      if (host === candidate || host.endsWith(`.${candidate}`)) return 'LINKHUB';
+    }
+    return 'STANDALONE';
+  } catch {
+    return 'UNKNOWN';
+  }
 }
 
 async function readBoundedText(response) {
@@ -164,6 +187,7 @@ function htmlSignals(html) {
 function buildTriage({ reachable, contentType, finalUrl, html, error, status }) {
   const checkedAt = new Date().toISOString();
   const htmlResponse = Boolean(contentType?.toLowerCase().includes('html') && html);
+  const siteKind = siteKindFromUrl(finalUrl);
   const hardGates = {
     website_reachable: Boolean(reachable),
     html_response: htmlResponse
@@ -173,6 +197,7 @@ function buildTriage({ reachable, contentType, finalUrl, html, error, status }) 
     return {
       version: 'discovery-triage-v1',
       verdict: 'WEAK',
+      site_kind: siteKind,
       checked_at: checkedAt,
       hard_gates: hardGates,
       conversion_opportunity: { score: null, evidence: [] },
@@ -183,10 +208,35 @@ function buildTriage({ reachable, contentType, finalUrl, html, error, status }) 
   }
 
   const signals = htmlSignals(html);
+  if (siteKind === 'LINKHUB') {
+    return {
+      version: 'discovery-triage-v1',
+      verdict: 'STRONG',
+      site_kind: 'LINKHUB',
+      checked_at: checkedAt,
+      hard_gates: hardGates,
+      conversion_opportunity: {
+        score: 5,
+        evidence: ['Alleen een linkhub aangetroffen; geen zelfstandige bedrijfswebsite gevonden.']
+      },
+      execution_fit: {
+        score: 4,
+        evidence: ['Een compacte zelfstandige website kan de bestaande externe links en boekingsroute hergebruiken zonder complex platformwerk.']
+      },
+      unknown_factors: ['customer_economics', 'existing_demand', 'competitive_context'],
+      evidence: [
+        `HTTP ${status} op ${finalUrl}`,
+        'De linkhub wordt als distributie-/doorverwijspagina beoordeeld en niet alsof dit de eigen website van de prospect is.'
+      ],
+      signals
+    };
+  }
+
   if (signals.rendering_limited) {
     return {
       version: 'discovery-triage-v1',
       verdict: 'POSSIBLE',
+      site_kind: 'STANDALONE',
       checked_at: checkedAt,
       hard_gates: hardGates,
       conversion_opportunity: {
@@ -234,6 +284,7 @@ function buildTriage({ reachable, contentType, finalUrl, html, error, status }) 
   return {
     version: 'discovery-triage-v1',
     verdict,
+    site_kind: 'STANDALONE',
     checked_at: checkedAt,
     hard_gates: hardGates,
     conversion_opportunity: {
@@ -260,7 +311,7 @@ async function fetchWebsite(initialUrl) {
         redirect: 'manual',
         headers: {
           Accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5',
-          'User-Agent': 'SolidDesign-Website-Preflight/0.2'
+          'User-Agent': 'SolidDesign-Website-Preflight/0.3'
         },
         signal: AbortSignal.timeout(15000)
       });
@@ -269,6 +320,7 @@ async function fetchWebsite(initialUrl) {
         input_url: initialUrl.toString(),
         final_url: url.toString(),
         website_key: websiteKey(url),
+        site_kind: siteKindFromUrl(url.toString()),
         status: null,
         reachable: false,
         title: null,
@@ -302,6 +354,7 @@ async function fetchWebsite(initialUrl) {
       input_url: initialUrl.toString(),
       final_url: url.toString(),
       website_key: websiteKey(url),
+      site_kind: siteKindFromUrl(url.toString()),
       status: response.status,
       reachable,
       title: meta.title,
@@ -327,6 +380,7 @@ async function fetchWebsite(initialUrl) {
     input_url: initialUrl.toString(),
     final_url: url.toString(),
     website_key: websiteKey(url),
+    site_kind: siteKindFromUrl(url.toString()),
     status: null,
     reachable: false,
     title: null,
