@@ -160,3 +160,79 @@ High. Sector Intelligence is Markdown and the CMS addition is a thin launch acti
 Adopt. The deterministic automatic baseline remains unchanged. Sector Intelligence enriches the ChatGPT design/refinement layer. If Sector Intelligence exists before design refinement, it is used immediately; if it arrives later, the CMS can launch one SI-informed improvement pass that returns a new DRAFT for normal review and LIVE promotion.
 
 Canonical method: `sector-intelligence/README.md`.
+
+## ADR-016 — Operators do not need GitHub access for Sector Intelligence
+
+**Date:** 2026-08-28
+
+**Supersedes:** only the operator publication mechanism in ADR-015. ADR-015 remains authoritative for the purpose, storage model and design use of Sector Intelligence.
+
+### Problem
+
+Sector Intelligence was the only normal CMS function that required an operator to connect a personal ChatGPT account to GitHub. That breaks an otherwise clean separation between operational users and engineering infrastructure.
+
+### Hard requirements
+
+- a normal operator needs only a CMS account and access to the shared SolidDesign ChatGPT project;
+- research remains extensive and human-reviewable;
+- GitHub remains canonical storage and version history;
+- publication never writes directly to `main`;
+- the operator must not need repository knowledge, repository credentials or repository paths;
+- user flow must stay minimal;
+- do not add a research database, queue, scheduler or general-purpose GitHub gateway.
+
+### Simplest viable solution
+
+Split research from publication at the CMS boundary:
+
+```text
+CMS → start research prompt → ChatGPT research → final Markdown
+    → operator Copy → CMS Verwerk onderzoeksresultaat
+    → deterministic validation → constrained server-side publisher
+    → branch + PR → human review → merge
+```
+
+The research prompt contains the complete execution contract and research inputs but no repository URL, path, branch or PR instructions. ChatGPT does not read or write GitHub in this operator flow.
+
+The browser submits only `canonical_sector_key` and Markdown. Repository, path, branch, base branch and PR metadata are server-side constants.
+
+### Existing solutions reused
+
+- existing Discovery sector input and Overture resolver;
+- ordinary ChatGPT for research and synthesis;
+- browser clipboard API, with paste-field fallback;
+- Cloudflare Pages Function for the narrow server-side capability;
+- GitHub branches and pull requests for review/versioning.
+
+### Security boundary
+
+The publication endpoint:
+
+- requires an authenticated, allowlisted CMS operator;
+- validates the canonical sector key and Markdown contract;
+- can write only canonical Sector Intelligence content;
+- creates a new branch and PR;
+- never accepts arbitrary repository/path/branch input;
+- never writes directly to `main`.
+
+The technical GitHub credential is a fine-grained repository-scoped token stored only as the Cloudflare Pages secret `GITHUB_SECTOR_INTELLIGENCE_TOKEN`.
+
+### Added complexity
+
+One narrow Pages Function and one second CMS action (`Verwerk onderzoeksresultaat`). No new database table, job state, queue, scheduler, agent, generic GitHub API proxy or operator credential is added.
+
+### Failure modes
+
+- clipboard read blocked → reveal a simple paste field only as fallback;
+- user copies the wrong ChatGPT content → reject deterministic contract mismatch before publication;
+- result already equals canonical content → create no branch or PR;
+- technical credential missing/expired → fail closed with a generic CMS error; no fallback to operator GitHub access;
+- publication fails after branch creation → no direct-main impact; maintainer can inspect/remove the orphan branch.
+
+### Reversibility
+
+High. Remove the one endpoint and processing action to return to manual publication. Canonical Sector Intelligence files and Git history remain unchanged.
+
+### Verdict
+
+Adopt. Normal SolidDesign operators do not require a GitHub account or ChatGPT↔GitHub connection. GitHub is an engineering/publication boundary behind the CMS.
