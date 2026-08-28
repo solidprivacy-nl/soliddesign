@@ -11,17 +11,43 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      PROSPECT_ID: ${{ github.event.client_payload.prospect_id }}
+      PREPARATION_TOKEN: ${{ github.event.client_payload.preparation_token }}
+      SUPABASE_URL: https://grderdhnjkeucaaehgqy.supabase.co
+      SUPABASE_PUBLISHABLE_KEY: sb_publishable_fRXRtDIHJ98LIN3cfQHtpA_WJ0yPPRh
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+      - name: Install SolidDesign
+        run: python -m pip install -e .
       - name: Validate request
-        env:
-          PROSPECT_ID: ${{ github.event.client_payload.prospect_id }}
         run: |
+          set -euo pipefail
           test -n "$PROSPECT_ID"
+          test ${#PREPARATION_TOKEN} -ge 32
           python - <<'PY'
           import os, uuid
           uuid.UUID(os.environ['PROSPECT_ID'])
           PY
+      - name: Load prospect and classify online presence
+        id: classify
+        run: |
+          set -euo pipefail
+          kind=$(python scripts/prepare_prospect.py "$PROSPECT_ID" --classify --input-out /tmp/preparation-input.json)
+          echo "kind=$kind" >> "$GITHUB_OUTPUT"
+      - name: Install pinned audit donor
+        if: steps.classify.outputs.kind == 'STANDALONE'
+        run: |
+          set -euo pipefail
+          bash scripts/bootstrap_donors.sh
+          echo "PITCH_DOCTOR_COMMAND=$GITHUB_WORKSPACE/.vendor/pitch-doctor/.venv/bin/pitch-doctor" >> "$GITHUB_ENV"
+      - name: Build technical report and first mock-up
+        if: steps.classify.outputs.kind != 'COMPLETE'
+        run: python scripts/prepare_prospect.py "$PROSPECT_ID" --input /tmp/preparation-input.json
+      - name: Mark preparation failed
+        if: failure() && steps.classify.outputs.kind != 'COMPLETE'
+        run: python scripts/prepare_prospect.py "$PROSPECT_ID" --mark-failed --error "Automatische voorbereiding is mislukt. Probeer opnieuw vanuit Prospects."
