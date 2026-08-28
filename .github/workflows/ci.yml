@@ -38,6 +38,7 @@ jobs:
       - name: Operator static safety
         run: |
           node --check operator/app.js
+          node --check operator/prospect-preparation.js
           node --check operator/design-process.js
           node --check operator/discovery-sectors.js
           node --check operator/discovery-triage.js
@@ -46,6 +47,8 @@ jobs:
           node --check operator/functions/api/site-check.js
           node --check operator/functions/api/resolve-sector.js
           node --check operator/functions/api/publish-sector-intelligence.js
+          node --check operator/functions/api/prepare-prospect.js
+          python -m py_compile scripts/prepare_prospect.py src/soliddesign/preparation.py
           test -s operator/index.html
           test -s operator/start-design.html
           test -s operator/config.js
@@ -54,9 +57,13 @@ jobs:
           test -s docs/DECISIONS.md
           test -s docs/DISCOVERY_SECTOR_RESOLUTION.md
           test -s docs/DISCOVERY_TRIAGE.md
+          test -s docs/FIRST_CONCEPT_PREPARATION.md
           test -s sector-intelligence/README.md
+          test -s supabase/functions/prospect-preparation/index.ts
           test -s supabase/migrations/20260826_discovery_archive_v01.sql
           test -s supabase/migrations/20260827_discovery_triage_v01.sql
+          test -s supabase/migrations/20260828_first_concept_preparation_v01.sql
+          test -s .github/workflows/prepare-prospect.yml
           test -s prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'noindex,nofollow,noarchive' operator/index.html
           grep -q 'noindex,nofollow,noarchive' operator/start-design.html
@@ -66,6 +73,7 @@ jobs:
           grep -q 'operator_ingest_discovery_candidates' supabase/migrations/20260826_discovery_archive_v01.sql
           grep -q 'operator_promote_discovery_candidate' supabase/migrations/20260827_discovery_triage_v01.sql
           grep -q 'operator_set_discovery_triage' supabase/migrations/20260827_discovery_triage_v01.sql
+          grep -q 'operator_queue_first_concept' supabase/migrations/20260828_first_concept_preparation_v01.sql
           grep -q "stukadoor: \['plasterer'\]" operator/discovery-sectors.js
           grep -q "bakker: \['bakery'\]" operator/discovery-sectors.js
           grep -q "kapper: \['barber'\]" operator/discovery-sectors.js
@@ -82,6 +90,11 @@ jobs:
           grep -q 'operator_allowlist' operator/functions/api/publish-sector-intelligence.js
           grep -q 'refs/heads/' operator/functions/api/publish-sector-intelligence.js
           grep -q 'REQUIRED_HEADINGS' operator/functions/api/publish-sector-intelligence.js
+          grep -q 'LINKHUB_HOSTS' operator/functions/api/site-check.js
+          grep -q "site_kind: 'LINKHUB'" operator/functions/api/site-check.js
+          grep -q 'Alleen een linkhub aangetroffen' operator/functions/api/site-check.js
+          grep -q '/api/prepare-prospect' operator/discovery-triage.js
+          grep -q 'Technisch rapport en eerste mock-up worden voorbereid' operator/discovery-triage.js
           grep -q 'discovery-triage-v1' operator/functions/api/site-check.js
           grep -q 'Voeg toe aan Prospects' operator/discovery-triage.js
           grep -q 'Verbeterkans' operator/discovery-triage.js
@@ -93,6 +106,15 @@ jobs:
           grep -q 'prospectDecisionSignals' operator/app.js
           grep -q 'Basischeck probleem' operator/app.js
           grep -q 'prospect-signal' operator/styles.css
+          grep -q 'Start eerste beoordeling en mock-up' operator/prospect-preparation.js
+          grep -q 'Probeer voorbereiding opnieuw' operator/prospect-preparation.js
+          grep -q 'prospect-preparation.js' operator/index.html
+          grep -q 'operator_queue_first_concept' operator/functions/api/prepare-prospect.js
+          grep -q 'repository_dispatch' .github/workflows/prepare-prospect.yml
+          grep -q 'prepare_prospect' .github/workflows/prepare-prospect.yml
+          grep -q 'prospect-preparation' scripts/prepare_prospect.py
+          grep -q 'linkhub-presence' src/soliddesign/preparation.py
+          grep -q 'No `preparation_jobs` table' docs/FIRST_CONCEPT_PREPARATION.md
           grep -q 'overture_categories.csv' operator/functions/api/resolve-sector.js
           grep -q 'workers_ai_validated' operator/functions/api/resolve-sector.js
           grep -q '"binding": "AI"' operator/wrangler.jsonc
