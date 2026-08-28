@@ -11,6 +11,12 @@ def build_verified_facts(prospect: Prospect, audit: AuditResult) -> VerifiedFact
     if prospect.discovery_version:
         discovery_label = f"{discovery_label} {prospect.discovery_version}"
 
+    website_evidence = (
+        "verified discovery URL; classified as linkhub, not a standalone prospect website"
+        if audit.source == "linkhub-presence"
+        else "verified prospect website URL"
+    )
+
     return VerifiedFacts(
         company_name=prospect.name,
         category=prospect.category,
@@ -25,7 +31,7 @@ def build_verified_facts(prospect: Prospect, audit: AuditResult) -> VerifiedFact
         approved_claims=prospect.approved_claims,
         evidence={
             "identity": f"structured discovery record ({discovery_label})",
-            "website": "verified prospect website URL",
+            "website": website_evidence,
             "source_confidence": (
                 f"source existence confidence={prospect.source_confidence}"
                 if prospect.source_confidence is not None
