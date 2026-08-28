@@ -109,9 +109,10 @@ create unique index if not exists prospects_public_slug_uidx
 -- Operators may rename the short public route; the existing operator UPDATE RLS policy remains the authorization boundary.
 grant update (public_slug) on table public.prospects to authenticated;
 
--- Public route resolution is deliberately narrow: anon can only read id + slug, and RLS only exposes
--- the row whose slug exactly matches the custom request header supplied by the Pages resolver.
+-- Public route resolution is deliberately narrow. The Pages resolver sends the exact slug in a custom header.
+-- Anonymous callers can only read the route metadata for that exact slug and its current LIVE demo target.
 grant select (id, public_slug) on table public.prospects to anon;
+grant select (prospect_id, preview_url, status, artifact_path) on table public.demos to anon;
 
 drop policy if exists public_resolve_prospect_slug on public.prospects;
 create policy public_resolve_prospect_slug on public.prospects
@@ -126,6 +127,27 @@ create policy public_resolve_prospect_slug on public.prospects
       ),
       ''
     ))
+  );
+
+drop policy if exists public_resolve_live_demo on public.demos;
+create policy public_resolve_live_demo on public.demos
+  for select to anon
+  using (
+    status = 'LIVE'
+    and exists (
+      select 1
+      from public.prospects p
+      where p.id = demos.prospect_id
+        and p.public_slug = lower(coalesce(
+          (
+            coalesce(
+              nullif(current_setting('request.headers', true), ''),
+              '{}'
+            )::jsonb ->> 'x-soliddesign-prospect-slug'
+          ),
+          ''
+        ))
+    )
   );
 
 revoke execute on function public.prospect_slug_base(text) from public, anon, authenticated;
