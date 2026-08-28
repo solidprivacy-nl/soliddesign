@@ -1,6 +1,6 @@
 # SolidDesign Sector Intelligence
 
-**Status:** canonical v0.2  
+**Status:** canonical v0.3  
 **Governing rule:** `ENGINEERING_CONSTITUTION.md`
 
 Sector Intelligence is reusable external design research for one canonical business sector. It exists to raise the quality bar of future SolidDesign designs without turning sectors into templates.
@@ -12,6 +12,7 @@ Sector Intelligence is reusable external design research for one canonical busin
 3. **External references produce principles, never templates.** Do not copy branding, copy, layouts or distinctive creative elements.
 4. **Sector Intelligence is advisory evidence.** Verified prospect facts, prospect-specific requirements and the SolidDesign design method remain authoritative.
 5. **No extra state plane.** Sector Intelligence lives as Markdown in GitHub. Git history provides versioning; a PR provides review/publish governance.
+6. **Normal operators need no GitHub access.** GitHub is an engineering/publication boundary behind the CMS, not an operator dependency.
 
 ## Inputs for a research run
 
@@ -37,7 +38,7 @@ ChatGPT must interpret the actual market represented by the human term and locat
 
 Do not maintain a second hand-built research taxonomy unless repeated failures prove it necessary.
 
-## CMS launcher
+## CMS launcher and operator flow
 
 The operator entry point lives in **Bedrijven zoeken**, directly below the normal area-search action.
 
@@ -47,26 +48,96 @@ The operator uses the same inputs that already drive Discovery:
 - `Sector(en)` supplies the original human market term;
 - the existing validated Overture sector resolver supplies the canonical machine key.
 
-Sector Intelligence is one canonical file per sector, so the launcher accepts **one sector per research run**. Discovery itself may still search multiple sectors in one run.
+Sector Intelligence is one canonical file per sector, so the research flow accepts **one sector per run**. Discovery itself may still search multiple sectors in one run.
 
-The button is labelled:
+The normal operator flow is:
 
 ```text
-Start sectoronderzoek in ChatGPT
+1. Start sectoronderzoek in ChatGPT
+2. ChatGPT researches and returns one final Markdown document
+3. Operator copies the final ChatGPT answer
+4. Verwerk onderzoeksresultaat
+5. CMS validates and submits it for review
 ```
 
-It performs only the minimum orchestration required:
+The primary handoff is clipboard-first. If the browser cannot read the clipboard, the CMS reveals a plain paste field as fallback. No research job, draft object or extra lifecycle is stored in Supabase.
 
-1. preserve the human sector term exactly as entered;
-2. resolve the canonical Overture key with the existing sector resolver;
-3. build the standardized research instruction;
-4. copy that instruction to the clipboard;
-5. open the ordinary ChatGPT client;
-6. tell the operator to paste the instruction into a new chat.
+### What the launch prompt contains
 
-The CMS does not store research job state and does not call a separate research API. ChatGPT performs the research, synthesis, self-review and GitHub write. GitHub remains the publication boundary.
+The copied research instruction contains only the task contract and the three research inputs. It does **not** expose repository URLs, repository paths, branches or PR mechanics.
 
-If `sector-intelligence/<key>.md` already exists, the same launcher intentionally requests a refresh rather than creating a second knowledge object. The resulting ChatGPT run must still create a branch and PR; it must not merge automatically.
+ChatGPT is responsible only for:
+
+- web research;
+- reference selection;
+- analysis and synthesis;
+- mandatory self-review;
+- the final Markdown document.
+
+ChatGPT must not publish, create branches or perform repository actions in this operator flow.
+
+## Deterministic result validation
+
+Before publication, the CMS backend validates the returned document without another AI call.
+
+At minimum it requires:
+
+- a valid canonical sector key;
+- matching `sector_key` front matter;
+- a Sector Design Intelligence title;
+- required core headings;
+- source references;
+- a bounded file size.
+
+A complete outer Markdown code fence is tolerated and removed automatically. Invalid or mismatched content is rejected before any repository write.
+
+## Narrow publication capability
+
+The browser may submit only:
+
+```text
+canonical_sector_key
+markdown
+```
+
+The browser cannot choose a repository, path, branch, base branch or PR metadata.
+
+The server-side publication function owns those constants and may write only the canonical Sector Intelligence path for the validated key. It never writes directly to `main`.
+
+Publication flow:
+
+```text
+CMS operator
+→ validated Markdown
+→ constrained CMS backend capability
+→ new branch
+→ sector-intelligence/<key>.md
+→ PR to main
+→ human review
+→ merge
+```
+
+If the submitted Markdown is byte-equivalent to the current canonical file after trimming, no new branch or PR is created.
+
+## Runtime credential
+
+The CMS backend uses one technical GitHub identity stored only as a Cloudflare Pages secret:
+
+```text
+GITHUB_SECTOR_INTELLIGENCE_TOKEN
+```
+
+For v0.3 the simplest viable credential is a fine-grained token scoped to the SolidDesign repository with only the permissions required to read/write contents and create pull requests. It is not stored in Git, browser code, Supabase or operator accounts.
+
+A normal SolidDesign operator therefore needs:
+
+```text
+CMS account
++
+access to the shared SolidDesign ChatGPT project
+```
+
+and does **not** need a GitHub account or ChatGPT↔GitHub connection.
 
 ## Research scope
 
@@ -108,13 +179,7 @@ Prefer evidence-backed observations over generic design advice.
 
 ## Required output
 
-Write one file:
-
-```text
-sector-intelligence/<canonical_sector_key>.md
-```
-
-Use minimal front matter:
+The final research result must use minimal front matter:
 
 ```yaml
 ---
@@ -126,7 +191,7 @@ method_version: 1
 ---
 ```
 
-Recommended content:
+Required content structure:
 
 ```text
 # Sector Design Intelligence — <label>
@@ -153,7 +218,7 @@ Every named reference must include a source URL and a short reason for selection
 
 ## Mandatory self-review
 
-Before writing the GitHub result, challenge the research:
+Before returning the final result, challenge the research:
 
 - Are these genuinely strong designs, or merely prominent brands?
 - Is the reference set sufficiently diverse?
@@ -165,22 +230,6 @@ Before writing the GitHub result, challenge the research:
 - Which three conclusions are weakest or least certain?
 
 Keep uncertainty explicit rather than manufacturing confidence.
-
-## Publication workflow
-
-Use existing platform capabilities:
-
-```text
-ordinary ChatGPT research
-→ synthesis + self-review
-→ GitHub branch
-→ sector-intelligence/<key>.md
-→ PR
-→ human review
-→ merge to main
-```
-
-Do not add a Sector Intelligence database, queue, crawler, screenshot store, ranking service or autonomous orchestration unless a measured production problem later justifies it.
 
 ## Use in design
 
