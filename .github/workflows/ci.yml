@@ -66,8 +66,13 @@ jobs:
           grep -q 'operator_set_discovery_triage' supabase/migrations/20260827_discovery_triage_v01.sql
           grep -q "stukadoor: \['plasterer'\]" operator/discovery-sectors.js
           grep -q "bakker: \['bakery'\]" operator/discovery-sectors.js
+          grep -q "kapper: \['barber'\]" operator/discovery-sectors.js
           grep -q '/api/resolve-sector' operator/discovery-sectors.js
           grep -q 'discovery-triage.js' operator/discovery-sectors.js
+          grep -q 'startSectorIntelligence' operator/discovery-sectors.js
+          grep -q 'Start sectoronderzoek in ChatGPT' operator/discovery-sectors.js
+          grep -q 'human_sector_term' operator/discovery-sectors.js
+          grep -q 'sectorIntelligencePrompt' operator/discovery-sectors.js
           grep -q 'discovery-triage-v1' operator/functions/api/site-check.js
           grep -q 'Voeg toe aan Prospects' operator/discovery-triage.js
           grep -q 'Verbeterkans' operator/discovery-triage.js
@@ -90,6 +95,8 @@ jobs:
           grep -q 'Canonical sector key' operator/design-process.js
           grep -q 'sector-intelligence/<canonical_sector_key>.md' prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'Ontology identifies; market language guides research' sector-intelligence/README.md
+          grep -q '## CMS launcher' sector-intelligence/README.md
+          grep -q 'Status: canonical v0.2' sector-intelligence/README.md
           ! grep -q 'Copy SI-verbeterstart' operator/index.html
           ! grep -R -E 'SUPABASE_(SERVICE_ROLE|SECRET)_KEY|service_role' operator/ --exclude=README.md
       - name: Operator Pages Function
