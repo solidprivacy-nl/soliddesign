@@ -1,0 +1,27 @@
+name: Prepare Prospect
+
+on:
+  repository_dispatch:
+    types: [prepare_prospect]
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate request
+        env:
+          PROSPECT_ID: ${{ github.event.client_payload.prospect_id }}
+        run: |
+          test -n "$PROSPECT_ID"
+          python - <<'PY'
+          import os, uuid
+          uuid.UUID(os.environ['PROSPECT_ID'])
+          PY
