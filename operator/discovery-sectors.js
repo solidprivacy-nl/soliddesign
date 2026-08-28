@@ -79,7 +79,7 @@
     }
     authClient ||= window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey);
     const { data: { session } } = await authClient.auth.getSession();
-    if (!session?.access_token) throw new Error('Log opnieuw in om discovery uit te voeren.');
+    if (!session?.access_token) throw new Error('Log opnieuw in om deze actie uit te voeren.');
     return session.access_token;
   }
 
@@ -129,7 +129,42 @@
   }
 
   function sectorIntelligencePrompt({ humanTerm, location, canonicalKey }) {
-    return `Werk autonoom als Sector Intelligence researcher voor SolidDesign.\n\nRepository: https://github.com/solidprivacy-nl/soliddesign\nLees eerst ENGINEERING_CONSTITUTION.md en sector-intelligence/README.md in de repository en volg die als canonical instructions.\n\nResearch inputs:\n- human_sector_term: ${humanTerm}\n- location: ${location}\n- canonical_sector_key: ${canonicalKey}\n\nVoer het volledige onderzoek uit in deze gewone ChatGPT-chat: uitgebreid webonderzoek, referentieselectie, analyse, synthese en de verplichte self-review. Gebruik de menselijke marktterm en locatie voor de research; gebruik de Overture-key alleen als machine identity. Schrijf het eindresultaat naar sector-intelligence/${canonicalKey}.md op een nieuwe GitHub branch en open een PR naar main. Als het bestand al bestaat, behandel dit als een refresh en behoud alleen conclusies die na nieuw onderzoek nog gerechtvaardigd zijn. Werk autonoom door tot de PR is geopend en rapporteer daarna kort het resultaat. Merge de PR niet zelf.`;
+    return `Werk autonoom als Sector Intelligence researcher voor SolidDesign.\n\nDOEL\nOnderzoek de actuele design- en conversiekwaliteitsstandaard voor deze markt en distilleer herbruikbare, evidence-backed designinzichten. Het resultaat is adviserend en mag nooit prospectfeiten verzinnen of externe designs kopiëren.\n\nRESEARCH INPUTS\n- human_sector_term: ${humanTerm}\n- location: ${location}\n- canonical_sector_key: ${canonicalKey}\n\nWERKWIJZE\n1. Gebruik de menselijke sectornaam en locatie als marktbetekenis. De canonical sector key is alleen machine identity en mag de researchscope niet vernauwen.\n2. Start lokaal, verbreed naar Nederland wanneer lokale voorbeelden onvoldoende zijn en voeg alleen selectief sterke internationale of aangrenzende creatieve referenties toe.\n3. Inspecteer daadwerkelijke websites, niet alleen zoekresultaatsnippets.\n4. Beoordeel ten minste: first impression/craft, typografie, compositie en hiërarchie, imagery/art direction, trust, conversiehiërarchie, mobile, originaliteit/sector-specificiteit en evidente template/AI-slop patronen.\n5. Een bruikbare richtlijn is ongeveer 7 sterke sectorreferenties plus ongeveer 3 aangrenzende creatieve referenties. Dit is geen scoreformule.\n6. Trek principes uit meerdere observaties. Kopieer geen branding, copy, layouts of onderscheidende creatieve elementen.\n7. Wees kritisch op eigen conclusies: prominent merk is niet automatisch sterk design; één voorbeeld is geen regel; clichés zijn geen best practice; benoem de drie zwakste/onzekerste conclusies expliciet.\n8. Werk vanuit first principles, solid but simple en zonder overengineering.\n\nEINDOUTPUT\nJe allerlaatste bericht moet uitsluitend het definitieve Markdown-document bevatten, zonder inleiding, toelichting of code fence. Gebruik exact deze structuur en headings:\n\n---\nsector_key: ${canonicalKey}\nresearch_label: <menselijk leesbare sectornaam>\nmarket: Nederland\nresearched_at: <YYYY-MM-DD>\nmethod_version: 1\n---\n# Sector Design Intelligence — <label>\n\n## Quality bar\n## Customer / market context relevant to design\n## Strong recurring patterns\n### Hero\n### Typography\n### Imagery\n### Trust\n### Services / offering\n### Conversion\n### Mobile\n## Creative opportunities\n## Patterns to avoid\n## Sector references\n## Adjacent creative references\n## Principles distilled from the evidence\n## Weak / uncertain conclusions\n\nElke genoemde referentie bevat een directe bron-URL en een korte reden voor selectie. Publiceer zelf niets en voer geen repository-, branch- of PR-acties uit. Alleen het definitieve Markdown-resultaat is nodig.`;
+  }
+
+  async function publishSectorIntelligence(sector, markdown) {
+    const token = await accessToken();
+    const response = await fetch('/api/publish-sector-intelligence', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        canonical_sector_key: sector.canonicalKey,
+        markdown
+      })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Onderzoeksresultaat kon niet worden verwerkt (${response.status}).`);
+    return payload;
+  }
+
+  function currentResearchInputs() {
+    return {
+      location: document.getElementById('discoveryLocation')?.value.trim() || '',
+      sectorValue: document.getElementById('discoveryKeywords')?.value.trim() || ''
+    };
+  }
+
+  async function resolveResearchContext() {
+    const { location, sectorValue } = currentResearchInputs();
+    if (!location) throw new Error('Vul eerst een locatie in voor het sectoronderzoek.');
+    if (!sectorValue) throw new Error('Vul eerst één sector in voor het sectoronderzoek.');
+    return {
+      location,
+      ...(await resolveSingleSector(sectorValue))
+    };
   }
 
   function installSectorIntelligenceLauncher() {
@@ -138,41 +173,113 @@
     const discoveryAction = discoveryButton?.closest('.discovery-action');
     if (!discoveryAction) return;
 
-    const action = document.createElement('div');
-    action.className = 'discovery-action';
-    const note = document.createElement('span');
-    note.className = 'subtle';
-    note.innerHTML = '<strong>Sectorinzichten:</strong> laat ChatGPT voor één sector sterke websites onderzoeken en de herbruikbare designinzichten via GitHub vastleggen.';
-    const button = document.createElement('button');
-    button.id = 'startSectorIntelligence';
-    button.type = 'button';
-    button.className = 'secondary';
-    button.textContent = 'Start sectoronderzoek in ChatGPT';
-    action.append(note, button);
-    discoveryAction.insertAdjacentElement('afterend', action);
+    const startAction = document.createElement('div');
+    startAction.className = 'discovery-action';
+    const startNote = document.createElement('span');
+    startNote.className = 'subtle';
+    startNote.innerHTML = '<strong>Sectorinzichten:</strong> laat ChatGPT voor één sector sterke websites onderzoeken en herbruikbare designinzichten opbouwen.';
+    const startButton = document.createElement('button');
+    startButton.id = 'startSectorIntelligence';
+    startButton.type = 'button';
+    startButton.className = 'secondary';
+    startButton.textContent = 'Start sectoronderzoek in ChatGPT';
+    startAction.append(startNote, startButton);
 
-    button.addEventListener('click', async () => {
-      const location = document.getElementById('discoveryLocation')?.value.trim() || '';
-      const sectorValue = document.getElementById('discoveryKeywords')?.value.trim() || '';
-      if (!location) return setMessage('Vul eerst een locatie in voor het sectoronderzoek.', true);
-      if (!sectorValue) return setMessage('Vul eerst één sector in voor het sectoronderzoek.', true);
+    const processAction = document.createElement('div');
+    processAction.className = 'discovery-action';
+    const processNote = document.createElement('span');
+    processNote.className = 'subtle';
+    processNote.textContent = 'Onderzoek klaar? Kopieer het definitieve antwoord in ChatGPT en verwerk het hier.';
+    const processButton = document.createElement('button');
+    processButton.id = 'processSectorIntelligence';
+    processButton.type = 'button';
+    processButton.className = 'secondary';
+    processButton.textContent = 'Verwerk onderzoeksresultaat';
+    processAction.append(processNote, processButton);
 
+    const fallback = document.createElement('div');
+    fallback.id = 'sectorIntelligencePasteFallback';
+    fallback.hidden = true;
+    fallback.className = 'card';
+    fallback.innerHTML = `
+      <label>Onderzoeksresultaat
+        <textarea id="sectorIntelligenceResult" rows="10" placeholder="Plak hier alleen het definitieve Markdown-resultaat uit ChatGPT."></textarea>
+      </label>
+      <div class="discovery-action">
+        <span class="subtle">Gebruik dit plakveld alleen als de browser het klembord niet kan lezen.</span>
+        <button id="submitSectorIntelligenceResult" type="button" class="secondary">Verwerk geplakte tekst</button>
+      </div>`;
+
+    discoveryAction.insertAdjacentElement('afterend', startAction);
+    startAction.insertAdjacentElement('afterend', processAction);
+    processAction.insertAdjacentElement('afterend', fallback);
+
+    startButton.addEventListener('click', async () => {
       const popup = window.open('about:blank', '_blank');
       if (popup) popup.opener = null;
-      button.disabled = true;
+      startButton.disabled = true;
       setMessage('Sectoronderzoek voor ChatGPT voorbereiden…');
       try {
-        const sector = await resolveSingleSector(sectorValue);
-        const prompt = sectorIntelligencePrompt({ ...sector, location });
+        const context = await resolveResearchContext();
+        const prompt = sectorIntelligencePrompt(context);
         await navigator.clipboard.writeText(prompt);
         if (popup) popup.location = 'https://chatgpt.com/';
         else window.open('https://chatgpt.com/', '_blank', 'noopener');
-        setMessage(`Onderzoeksopdracht voor “${sector.humanTerm}” in ${location} gekopieerd (sector: ${sector.canonicalKey}). Plak hem in een nieuwe ChatGPT-chat.`);
+        setMessage(`Onderzoeksopdracht voor “${context.humanTerm}” in ${context.location} gekopieerd. Plak hem in een nieuwe ChatGPT-chat.`);
       } catch (error) {
         if (popup) popup.close();
         setMessage(error.message || String(error), true);
       } finally {
+        startButton.disabled = false;
+      }
+    });
+
+    async function submitResult(markdown, button) {
+      if (!String(markdown || '').trim()) throw new Error('Het onderzoeksresultaat is leeg.');
+      button.disabled = true;
+      setMessage('Onderzoeksresultaat controleren en opslaan voor review…');
+      try {
+        const context = await resolveResearchContext();
+        const result = await publishSectorIntelligence(context, markdown);
+        fallback.hidden = true;
+        document.getElementById('sectorIntelligenceResult').value = '';
+        if (result.status === 'unchanged') {
+          setMessage(`De sectorinzichten voor “${context.humanTerm}” zijn al actueel; er is geen nieuwe review aangemaakt.`);
+        } else {
+          setMessage(`Sectorinzichten voor “${context.humanTerm}” zijn opgeslagen voor review.`);
+        }
+      } finally {
         button.disabled = false;
+      }
+    }
+
+    processButton.addEventListener('click', async () => {
+      processButton.disabled = true;
+      try {
+        let markdown = '';
+        try {
+          markdown = await navigator.clipboard.readText();
+        } catch {
+          fallback.hidden = false;
+          document.getElementById('sectorIntelligenceResult').focus();
+          setMessage('De browser kon het klembord niet lezen. Plak het definitieve onderzoeksresultaat hieronder.', true);
+          return;
+        }
+        await submitResult(markdown, processButton);
+      } catch (error) {
+        setMessage(error.message || String(error), true);
+      } finally {
+        processButton.disabled = false;
+      }
+    });
+
+    const submitFallback = fallback.querySelector('#submitSectorIntelligenceResult');
+    submitFallback.addEventListener('click', async () => {
+      try {
+        const markdown = fallback.querySelector('#sectorIntelligenceResult').value;
+        await submitResult(markdown, submitFallback);
+      } catch (error) {
+        setMessage(error.message || String(error), true);
       }
     });
   }
