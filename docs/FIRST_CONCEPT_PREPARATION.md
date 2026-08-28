@@ -1,6 +1,6 @@
 # First Concept Preparation
 
-**Status:** canonical v0.1  
+**Status:** canonical v0.2  
 **Governing rule:** `ENGINEERING_CONSTITUTION.md`
 
 ## Problem
@@ -8,6 +8,8 @@
 `Voeg toe aan Prospects` previously changed only the prospect state. The Operator copy implied that a technical report would follow, but no audit or mock-up production was actually started. This left selected prospects in the active work queue without the proof assets needed for the next step.
 
 A second problem surfaced with linkhub URLs such as Linktree: Discovery was scoring the technical quality of the linkhub platform as if it were the prospect's own website. That answers the wrong question. A linkhub can be perfectly implemented by its platform while the business still has a large opportunity because it has no standalone website.
+
+A third implementation constraint surfaced after the first automatic LIVE proof: hosted Supabase Edge Functions rewrite `GET` responses with `text/html` to `text/plain` on the default project domain. Therefore Supabase Edge Functions are suitable for the preparation API, but not as the browser-facing HTML preview server.
 
 ## Hard requirements
 
@@ -20,6 +22,7 @@ A second problem surfaced with linkhub URLs such as Linktree: Discovery was scor
 - reuse the existing guarded Pitch Doctor adapter for standalone websites;
 - reuse the existing deterministic `VerifiedFacts → ConversionBrief → DesignProfile → SiteConfig → HTML` baseline;
 - reuse existing `audits`, `demos`, storage and preview contracts;
+- browser-facing HTML previews must be served by Cloudflare Pages, not the default Supabase Edge Function domain;
 - do not introduce a second job/state database.
 
 ## Decision
@@ -45,6 +48,7 @@ DISCOVERY
 → SiteConfig
 → deterministic baseline HTML
 → audit + LIVE demo in Supabase
+→ Cloudflare Pages serves preview HTML
 → DEMO_READY
 ```
 
@@ -119,6 +123,33 @@ Successful preparation reuses existing operational contracts:
 
 The first automatic baseline is intentionally published as the initial LIVE proof. Later design refinements continue to use the existing DRAFT → human review → LIVE promotion workflow.
 
+### Preview serving boundary
+
+Supabase remains the storage layer. It is **not** the public HTML renderer.
+
+Canonical browser path:
+
+```text
+Browser
+→ https://soliddesign-cms.pages.dev/p/<prospect>/
+→ Cloudflare Pages Function
+→ read LIVE manifest from Supabase Storage
+→ fetch version bytes from Supabase Storage
+→ return the asset with the correct MIME type
+```
+
+Immutable version previews use:
+
+```text
+/p/<prospect>/v/<demo>/
+```
+
+Cloudflare sets `text/html; charset=utf-8` for HTML and the corresponding MIME types for CSS, JavaScript, images and fonts. It does not forward Supabase HTML-serving restrictions to the browser.
+
+The existing legacy preview origin remains a fallback only when no Supabase LIVE manifest exists. This preserves older previews without creating a second current preview architecture.
+
+The hosted `mockup-preview` Supabase Edge Function may remain temporarily for backward compatibility, but new Operator links must not use it for browser-facing HTML.
+
 ## Operator UX
 
 Normal path:
@@ -147,12 +178,14 @@ While queued/running, the Prospect view shows one progress message. On completio
 - **Stale capability** → 30-minute expiry and hash removal on terminal state.
 - **Remote runner gets privileged database credential** → prohibited; workflow uses only the one-time capability.
 - **Preparation fails after promotion** → prospect remains selected; Prospect view exposes the bounded retry action.
+- **Supabase returns HTML as source text** → public preview rendering is handled by Cloudflare Pages; Supabase remains storage/API only.
+- **Old preview has no Supabase manifest** → bounded fallback to the legacy preview origin.
 - **LIVE proof silently changes later** → later refinements retain the existing DRAFT/human promotion boundary.
 
 ## Reversibility
 
-High. The feature adds one deterministic classifier, one bounded runner, one narrow Edge Function and one short-lived JSON state object. Existing audit/demo/storage contracts remain unchanged. Removing the automatic trigger returns the system to manual preparation without data migration.
+High. The feature adds one deterministic classifier, one bounded runner, one narrow Edge Function, one Cloudflare preview-serving route and one short-lived JSON state object. Existing audit/demo/storage contracts remain unchanged. Removing the automatic trigger returns the system to manual preparation without data migration.
 
 ## Final rule
 
-> Human selection should start production, but it must not manufacture evidence. Classify the actual online presence first, then reuse the smallest proven pipeline that fits it.
+> Human selection should start production, but it must not manufacture evidence. Classify the actual online presence first, then reuse the smallest proven pipeline that fits it. Store artifacts in Supabase; serve browser HTML through Cloudflare.
