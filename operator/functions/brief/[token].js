@@ -34,7 +34,7 @@ function responseHeaders(contentType) {
     'X-Robots-Tag': 'noindex, nofollow, noarchive',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'no-referrer',
-    'Content-Security-Policy': "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
   };
 }
 
@@ -59,7 +59,7 @@ export async function onRequest({ request, params }) {
   }
 
   const brief = await upstream.text();
-  const body = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow,noarchive"><title>SolidDesign Prospect Design Brief</title></head><body><main><pre>${linkifyPlainText(brief)}</pre></main></body></html>`;
+  const body = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow,noarchive"><title>SolidDesign Prospect Design Brief</title><style>html{background:#f6f4ef;color:#1d2822}body{margin:0}main{max-width:1040px;margin:0 auto;padding:40px 24px 64px}pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:14px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}a{color:#315e57;text-decoration-thickness:1px;text-underline-offset:2px}@media(max-width:640px){main{padding:24px 16px}pre{font-size:13px}}</style></head><body><main><pre>${linkifyPlainText(brief)}</pre></main></body></html>`;
 
   return new Response(body, {
     status: 200,
