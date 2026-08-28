@@ -8,6 +8,7 @@
   const detailPanel = document.getElementById('detailPanel');
   const POLL_INTERVAL_MS = 10_000;
   const MAX_POLL_ATTEMPTS = 60;
+  const SUPABASE_PREVIEW_BASE = `${CONFIG.supabaseUrl.replace(/\/$/, '')}/functions/v1/mockup-preview`;
   let decorateTimer = null;
   let pollTimer = null;
   let activePollProspectId = null;
@@ -15,6 +16,35 @@
   function scheduleDecorate() {
     clearTimeout(decorateTimer);
     decorateTimer = setTimeout(() => decorate().catch(console.error), 80);
+  }
+
+  function cloudflarePreviewUrl(href) {
+    const value = String(href || '');
+    const stablePrefix = `${SUPABASE_PREVIEW_BASE}/p/`;
+    if (value.startsWith(stablePrefix)) {
+      return `${window.location.origin}/p/${value.slice(stablePrefix.length)}`;
+    }
+
+    const versionPrefix = `${SUPABASE_PREVIEW_BASE}/v/`;
+    if (!value.startsWith(versionPrefix)) return null;
+    const tail = value.slice(versionPrefix.length);
+    const match = tail.match(/^([0-9a-f-]+)\/([0-9a-f-]+)\/(.*)$/i);
+    if (!match) return null;
+    return `${window.location.origin}/p/${match[1]}/v/${match[2]}/${match[3]}`;
+  }
+
+  function rewritePreviewLinks(root) {
+    for (const link of root.querySelectorAll('a[href]')) {
+      const replacement = cloudflarePreviewUrl(link.href);
+      if (!replacement) continue;
+      link.href = replacement;
+      if (link.textContent?.includes('supabase.co/functions/v1/mockup-preview')) {
+        link.textContent = link.textContent.replace(
+          /https:\/\/[^\s]+\.supabase\.co\/functions\/v1\/mockup-preview\/[^\s]+/,
+          replacement
+        );
+      }
+    }
   }
 
   async function sessionOrThrow() {
@@ -121,6 +151,7 @@
   async function decorate() {
     const root = detailPanel?.querySelector('.detail-content');
     if (!root) return;
+    rewritePreviewLinks(root);
 
     const prospect = await currentProspect(root);
     if (!prospect) return;
