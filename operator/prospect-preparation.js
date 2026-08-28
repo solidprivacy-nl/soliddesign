@@ -6,8 +6,11 @@
 
   const db = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
   const detailPanel = document.getElementById('detailPanel');
+  const POLL_INTERVAL_MS = 10_000;
+  const MAX_POLL_ATTEMPTS = 60;
   let decorateTimer = null;
   let pollTimer = null;
+  let activePollProspectId = null;
 
   function scheduleDecorate() {
     clearTimeout(decorateTimer);
@@ -72,8 +75,16 @@
   }
 
   function startPolling(prospectId) {
+    if (activePollProspectId === prospectId && pollTimer) return;
     clearTimeout(pollTimer);
+    activePollProspectId = prospectId;
     let attempts = 0;
+
+    const finish = () => {
+      clearTimeout(pollTimer);
+      pollTimer = null;
+      activePollProspectId = null;
+    };
 
     const check = async () => {
       attempts += 1;
@@ -82,19 +93,29 @@
         .select('qualification')
         .eq('id', prospectId)
         .single();
-      if (error) return;
-      const status = data?.qualification?.preparation?.status;
-      if (status === 'COMPLETE') {
-        document.getElementById('refreshBtn')?.click();
+
+      if (!error) {
+        const status = data?.qualification?.preparation?.status;
+        if (status === 'COMPLETE') {
+          finish();
+          document.getElementById('refreshBtn')?.click();
+          return;
+        }
+        if (status === 'FAILED') {
+          finish();
+          scheduleDecorate();
+          return;
+        }
+      }
+
+      if (attempts >= MAX_POLL_ATTEMPTS) {
+        finish();
         return;
       }
-      if (status === 'FAILED') {
-        scheduleDecorate();
-        return;
-      }
-      if (attempts < 24) pollTimer = setTimeout(check, 5000);
+      pollTimer = setTimeout(check, POLL_INTERVAL_MS);
     };
-    pollTimer = setTimeout(check, 5000);
+
+    pollTimer = setTimeout(check, POLL_INTERVAL_MS);
   }
 
   async function decorate() {
@@ -149,7 +170,7 @@
   }
 
   if (detailPanel) {
-    new MutationObserver(scheduleDecorate).observe(detailPanel, { childList: true, subtree: true });
+    new MutationObserver(scheduleDecorate).observe(detailPanel, { childList: true });
   }
   document.getElementById('refreshBtn')?.addEventListener('click', scheduleDecorate);
   scheduleDecorate();
