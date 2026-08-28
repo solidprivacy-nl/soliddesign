@@ -100,7 +100,7 @@ function buildBox(prospect, root) {
       </label>
     </div>
     <div class="save-row">
-      <div class="subtle">Gebruik alleen kleine letters, cijfers en koppeltekens. Wijzig deze naam alleen bewust: eerder gedeelde korte links veranderen dan mee.</div>
+      <div class="subtle">Gebruik alleen kleine letters, cijfers en koppeltekens. Wijzig deze naam alleen bewust: een eerder gedeelde korte link werkt daarna niet meer.</div>
       <div>
         <button type="button" class="secondary" data-public-link-save>Naam opslaan</button>
         <button type="button" class="secondary" data-public-link-copy>Kopieer link</button>
