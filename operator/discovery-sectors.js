@@ -19,7 +19,13 @@
     plasterer: ['plasterer'],
     bakker: ['bakery'],
     bakkerij: ['bakery'],
-    bakery: ['bakery']
+    bakery: ['bakery'],
+    kapper: ['barber'],
+    kappers: ['barber'],
+    kapsalon: ['barber'],
+    kapsalons: ['barber'],
+    barber: ['barber'],
+    barbershop: ['barber']
   });
 
   const canonicalCodes = new Set(Object.values(SECTORS).flat());
@@ -29,8 +35,7 @@
     return String(value || '')
       .trim()
       .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9 _-]/g, '')
       .replace(/[\s-]+/g, '_')
       .replace(/^_+|_+$/g, '');
@@ -93,6 +98,85 @@
     return payload;
   }
 
+  function mergeResolvedCodes(known, dynamic) {
+    const unresolved = Array.isArray(dynamic?.unresolved) ? dynamic.unresolved : [];
+    if (unresolved.length) {
+      const quoted = unresolved.map((item) => `“${item}”`).join(', ');
+      throw new Error(`${quoted} kon niet betrouwbaar aan een geldige Overture-sector worden gekoppeld.`);
+    }
+
+    const codes = [...known.codes];
+    for (const item of Array.isArray(dynamic?.resolutions) ? dynamic.resolutions : []) {
+      const code = normalize(item?.code);
+      if (code && !codes.includes(code)) codes.push(code);
+    }
+    if (!codes.length) throw new Error('Geen geldige Overture-sector gevonden.');
+    return codes;
+  }
+
+  async function resolveSingleSector(value) {
+    const known = resolveKnown(value);
+    if (known.requested.length !== 1) {
+      throw new Error('Voer voor sectorinzichten precies één sector tegelijk in.');
+    }
+    const codes = known.unknown.length
+      ? mergeResolvedCodes(known, await resolveUnknown(known.unknown))
+      : known.codes;
+    if (codes.length !== 1) {
+      throw new Error('Deze sector koppelt aan meerdere Overture-categorieën. Gebruik een specifiekere sectornaam.');
+    }
+    return { humanTerm: known.requested[0], canonicalKey: codes[0] };
+  }
+
+  function sectorIntelligencePrompt({ humanTerm, location, canonicalKey }) {
+    return `Werk autonoom als Sector Intelligence researcher voor SolidDesign.\n\nRepository: https://github.com/solidprivacy-nl/soliddesign\nLees eerst ENGINEERING_CONSTITUTION.md en sector-intelligence/README.md in de repository en volg die als canonical instructions.\n\nResearch inputs:\n- human_sector_term: ${humanTerm}\n- location: ${location}\n- canonical_sector_key: ${canonicalKey}\n\nVoer het volledige onderzoek uit in deze gewone ChatGPT-chat: uitgebreid webonderzoek, referentieselectie, analyse, synthese en de verplichte self-review. Gebruik de menselijke marktterm en locatie voor de research; gebruik de Overture-key alleen als machine identity. Schrijf het eindresultaat naar sector-intelligence/${canonicalKey}.md op een nieuwe GitHub branch en open een PR naar main. Als het bestand al bestaat, behandel dit als een refresh en behoud alleen conclusies die na nieuw onderzoek nog gerechtvaardigd zijn. Werk autonoom door tot de PR is geopend en rapporteer daarna kort het resultaat. Merge de PR niet zelf.`;
+  }
+
+  function installSectorIntelligenceLauncher() {
+    if (document.getElementById('startSectorIntelligence')) return;
+    const discoveryButton = document.getElementById('runAreaDiscovery');
+    const discoveryAction = discoveryButton?.closest('.discovery-action');
+    if (!discoveryAction) return;
+
+    const action = document.createElement('div');
+    action.className = 'discovery-action';
+    const note = document.createElement('span');
+    note.className = 'subtle';
+    note.innerHTML = '<strong>Sectorinzichten:</strong> laat ChatGPT voor één sector sterke websites onderzoeken en de herbruikbare designinzichten via GitHub vastleggen.';
+    const button = document.createElement('button');
+    button.id = 'startSectorIntelligence';
+    button.type = 'button';
+    button.className = 'secondary';
+    button.textContent = 'Start sectoronderzoek in ChatGPT';
+    action.append(note, button);
+    discoveryAction.insertAdjacentElement('afterend', action);
+
+    button.addEventListener('click', async () => {
+      const location = document.getElementById('discoveryLocation')?.value.trim() || '';
+      const sectorValue = document.getElementById('discoveryKeywords')?.value.trim() || '';
+      if (!location) return setMessage('Vul eerst een locatie in voor het sectoronderzoek.', true);
+      if (!sectorValue) return setMessage('Vul eerst één sector in voor het sectoronderzoek.', true);
+
+      const popup = window.open('about:blank', '_blank');
+      if (popup) popup.opener = null;
+      button.disabled = true;
+      setMessage('Sectoronderzoek voor ChatGPT voorbereiden…');
+      try {
+        const sector = await resolveSingleSector(sectorValue);
+        const prompt = sectorIntelligencePrompt({ ...sector, location });
+        await navigator.clipboard.writeText(prompt);
+        if (popup) popup.location = 'https://chatgpt.com/';
+        else window.open('https://chatgpt.com/', '_blank', 'noopener');
+        setMessage(`Onderzoeksopdracht voor “${sector.humanTerm}” in ${location} gekopieerd (sector: ${sector.canonicalKey}). Plak hem in een nieuwe ChatGPT-chat.`);
+      } catch (error) {
+        if (popup) popup.close();
+        setMessage(error.message || String(error), true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+
   document.addEventListener('click', async (event) => {
     const button = event.target.closest?.('#runAreaDiscovery');
     if (!button) return;
@@ -121,20 +205,7 @@
     setMessage(`Sector${known.unknown.length === 1 ? '' : 'en'} automatisch koppelen aan Overture…`);
 
     try {
-      const dynamic = await resolveUnknown(known.unknown);
-      const unresolved = Array.isArray(dynamic.unresolved) ? dynamic.unresolved : [];
-      if (unresolved.length) {
-        const quoted = unresolved.map((item) => `“${item}”`).join(', ');
-        throw new Error(`${quoted} kon niet betrouwbaar aan een geldige Overture-sector worden gekoppeld.`);
-      }
-
-      const codes = [...known.codes];
-      for (const item of Array.isArray(dynamic.resolutions) ? dynamic.resolutions : []) {
-        const code = normalize(item?.code);
-        if (code && !codes.includes(code)) codes.push(code);
-      }
-      if (!codes.length) throw new Error('Geen geldige Overture-sector gevonden.');
-
+      const codes = mergeResolvedCodes(known, await resolveUnknown(known.unknown));
       input.value = codes.join(', ');
       button.dataset.sectorResolved = 'true';
       button.disabled = false;
@@ -148,6 +219,8 @@
 
   window.SOLIDDESIGN_DISCOVERY_SECTORS = SECTORS;
   window.SOLIDDESIGN_RESOLVE_DISCOVERY_SECTORS = resolveKnown;
+
+  installSectorIntelligenceLauncher();
 
   // Keep the main discovery module unchanged: triage is a thin enhancement layer.
   const triageScript = document.createElement('script');
