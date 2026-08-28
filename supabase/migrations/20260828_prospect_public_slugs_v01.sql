@@ -118,7 +118,7 @@ drop policy if exists public_resolve_prospect_slug on public.prospects;
 create policy public_resolve_prospect_slug on public.prospects
   for select to anon
   using (
-    public_slug = lower(coalesce(
+    public_slug = (select lower(coalesce(
       (
         coalesce(
           nullif(current_setting('request.headers', true), ''),
@@ -126,7 +126,7 @@ create policy public_resolve_prospect_slug on public.prospects
         )::jsonb ->> 'x-soliddesign-prospect-slug'
       ),
       ''
-    ))
+    )))
   );
 
 drop policy if exists public_resolve_live_demo on public.demos;
@@ -138,7 +138,7 @@ create policy public_resolve_live_demo on public.demos
       select 1
       from public.prospects p
       where p.id = demos.prospect_id
-        and p.public_slug = lower(coalesce(
+        and p.public_slug = (select lower(coalesce(
           (
             coalesce(
               nullif(current_setting('request.headers', true), ''),
@@ -146,7 +146,7 @@ create policy public_resolve_live_demo on public.demos
             )::jsonb ->> 'x-soliddesign-prospect-slug'
           ),
           ''
-        ))
+        )))
     )
   );
 
