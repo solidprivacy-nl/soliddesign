@@ -45,11 +45,13 @@ jobs:
           node --check operator/functions/api/geocode.js
           node --check operator/functions/api/site-check.js
           node --check operator/functions/api/resolve-sector.js
+          node --check operator/functions/api/publish-sector-intelligence.js
           test -s operator/index.html
           test -s operator/start-design.html
           test -s operator/config.js
           test -s operator/discovery.css
           test -s operator/wrangler.jsonc
+          test -s docs/DECISIONS.md
           test -s docs/DISCOVERY_SECTOR_RESOLUTION.md
           test -s docs/DISCOVERY_TRIAGE.md
           test -s sector-intelligence/README.md
@@ -68,11 +70,18 @@ jobs:
           grep -q "bakker: \['bakery'\]" operator/discovery-sectors.js
           grep -q "kapper: \['barber'\]" operator/discovery-sectors.js
           grep -q '/api/resolve-sector' operator/discovery-sectors.js
+          grep -q '/api/publish-sector-intelligence' operator/discovery-sectors.js
           grep -q 'discovery-triage.js' operator/discovery-sectors.js
           grep -q 'startSectorIntelligence' operator/discovery-sectors.js
           grep -q 'Start sectoronderzoek in ChatGPT' operator/discovery-sectors.js
+          grep -q 'Verwerk onderzoeksresultaat' operator/discovery-sectors.js
           grep -q 'human_sector_term' operator/discovery-sectors.js
           grep -q 'sectorIntelligencePrompt' operator/discovery-sectors.js
+          ! grep -q 'github.com/solidprivacy-nl/soliddesign' operator/discovery-sectors.js
+          grep -q 'GITHUB_SECTOR_INTELLIGENCE_TOKEN' operator/functions/api/publish-sector-intelligence.js
+          grep -q 'operator_allowlist' operator/functions/api/publish-sector-intelligence.js
+          grep -q 'refs/heads/' operator/functions/api/publish-sector-intelligence.js
+          grep -q 'REQUIRED_HEADINGS' operator/functions/api/publish-sector-intelligence.js
           grep -q 'discovery-triage-v1' operator/functions/api/site-check.js
           grep -q 'Voeg toe aan Prospects' operator/discovery-triage.js
           grep -q 'Verbeterkans' operator/discovery-triage.js
@@ -95,8 +104,9 @@ jobs:
           grep -q 'Canonical sector key' operator/design-process.js
           grep -q 'sector-intelligence/<canonical_sector_key>.md' prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'Ontology identifies; market language guides research' sector-intelligence/README.md
-          grep -q '## CMS launcher' sector-intelligence/README.md
-          grep -q 'canonical v0.2' sector-intelligence/README.md
+          grep -q '## CMS launcher and operator flow' sector-intelligence/README.md
+          grep -q 'canonical v0.3' sector-intelligence/README.md
+          grep -q 'ADR-016' docs/DECISIONS.md
           ! grep -q 'Copy SI-verbeterstart' operator/index.html
           ! grep -R -E 'SUPABASE_(SERVICE_ROLE|SECRET)_KEY|service_role' operator/ --exclude=README.md
       - name: Operator Pages Function
