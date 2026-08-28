@@ -73,6 +73,13 @@
     })[key] || String(key || '').replaceAll('_', ' ');
   }
 
+  function setDiscoveryMessage(text, isError = false) {
+    const node = document.getElementById('discoveryMessage');
+    if (!node) return;
+    node.textContent = text || '';
+    node.classList.toggle('error', Boolean(isError));
+  }
+
   async function sessionOrThrow() {
     const { data: { session } } = await db.auth.getSession();
     if (!session?.access_token) throw new Error('Log opnieuw in om gevonden bedrijven te beoordelen.');
@@ -100,6 +107,20 @@
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.error || `Websitecontrole mislukt (${response.status}).`);
+    return payload;
+  }
+
+  async function prepareProspect(prospectId, accessToken) {
+    const response = await fetch('/api/prepare-prospect', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ prospect_id: prospectId })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Voorbereiding kon niet worden gestart (${response.status}).`);
     return payload;
   }
 
@@ -234,9 +255,9 @@
     const intro = document.createElement('div');
     intro.className = 'triage-assessment-intro';
     const title = document.createElement('strong');
-    title.textContent = 'Snelle websitebeoordeling';
+    title.textContent = triage.site_kind === 'LINKHUB' ? 'Snelle aanwezigheidsbeoordeling' : 'Snelle websitebeoordeling';
     const note = document.createElement('span');
-    note.textContent = 'Selectiecheck voor Discovery. Het volledige technisch rapport volgt pas nadat het bedrijf aan Prospects is toegevoegd.';
+    note.textContent = 'Selectiecheck voor Discovery. Na toevoegen worden het technische rapport en de eerste mock-up automatisch voorbereid.';
     intro.append(title, note);
     panel.appendChild(intro);
 
@@ -311,8 +332,18 @@
       primary.addEventListener('click', async () => {
         primary.disabled = true;
         try {
+          const session = await sessionOrThrow();
           const changed = await rpc('operator_promote_discovery_candidate', { p_id: row.id });
           if (!changed) throw new Error('Bedrijf kon niet aan Prospects worden toegevoegd.');
+
+          try {
+            await prepareProspect(row.id, session.access_token);
+            setDiscoveryMessage(`${row.name} is toegevoegd. Technisch rapport en eerste mock-up worden voorbereid.`);
+          } catch (prepareError) {
+            console.error('Automatic prospect preparation failed to start', prepareError);
+            setDiscoveryMessage(`${row.name} is toegevoegd, maar de automatische voorbereiding kon niet starten. Start die vanuit Prospects opnieuw.`, true);
+          }
+
           document.getElementById('refreshDiscoveryBtn')?.click();
           document.getElementById('refreshBtn')?.click();
         } catch (error) {
@@ -437,7 +468,6 @@
     for (const group of GROUPS) {
       const items = grouped.get(group.key) || [];
       if (!items.length) continue;
-
       items.sort((a, b) => {
         const opportunityDelta = scoreValue(b.row, 'conversion_opportunity') - scoreValue(a.row, 'conversion_opportunity');
         if (opportunityDelta) return opportunityDelta;
