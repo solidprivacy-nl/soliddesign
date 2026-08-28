@@ -1,6 +1,6 @@
 # SolidDesign Sector Intelligence
 
-**Status:** canonical v0.1  
+**Status:** canonical v0.2  
 **Governing rule:** `ENGINEERING_CONSTITUTION.md`
 
 Sector Intelligence is reusable external design research for one canonical business sector. It exists to raise the quality bar of future SolidDesign designs without turning sectors into templates.
@@ -36,6 +36,37 @@ location = Amsterdam
 ChatGPT must interpret the actual market represented by the human term and location. For the example above, relevant vocabulary can include Dutch and English variants such as kappers, kapsalons, hair salons, barbershops and other contextually valid terms.
 
 Do not maintain a second hand-built research taxonomy unless repeated failures prove it necessary.
+
+## CMS launcher
+
+The operator entry point lives in **Bedrijven zoeken**, directly below the normal area-search action.
+
+The operator uses the same inputs that already drive Discovery:
+
+- `Locatie` remains the market starting point;
+- `Sector(en)` supplies the original human market term;
+- the existing validated Overture sector resolver supplies the canonical machine key.
+
+Sector Intelligence is one canonical file per sector, so the launcher accepts **one sector per research run**. Discovery itself may still search multiple sectors in one run.
+
+The button is labelled:
+
+```text
+Start sectoronderzoek in ChatGPT
+```
+
+It performs only the minimum orchestration required:
+
+1. preserve the human sector term exactly as entered;
+2. resolve the canonical Overture key with the existing sector resolver;
+3. build the standardized research instruction;
+4. copy that instruction to the clipboard;
+5. open the ordinary ChatGPT client;
+6. tell the operator to paste the instruction into a new chat.
+
+The CMS does not store research job state and does not call a separate research API. ChatGPT performs the research, synthesis, self-review and GitHub write. GitHub remains the publication boundary.
+
+If `sector-intelligence/<key>.md` already exists, the same launcher intentionally requests a refresh rather than creating a second knowledge object. The resulting ChatGPT run must still create a branch and PR; it must not merge automatically.
 
 ## Research scope
 
