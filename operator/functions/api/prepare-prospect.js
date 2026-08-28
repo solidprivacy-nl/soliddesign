@@ -51,19 +51,50 @@ async function authorizeAndLoadProspect(request, prospectId) {
   return Array.isArray(rows) && rows.length === 1 ? rows[0] : null;
 }
 
-async function dispatch(token, prospectId) {
+function randomToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/g, '');
+}
+
+async function sha256Hex(value) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function queuePreparation(request, prospectId, tokenHash) {
+  const authorization = request.headers.get('Authorization') || '';
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/operator_queue_first_concept`, {
+    method: 'POST',
+    headers: {
+      Authorization: authorization,
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ p_id: prospectId, p_token_hash: tokenHash })
+  });
+  if (!response.ok) throw new Error(`Queue RPC failed (${response.status}).`);
+  return Boolean(await response.json().catch(() => false));
+}
+
+async function dispatch(githubToken, prospectId, preparationToken) {
   const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/dispatches`, {
     method: 'POST',
     headers: {
       Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${githubToken}`,
       'Content-Type': 'application/json',
       'User-Agent': 'SolidDesign-CMS',
       'X-GitHub-Api-Version': '2022-11-28'
     },
     body: JSON.stringify({
       event_type: 'prepare_prospect',
-      client_payload: { prospect_id: prospectId }
+      client_payload: {
+        prospect_id: prospectId,
+        preparation_token: preparationToken
+      }
     })
   });
   if (!response.ok) {
@@ -90,14 +121,19 @@ export async function onRequestPost(context) {
     return json({ error: 'Voeg het bedrijf eerst toe aan Prospects.' }, 409);
   }
 
-  const token = context.env?.GITHUB_AUTOMATION_TOKEN || context.env?.GITHUB_SECTOR_INTELLIGENCE_TOKEN;
-  if (!token) return json({ error: 'Automatische voorbereiding is nog niet geconfigureerd.' }, 503);
+  const githubToken = context.env?.GITHUB_AUTOMATION_TOKEN || context.env?.GITHUB_SECTOR_INTELLIGENCE_TOKEN;
+  if (!githubToken) return json({ error: 'Automatische voorbereiding is nog niet geconfigureerd.' }, 503);
+
+  const preparationToken = randomToken();
+  const tokenHash = await sha256Hex(preparationToken);
 
   try {
-    await dispatch(token, prospectId);
+    const queued = await queuePreparation(context.request, prospectId, tokenHash);
+    if (!queued) return json({ error: 'Prospect kon niet voor voorbereiding worden klaargezet.' }, 409);
+    await dispatch(githubToken, prospectId, preparationToken);
     return json({ status: 'queued' });
   } catch (error) {
     console.error('Prospect preparation dispatch failed', error?.status || '', error);
-    return json({ error: 'Automatische voorbereiding kon niet worden gestart.' }, 502);
+    return json({ error: 'Automatische voorbereiding kon niet worden gestart. Probeer het vanuit Prospects opnieuw.' }, 502);
   }
 }
