@@ -68,6 +68,7 @@ jobs:
           DEPLOY_BRANCH: ${{ steps.deployment.outputs.branch }}
           SUPABASE_URL: https://grderdhnjkeucaaehgqy.supabase.co
           SMOKE_SLUG: siberg
+          LEGACY_SMOKE_SLUG: koppen-electro-techniek
         run: |
           set -euo pipefail
           BASE_URL="https://${DEPLOY_BRANCH}.soliddesign-cms.pages.dev"
@@ -86,6 +87,20 @@ jobs:
           curl -fsSL --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prospect/$SMOKE_SLUG/?src=qr" -o /tmp/prospect.html
           grep -q 'soliddesignProspectEngagement' /tmp/prospect.html
           grep -q 'prospect-engagement.js' /tmp/prospect.html
+
+          # Grandfathered compatibility is intentionally finite. While these rows exist,
+          # prove one representative legacy LIVE page remains under the public prospect URL.
+          curl -sS --retry 5 --retry-delay 1 --retry-all-errors \
+            -D /tmp/legacy.headers \
+            "$BASE_URL/prospect/$LEGACY_SMOKE_SLUG/?src=qr" \
+            -o /tmp/legacy.html
+          grep -Eq '^HTTP/[^ ]+ 200' /tmp/legacy.headers
+          grep -Eqi '^x-robots-tag: noindex, nofollow, noarchive' /tmp/legacy.headers
+          if grep -Eqi '^location: https://(gate3-v1\.soliddesign-cms|soliddesign-previews-solidprivacy|gate3-v1\.soliddesign-previews-solidprivacy)\.pages\.dev' /tmp/legacy.headers; then
+            echo 'legacy preview leaked its technical host'
+            exit 1
+          fi
+          grep -q 'soliddesignProspectEngagement' /tmp/legacy.html
 
           for function_name in team-invite prospect-engagement; do
             curl -sS -D "/tmp/${function_name}.headers" -o "/tmp/${function_name}.body" \
