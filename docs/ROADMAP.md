@@ -23,6 +23,7 @@ Canonical design:
 - `docs/ARCHITECTURE.md`
 - `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`
 - `docs/SECURITY.md`
+- `docs/AUTH_REDIRECTS.md`
 - `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md`
 
 Status rule used below:
@@ -51,7 +52,7 @@ TEMPORARY PUBLIC ROUTE
 https://soliddesign-cms.pages.dev/prospect/<public_slug>
 ```
 
-Architecture, security, public-link, database-evolution and Operator documentation now point to one operating model. Domain names are delivery configuration; `public_slug` remains prospect identity.
+Architecture, security, public-link, database-evolution, Auth-redirect and Operator documentation now point to one operating model. Domain names are delivery configuration; `public_slug` remains prospect identity.
 
 Documentation precedence is explicit in `docs/ARCHITECTURE.md`. Completed Gate-1/2 plans and evidence are marked historical so they cannot silently become competing runtime architecture.
 
@@ -66,6 +67,9 @@ Implemented:
 - current operators backfilled without access loss;
 - `ADMIN / KEY_USER / USER`;
 - server-side Auth invite flow;
+- invite flow always passes an explicit `redirectTo` rather than relying on Supabase Site URL fallback;
+- invite redirect is limited to the current internal origin, isolated `pr-<number>` Pages previews, or the explicitly configured future `SOLIDDESIGN_INTERNAL_ORIGIN`;
+- arbitrary browser origins are rejected as invitation destinations;
 - Admin can invite User/Key user;
 - Key user can invite User only;
 - mandatory first password setup flow;
@@ -78,21 +82,40 @@ Implemented:
 - self-signup hidden in the normal UI;
 - browser CORS/preflight support on team management Edge Functions.
 
+### Required hosted Auth configuration
+
+Supabase **Authentication → URL Configuration** must match the runtime contract in `docs/AUTH_REDIRECTS.md`.
+
+Current rollout target:
+
+```text
+Site URL
+https://soliddesign-cms.pages.dev/
+
+Additional Redirect URLs
+https://soliddesign-cms.pages.dev/**
+https://pr-*.soliddesign-cms.pages.dev/**
+```
+
+`http://localhost:3000` is local-development state and must not remain the hosted production Site URL. After a future CMS-domain cutover, set Site URL and the Edge Function `SOLIDDESIGN_INTERNAL_ORIGIN` to `https://cms.<brand>.nl` and re-run the invite gate before removing the old hostname.
+
 ### Remaining M1 verification/debt
 
 `operator_allowlist` still gates a finite set of older Operator RLS/functions. It is transitional compatibility only; do not add new semantics to it.
 
 **Browser verification gate:**
 
-1. invite one controlled test colleague through Team;
-2. finish first-login/password activation;
-3. verify display name/initials and that assignments/activity show names rather than e-mail;
-4. verify normal access and role-specific Team visibility;
-5. verify an Admin can correct a display name;
-6. verify a Key user can invite User but not elevate roles;
-7. verify permanent deletion succeeds for a clean test account and is rejected after dossier/business history exists;
-8. deactivate/reactivate without SQL/admin-console intervention;
-9. verify active assignments block unsafe deactivation/deletion.
+1. verify hosted Auth URL Configuration matches `docs/AUTH_REDIRECTS.md`;
+2. invite one controlled test colleague through Team;
+3. confirm the invite returns to the exact allowed internal/PR-preview origin rather than localhost;
+4. finish first-login/password activation;
+5. verify display name/initials and that assignments/activity show names rather than e-mail;
+6. verify normal access and role-specific Team visibility;
+7. verify an Admin can correct a display name;
+8. verify a Key user can invite User but not elevate roles;
+9. verify permanent deletion succeeds for a clean test account and is rejected after dossier/business history exists;
+10. deactivate/reactivate without SQL/admin-console intervention;
+11. verify active assignments block unsafe deactivation/deletion.
 
 **After this browser gate passes:** perform one explicit access cutover from the remaining `operator_allowlist`-based RLS/function/browser checks to active `team_members`, then remove the compatibility model. Do not dual-maintain both indefinitely.
 
@@ -302,8 +325,9 @@ Automation candidates remain evidence-gated. Do not introduce queues, agentic wo
 3. Prefer existing platform capabilities over new services.
 4. Prefer explicit human actions over hidden automation until evidence justifies automation.
 5. Domain names are delivery configuration, not business identity.
-6. Human identity is display-name/UUID based; e-mail is account metadata, not workflow identity.
-7. Deactivation preserves history; permanent deletion is only for history-free cleanup accounts.
-8. Transitional compatibility must have an explicit shrink/remove condition and may not silently become architecture.
-9. Historical evidence/plans do not override current architecture or roadmap status.
-10. No future milestone is implemented merely because it appears on this roadmap.
+6. Auth redirects follow the configured internal origin and never a stale localhost fallback or arbitrary caller destination.
+7. Human identity is display-name/UUID based; e-mail is account metadata, not workflow identity.
+8. Deactivation preserves history; permanent deletion is only for history-free cleanup accounts.
+9. Transitional compatibility must have an explicit shrink/remove condition and may not silently become architecture.
+10. Historical evidence/plans do not override current architecture or roadmap status.
+11. No future milestone is implemented merely because it appears on this roadmap.
