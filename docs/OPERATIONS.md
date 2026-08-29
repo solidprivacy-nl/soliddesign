@@ -223,6 +223,41 @@ Team
 
 Key users may invite normal Users. Admins govern elevated roles. Normal operators do not need SQL or Supabase Studio for routine onboarding.
 
+### Hosted Auth redirect configuration
+
+Supabase **Authentication → URL Configuration** is part of the deployment contract. The application always sends an explicit validated `redirectTo`, but Supabase will only honor destinations that are in its Redirect URL allow list.
+
+Current rollout configuration:
+
+```text
+Site URL
+https://soliddesign-cms.pages.dev/
+
+Additional Redirect URLs
+https://soliddesign-cms.pages.dev/**
+https://pr-*.soliddesign-cms.pages.dev/**
+```
+
+`http://localhost:3000` must not remain the hosted production Site URL. It is local-development configuration only.
+
+After the internal custom-domain cutover:
+
+```text
+Site URL
+https://cms.<brand>.nl/
+
+Additional Redirect URLs
+https://cms.<brand>.nl/**
+```
+
+and set the `team-invite` Edge Function secret/environment value:
+
+```text
+SOLIDDESIGN_INTERNAL_ORIGIN=https://cms.<brand>.nl
+```
+
+Re-test invitations before removing the old internal hostname from the allow list. Full rationale and invariants: `docs/AUTH_REDIRECTS.md`.
+
 `operator_allowlist` still exists as **transitional compatibility** for older Operator RLS/access checks. It is not a second membership model and should disappear only after the remaining RLS/access paths have been deliberately cut over and verified.
 
 Never expose a secret/service-role credential to browser code. Browser access uses the Supabase publishable key with least-privilege grants, RLS and narrow RPC/server capabilities.
