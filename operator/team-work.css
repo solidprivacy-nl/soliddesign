@@ -21,6 +21,14 @@
   margin-bottom: 18px;
 }
 
+/* team-work adds the third prospect filter. Keep the filter UI bound to the
+   list column: search on its own row, the two selects below it. */
+#activeProspectPane .filters {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+#activeProspectPane .filters > * { min-width: 0; }
+#activeProspectPane .filters > #searchInput { grid-column: 1 / -1; }
+
 .work-list {
   display: grid;
   gap: 10px;
@@ -135,4 +143,9 @@
   .responsibility-grid { grid-template-columns: 1fr; }
   .work-item { align-items: flex-start; flex-direction: column; }
   .work-meta { align-items: flex-start; }
+}
+
+@media (max-width: 560px) {
+  #activeProspectPane .filters { grid-template-columns: 1fr; }
+  #activeProspectPane .filters > #searchInput { grid-column: auto; }
 }
