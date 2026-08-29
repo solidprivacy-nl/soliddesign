@@ -11,14 +11,14 @@ SolidDesign Operator remains deliberately narrow. It supports:
 - **Mijn werk** — personal work derived from current prospect responsibilities;
 - **Prospects** — shared prospect register and dossiers;
 - **Bedrijven zoeken** — manual discovery/intake;
-- **Team** — invite, role/status and work-distribution view for Key users/Admins;
+- **Team** — invite, role/status, human identity and work-distribution view for Key users/Admins;
 - per-prospect **Overzicht / Design / Outreach / Activiteit**;
 - immutable mock-up versions with explicit LIVE promotion;
 - stable public prospect links;
 - minimal prospect engagement in Outreach;
 - actor-aware dossier history.
 
-It is explicitly not a general CRM, website builder, task engine, workflow platform, HR system, capacity planner or analytics suite.
+It is explicitly not a general CRM, website builder, task engine, workflow platform, HR system, capacity planner, profile/avatar platform or analytics suite.
 
 ## One dossier, phase responsibilities
 
@@ -50,6 +50,26 @@ USER
 
 There is deliberately no Owner/Eigenaar role.
 
+## Human team identity
+
+The work interface identifies colleagues by `team_members.display_name`, not by e-mail address.
+
+```text
+AJ  Anne Jansen
+    anne@example.nl
+```
+
+Rules:
+
+- display name is the primary visible identity in Team, assignments and activity;
+- e-mail is secondary account/login metadata and is only shown where account management benefits from it;
+- the circular initials avatar is derived from the display name and is not stored;
+- there is no image-avatar upload/storage/crop workflow;
+- Admin may correct a display name through Team;
+- changing a display name does not change the stable Auth UUID behind assignments/history.
+
+This keeps names readable throughout the workflow without creating a user-profile subsystem.
+
 ## Invite-only onboarding
 
 Routine onboarding does not require SQL or Supabase dashboard changes.
@@ -77,6 +97,19 @@ Rules:
 `team_members` is the durable membership/role model. `operator_allowlist` remains a temporary compatibility gate for existing Operator RLS/access paths during rollout; do not build new membership semantics on top of it.
 
 The invitation metadata that drives the password-setup overlay is onboarding UX state, not a role/authorization source. Authorization remains server/RLS/team-membership based.
+
+## Deactivate versus remove
+
+**Deactiveer** is normal offboarding. The account loses active access but remains in Team/history so previous work still has a human actor.
+
+**Verwijder** is Admin-only cleanup for a mistaken/test/non-business account. The server permits permanent deletion only when the user:
+
+- is not the calling Admin;
+- has no current prospect responsibilities;
+- has no prospect-linked business activity/history;
+- is not the last active Admin.
+
+If business history exists, the delete action is rejected and the correct operation is deactivation. Permanent deletion also removes the Supabase Auth account; it is never implemented as a browser-side table delete.
 
 ## Discovery workflow
 
@@ -202,7 +235,8 @@ Examples:
 - mock-up created or promoted LIVE;
 - mailing sent;
 - archive/restore;
-- team lifecycle actions.
+- team lifecycle actions;
+- display-name changes.
 
 Routine UI navigation is not logged.
 
@@ -217,6 +251,8 @@ Current rollout access is composed from:
 - transitional `operator_allowlist` checks on older Operator RLS/access paths;
 - RLS and narrow authenticated RPC/server capabilities;
 - server-side role checks for privileged operations.
+
+Permanent user deletion is a server-side Admin capability because it must remove the Auth identity and enforce assignment/history safeguards. The browser never receives a service/admin credential.
 
 The allowlist is compatibility debt, not a target parallel user model. Remove it only through an explicit tested cutover of the remaining policies/access checks.
 
