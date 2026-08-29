@@ -8,11 +8,12 @@ function hideSelfSignup() {
   if (loginCard) loginCard.textContent = 'Log in met je SolidDesign-account. Nieuwe collega? Laat een Key user of Admin je uitnodigen.';
 }
 
-function setupOverlay(session) {
+function setupOverlay() {
   if (document.getElementById('inviteSetupOverlay')) return;
   const overlay = document.createElement('div');
   overlay.id = 'inviteSetupOverlay';
   overlay.className = 'auth-shell invite-setup-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:1000;background:var(--bg);overflow:auto;';
   overlay.innerHTML = `
     <section class="auth-card">
       <div class="brand">SolidDesign <span>Operator</span></div>
@@ -75,11 +76,11 @@ function setupOverlay(session) {
 async function enforceInviteSetup() {
   if (!db) return;
   const { data: { session } } = await db.auth.getSession();
-  if (session?.user?.user_metadata?.solidDesignMustSetPassword === true) setupOverlay(session);
+  if (session?.user?.user_metadata?.solidDesignMustSetPassword === true) setupOverlay();
 }
 
 hideSelfSignup();
 enforceInviteSetup().catch(console.error);
 db?.auth.onAuthStateChange((_event, session) => {
-  if (session?.user?.user_metadata?.solidDesignMustSetPassword === true) setupOverlay(session);
+  if (session?.user?.user_metadata?.solidDesignMustSetPassword === true) setupOverlay();
 });
