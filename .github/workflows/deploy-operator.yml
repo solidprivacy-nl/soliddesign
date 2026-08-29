@@ -62,6 +62,40 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           DEPLOY_BRANCH: ${{ steps.deployment.outputs.branch }}
         run: npx --yes wrangler@4 pages deploy . --project-name soliddesign-cms --branch "$DEPLOY_BRANCH"
+      - name: Smoke-test preview delivery
+        if: github.event_name == 'pull_request'
+        env:
+          DEPLOY_BRANCH: ${{ steps.deployment.outputs.branch }}
+          SUPABASE_URL: https://grderdhnjkeucaaehgqy.supabase.co
+          SMOKE_SLUG: siberg
+        run: |
+          set -euo pipefail
+          BASE_URL="https://${DEPLOY_BRANCH}.soliddesign-cms.pages.dev"
+
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/" -o /tmp/operator.html
+          grep -q 'SolidDesign' /tmp/operator.html
+
+          status=$(curl -sS -o /tmp/missing.html -w '%{http_code}' "$BASE_URL/prospect/does-not-exist/")
+          test "$status" = "404"
+
+          curl -sS -D /tmp/canonical.headers -o /dev/null "$BASE_URL/prospect/$SMOKE_SLUG?src=qr"
+          grep -Eq '^HTTP/[^ ]+ 302' /tmp/canonical.headers
+          grep -Eqi "^location: .*\/prospect\/$SMOKE_SLUG/\?src=qr" /tmp/canonical.headers
+          grep -Eqi '^x-robots-tag: noindex, nofollow, noarchive' /tmp/canonical.headers
+
+          curl -fsSL --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prospect/$SMOKE_SLUG/?src=qr" -o /tmp/prospect.html
+          grep -q 'soliddesignProspectEngagement' /tmp/prospect.html
+          grep -q 'prospect-engagement.js' /tmp/prospect.html
+
+          for function_name in team-invite prospect-engagement; do
+            curl -sS -D "/tmp/${function_name}.headers" -o "/tmp/${function_name}.body" \
+              -X OPTIONS "$SUPABASE_URL/functions/v1/$function_name" \
+              -H "Origin: $BASE_URL" \
+              -H 'Access-Control-Request-Method: POST' \
+              -H 'Access-Control-Request-Headers: authorization,apikey,content-type'
+            grep -Eq '^HTTP/[^ ]+ 2[0-9][0-9]' "/tmp/${function_name}.headers"
+            grep -Eqi '^access-control-allow-origin:' "/tmp/${function_name}.headers"
+          done
       - name: Deploy legacy preview alias
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: operator
