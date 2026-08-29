@@ -58,7 +58,8 @@ export async function onRequest({ request }) {
       headers: {
         Location: `${incoming.origin}/prospect/${encodeURIComponent(slug)}/${incoming.search}`,
         'Cache-Control': 'no-store',
-        'X-Robots-Tag': 'noindex, nofollow, noarchive'
+        'X-Robots-Tag': 'noindex, nofollow, noarchive',
+        'Referrer-Policy': 'no-referrer'
       }
     });
   }
@@ -86,7 +87,7 @@ export async function onRequest({ request }) {
 
   const headers = new Headers(upstream.headers);
   headers.delete('set-cookie');
-  headers.set('X-Robots-Tag', 'noindex, nofollow,noarchive');
+  headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
   headers.set('Referrer-Policy', 'no-referrer');
 
   const location = headers.get('Location');
