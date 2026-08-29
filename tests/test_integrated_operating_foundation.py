@@ -118,7 +118,7 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
         policy = self.read("operator/mockup-policy.js")
         public_links = self.read("docs/PROSPECT_PUBLIC_LINKS.md")
         self.assertIn("artifact_path", migration)
-        self.assertIn("External link", policy)
+        self.assertIn("alleen voor conceptreview", policy.lower())
         self.assertIn("New LIVE publication requires", public_links)
         self.assertIn("transition debt", public_links.lower())
 
