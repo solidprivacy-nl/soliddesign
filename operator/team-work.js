@@ -234,6 +234,7 @@ async function inviteMember(form, message) {
   const email = form.querySelector('[name="email"]').value.trim();
   const roleNode = form.querySelector('[name="role"]');
   const role = roleNode ? roleNode.value : 'USER';
+  const inviteOrigin = window.location.origin;
   const { data: { session } } = await db.auth.getSession();
   if (!session) throw new Error('Je bent niet meer ingelogd.');
 
@@ -244,28 +245,40 @@ async function inviteMember(form, message) {
       Authorization: `Bearer ${session.access_token}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ display_name: name, email, role })
+    body: JSON.stringify({ display_name: name, email, role, invite_origin: inviteOrigin })
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.error || 'Uitnodiging kon niet worden verstuurd.');
-  message.textContent = `Uitnodiging verstuurd naar ${email}.`;
-  message.classList.remove('error');
+  if (payload.activation_origin !== inviteOrigin) {
+    throw new Error(`Uitnodiging is verstuurd, maar de server bevestigde een onverwachte activatieomgeving: ${payload.activation_origin || 'onbekend'}.`);
+  }
+
+  const successText = `Uitnodiging verstuurd naar ${email}. Activatieomgeving: ${payload.activation_origin}.`;
   form.reset();
   await refreshState();
   renderTeam('ALL', true);
+  const refreshedMessage = el('teamView')?.querySelector('[data-invite-message]');
+  if (refreshedMessage) {
+    refreshedMessage.textContent = successText;
+    refreshedMessage.classList.remove('error');
+  } else {
+    message.textContent = successText;
+    message.classList.remove('error');
+  }
 }
 
 function inviteCard() {
   const card = document.createElement('section');
   card.className = 'card invite-card hidden';
   card.innerHTML = `
-    <div class="section-heading"><div><h3>Gebruiker uitnodigen</h3><p class="subtle">De nieuwe collega ontvangt een e-mail om het SolidDesign-account te activeren.</p></div><button type="button" class="ghost" data-invite-close>Sluiten</button></div>
+    <div class="section-heading"><div><h3>Gebruiker uitnodigen</h3><p class="subtle">De nieuwe collega ontvangt een e-mail om het SolidDesign-account te activeren.</p><p class="subtle">Activatieomgeving: <strong data-invite-origin></strong></p></div><button type="button" class="ghost" data-invite-close>Sluiten</button></div>
     <form class="invite-form">
       <label>Naam<input name="display_name" type="text" maxlength="100" required /></label>
       <label>E-mailadres<input name="email" type="email" maxlength="254" required /></label>
       ${currentMember.role === 'ADMIN' ? '<label>Rol<select name="role"><option value="USER">User</option><option value="KEY_USER">Key user</option></select></label>' : ''}
       <div class="invite-actions"><span class="message" data-invite-message></span><button type="submit" class="primary">Uitnodigen</button></div>
     </form>`;
+  card.querySelector('[data-invite-origin]').textContent = window.location.origin;
   card.querySelector('[data-invite-close]').addEventListener('click', () => card.classList.add('hidden'));
   const form = card.querySelector('form');
   form.addEventListener('submit', async (event) => {
