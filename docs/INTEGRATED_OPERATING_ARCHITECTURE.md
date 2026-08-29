@@ -1,18 +1,18 @@
 # SolidDesign Integrated Operating Architecture
 
-**Status:** target architecture / implementation basis  
+**Status:** current operating architecture / rollout basis  
 **Date:** 2026-08-29
 
 ## Objective
 
-Extend SolidDesign from a single-operator prospect tool into a small multi-user commercial work system without changing its architectural character.
+Operate SolidDesign as a small multi-user commercial work system without changing its architectural character.
 
 The system remains:
 
 - one application;
-- one Cloudflare Pages deployment;
+- one Cloudflare Pages project/deployment topology;
 - one Supabase operational state plane;
-- one canonical mock-up storage/lifecycle;
+- one canonical mock-up storage/LIVE lifecycle;
 - explicit human control;
 - minimal state and dependencies.
 
@@ -50,7 +50,7 @@ temporary: soliddesign-cms.pages.dev/prospect/<slug>
 later:     <brand>.nl/<slug>
 ```
 
-The brand/domain is configuration. The business identity is `prospects.public_slug`.
+The brand/domain is delivery configuration. The business identity is `prospects.public_slug`.
 
 Preferred final hostname shape:
 
@@ -63,7 +63,7 @@ See `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md`.
 
 ## Identity and governance
 
-Durable application membership is modeled as `team_members` and uses the stable Supabase Auth user UUID.
+Durable application membership is `team_members` and uses the stable Supabase Auth user UUID.
 
 System roles:
 
@@ -79,7 +79,13 @@ USER
 
 There is no Owner/Eigenaar application role.
 
-System role answers what a person may administer. It does not determine their prospect responsibilities.
+System role answers what a person may administer. It does not determine prospect responsibility.
+
+### Membership rollout compatibility
+
+`operator_allowlist` still gates older Operator RLS/access paths during the rollout. It is compatibility state only; `team_members` is the durable membership/role model.
+
+Do not add new role/workflow semantics to the allowlist. Remove it only after the remaining RLS/access paths are explicitly migrated and browser-verified.
 
 ## Prospect responsibility
 
@@ -115,20 +121,24 @@ The temporary public route is:
 /prospect/<public_slug>
 ```
 
-The public route resolves:
+The canonical public mapping is:
 
 ```text
 slug
 → prospect
 → current LIVE demo
-→ canonical artifact
+→ stored immutable artifact
 ```
 
-without changing the stable prospect identity.
+The public URL keeps the slug visible and does not expose internal UUID routes.
 
-When `<brand>.nl` is chosen, the same resolver moves to `<brand>.nl/<slug>` through configuration and host routing rather than data migration.
+New LIVE publication requires `artifact_path`. External HTTPS preview links are review/DRAFT escape hatches only and cannot become newly LIVE.
 
-The final branded public host is a strict allowlist surface and must never become an alias for internal CMS routes.
+A finite compatibility path exists for six grandfathered historical LIVE records that predate this invariant. It is restricted to explicitly allowlisted old SolidDesign Cloudflare preview hosts and is transition debt, not a general reverse-proxy capability.
+
+On the current internal Pages hostname, the old root `/<slug>` route is only a redirect alias to `/prospect/<slug>/`; it no longer performs its own prospect/LIVE resolution.
+
+When `<brand>.nl` is chosen, the same public resolver semantics move to `<brand>.nl/<slug>` through hostname/path routing rather than data migration. The branded public host must be a strict capability allowlist and never become an alias for internal CMS routes.
 
 ## Engagement
 
@@ -149,6 +159,8 @@ No raw IP, IP hash, fingerprint, persistent visitor identity, heatmap or session
 A plain HTTP GET is not considered commercial engagement. Browser-visible first-party telemetry is required to reduce bot/scanner false positives.
 
 Telemetry failure must never block public delivery.
+
+Internal employee QA uses a short-lived server-signed token bound to the prospect slug. IP-based classification and guessable internal flags are deliberately avoided.
 
 ## Internal information architecture
 
@@ -173,7 +185,7 @@ Default landing page. Derived from assignments and contextually opens the releva
 
 ### Prospects
 
-Shared active/archive register with responsibility/status filters and an unassigned view for coordinators.
+Shared active/archive register with status and simple work-distribution filters, including unassigned responsibilities.
 
 ### Team
 
@@ -193,9 +205,9 @@ mailing
 
 Engagement never automatically changes contact status or produces a lead score without later outcome evidence.
 
-## Minimum data expansion
+## Implemented data expansion
 
-Only these core changes are required:
+The integrated operating model adds only:
 
 ```text
 team_members
@@ -205,6 +217,33 @@ prospect_visits
 ```
 
 Existing prospects, demos, mailings, audits, discovery and Storage remain authoritative.
+
+No task table, portfolio table or analytics database was introduced.
+
+## Database evolution
+
+Current database state is defined by:
+
+```text
+supabase/schema.sql       # original bootstrap baseline
+        ↓
+supabase/migrations/*     # ordered canonical evolution
+        ↓
+current production schema
+```
+
+Do not maintain a second manually synchronized current schema file. See `supabase/README.md`.
+
+## Deployment topology
+
+There is one Pages project:
+
+```text
+main            → production
+pr-<number>     → isolated pre-merge QA preview
+```
+
+PR preview branches are verification environments in the same application/project, not separate architecture.
 
 ## Explicit non-goals
 
@@ -223,13 +262,14 @@ Do not add without observed need:
 - visitor fingerprinting;
 - automated lead scoring;
 - marketing automation;
-- separate BI platform.
+- separate BI platform;
+- generalized external-preview/reverse-proxy platform.
 
 ## Architecture invariants
 
 1. One prospect is one dossier.
 2. One canonical operational state plane.
-3. One canonical LIVE artifact state.
+3. One canonical stored-artifact LIVE state for new publication.
 4. System role and prospect responsibility are independent.
 5. One primary assignee per responsibility.
 6. Assignment is current state; event log is history.
@@ -242,4 +282,7 @@ Do not add without observed need:
 13. Engagement measures campaign response, not personal identity.
 14. Telemetry failure never blocks the prospect page.
 15. Routine onboarding does not require manual SQL/admin-console work.
-16. No new subsystem is added without an observed problem that justifies it.
+16. `operator_allowlist` is rollout compatibility, not a second durable membership model.
+17. Historical external LIVE compatibility is finite and must not expand into a general proxy.
+18. Database changes after bootstrap are expressed as ordered migrations.
+19. No new subsystem is added without an observed problem that justifies it.
