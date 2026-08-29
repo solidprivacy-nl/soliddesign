@@ -89,22 +89,61 @@ async function loadDetails(prospectId, card) {
   details.appendChild(table);
 }
 
+async function mintInternalPreviewToken(slug) {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session?.access_token) throw new Error('Je bent niet meer ingelogd.');
+
+  const response = await fetch(`${CONFIG.supabaseUrl}/functions/v1/prospect-engagement`, {
+    method: 'POST',
+    headers: {
+      apikey: CONFIG.supabasePublishableKey,
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ action: 'mint_internal', slug })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.internal_token) throw new Error(payload.error || 'Medewerkertest kon niet worden voorbereid.');
+  return payload.internal_token;
+}
+
 function ensureInternalTestButton(root) {
   const box = root.querySelector('[data-public-prospect-link]');
   if (!box || box.querySelector('[data-public-link-internal-test]')) return;
   const actions = box.querySelector('.save-row > div:last-child');
   const urlInput = box.querySelector('[data-public-link-url]');
+  const message = box.querySelector('[data-public-link-message]');
   if (!actions || !urlInput) return;
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'secondary';
   button.dataset.publicLinkInternalTest = 'true';
   button.textContent = 'Test als medewerker';
-  button.addEventListener('click', () => {
+  button.addEventListener('click', async () => {
     if (!urlInput.value) return;
-    const url = new URL(urlInput.value);
-    url.searchParams.set('__internal', '1');
-    window.open(url.toString(), '_blank', 'noopener');
+    button.disabled = true;
+    if (message) {
+      message.textContent = 'Medewerkertest voorbereiden…';
+      message.classList.remove('error');
+    }
+    try {
+      const url = new URL(urlInput.value);
+      const slug = url.pathname.split('/').filter(Boolean).at(-1) || '';
+      if (!slug) throw new Error('Prospectslug ontbreekt.');
+      const token = await mintInternalPreviewToken(slug);
+      url.searchParams.set('__sd_staff', token);
+      window.open(url.toString(), '_blank', 'noopener');
+      if (message) message.textContent = 'Medewerkertest geopend; deze opening telt niet mee als prospectrespons.';
+    } catch (error) {
+      if (message) {
+        message.textContent = error.message || 'Medewerkertest kon niet worden geopend.';
+        message.classList.add('error');
+      } else {
+        console.error(error);
+      }
+    } finally {
+      button.disabled = false;
+    }
   });
   actions.prepend(button);
 }
