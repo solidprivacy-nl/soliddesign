@@ -110,7 +110,7 @@ jobs:
           fi
           grep -q 'soliddesignProspectEngagement' /tmp/legacy.html
 
-          for function_name in team-invite prospect-engagement; do
+          for function_name in team-invite team-member-admin prospect-engagement; do
             curl -sS -D "/tmp/${function_name}.headers" -o "/tmp/${function_name}.body" \
               -X OPTIONS "$SUPABASE_URL/functions/v1/$function_name" \
               -H "Origin: $BASE_URL" \
