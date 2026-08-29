@@ -14,9 +14,14 @@ let assignments = [];
 let prospects = [];
 
 function el(id) { return document.getElementById(id); }
-function memberName(userId) { return team.find((m) => m.user_id === userId)?.display_name || 'Onbekend'; }
 function assignmentFor(prospectId, responsibility) {
   return assignments.find((a) => a.prospect_id === prospectId && a.responsibility === responsibility) || null;
+}
+function assignmentCount(userId) { return assignments.filter((a) => a.user_id === userId).length; }
+function assignableTeam() { return team.filter((member) => member.active && member.joined_at); }
+function memberStatus(member) {
+  if (!member.active) return 'Inactief';
+  return member.joined_at ? 'Actief' : 'Uitgenodigd';
 }
 
 function addStylesheet() {
@@ -32,9 +37,11 @@ async function loadTeamState() {
   const { data: { session } } = await db.auth.getSession();
   if (!session) return false;
 
+  await db.rpc('operator_mark_joined').catch(() => {});
+
   const [memberResult, teamResult, assignmentResult, prospectResult] = await Promise.all([
-    db.from('team_members').select('user_id,email,display_name,role,active,joined_at').eq('user_id', session.user.id).maybeSingle(),
-    db.from('team_members').select('user_id,email,display_name,role,active,joined_at').order('display_name'),
+    db.from('team_members').select('user_id,email,display_name,role,active,joined_at,deactivated_at').eq('user_id', session.user.id).maybeSingle(),
+    db.from('team_members').select('user_id,email,display_name,role,active,joined_at,deactivated_at').order('display_name'),
     db.from('prospect_assignments').select('prospect_id,responsibility,user_id,assigned_at'),
     db.from('prospects').select('id,name,city,contact_status,next_action_at,website_url').order('updated_at', { ascending: false })
   ]);
@@ -46,10 +53,25 @@ async function loadTeamState() {
   if (prospectResult.error) throw prospectResult.error;
 
   currentMember = memberResult.data;
-  team = (teamResult.data || []).filter((m) => m.active);
+  team = teamResult.data || [];
   assignments = assignmentResult.data || [];
   prospects = prospectResult.data || [];
   return true;
+}
+
+async function refreshState() {
+  const [teamResult, assignmentResult, prospectResult] = await Promise.all([
+    db.from('team_members').select('user_id,email,display_name,role,active,joined_at,deactivated_at').order('display_name'),
+    db.from('prospect_assignments').select('prospect_id,responsibility,user_id,assigned_at'),
+    db.from('prospects').select('id,name,city,contact_status,next_action_at,website_url').order('updated_at', { ascending: false })
+  ]);
+  if (teamResult.error) throw teamResult.error;
+  if (assignmentResult.error) throw assignmentResult.error;
+  if (prospectResult.error) throw prospectResult.error;
+  team = teamResult.data || [];
+  assignments = assignmentResult.data || [];
+  prospects = prospectResult.data || [];
+  currentMember = team.find((member) => member.user_id === currentMember?.user_id) || currentMember;
 }
 
 function mainNavButton(id, label) {
@@ -127,20 +149,6 @@ function installNavigation() {
   showExtensionView(myWorkView, myWorkNav);
 }
 
-async function refreshState() {
-  const [teamResult, assignmentResult, prospectResult] = await Promise.all([
-    db.from('team_members').select('user_id,email,display_name,role,active,joined_at').order('display_name'),
-    db.from('prospect_assignments').select('prospect_id,responsibility,user_id,assigned_at'),
-    db.from('prospects').select('id,name,city,contact_status,next_action_at,website_url').order('updated_at', { ascending: false })
-  ]);
-  if (teamResult.error) throw teamResult.error;
-  if (assignmentResult.error) throw assignmentResult.error;
-  if (prospectResult.error) throw prospectResult.error;
-  team = (teamResult.data || []).filter((m) => m.active);
-  assignments = assignmentResult.data || [];
-  prospects = prospectResult.data || [];
-}
-
 function prospectStatusLabel(value) {
   return ({
     qualified: 'Gekwalificeerd', ready_to_mail: 'Klaar voor brief', mailed: 'Brief verstuurd',
@@ -205,28 +213,172 @@ function renderMyWork(filter = 'ALL') {
   }
 }
 
-function renderTeam() {
+function canManageMember(member) {
+  if (member.user_id === currentMember.user_id) return false;
+  if (currentMember.role === 'ADMIN') return true;
+  return currentMember.role === 'KEY_USER' && member.role === 'USER';
+}
+
+async function inviteMember(form, message) {
+  const name = form.querySelector('[name="display_name"]').value.trim();
+  const email = form.querySelector('[name="email"]').value.trim();
+  const roleNode = form.querySelector('[name="role"]');
+  const role = roleNode ? roleNode.value : 'USER';
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) throw new Error('Je bent niet meer ingelogd.');
+
+  const response = await fetch(`${CONFIG.supabaseUrl}/functions/v1/team-invite`, {
+    method: 'POST',
+    headers: {
+      apikey: CONFIG.supabasePublishableKey,
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ display_name: name, email, role })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || 'Uitnodiging kon niet worden verstuurd.');
+  message.textContent = `Uitnodiging verstuurd naar ${email}.`;
+  message.classList.remove('error');
+  form.reset();
+  await refreshState();
+  renderTeam('ALL', true);
+}
+
+function inviteCard() {
+  const card = document.createElement('section');
+  card.className = 'card invite-card hidden';
+  card.innerHTML = `
+    <div class="section-heading"><div><h3>Gebruiker uitnodigen</h3><p class="subtle">De nieuwe collega ontvangt een e-mail om het SolidDesign-account te activeren.</p></div><button type="button" class="ghost" data-invite-close>Sluiten</button></div>
+    <form class="invite-form">
+      <label>Naam<input name="display_name" type="text" maxlength="100" required /></label>
+      <label>E-mailadres<input name="email" type="email" maxlength="254" required /></label>
+      ${currentMember.role === 'ADMIN' ? '<label>Rol<select name="role"><option value="USER">User</option><option value="KEY_USER">Key user</option></select></label>' : ''}
+      <div class="invite-actions"><span class="message" data-invite-message></span><button type="submit" class="primary">Uitnodigen</button></div>
+    </form>`;
+  card.querySelector('[data-invite-close]').addEventListener('click', () => card.classList.add('hidden'));
+  const form = card.querySelector('form');
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const submit = form.querySelector('button[type="submit"]');
+    const message = card.querySelector('[data-invite-message]');
+    submit.disabled = true;
+    message.textContent = 'Uitnodiging versturen…';
+    message.classList.remove('error');
+    try { await inviteMember(form, message); }
+    catch (error) { message.textContent = error.message; message.classList.add('error'); }
+    finally { submit.disabled = false; }
+  });
+  return card;
+}
+
+async function changeRole(member, role, message) {
+  const { error } = await db.rpc('operator_set_team_role', { p_user_id: member.user_id, p_role: role });
+  if (error) throw error;
+  message.textContent = 'Rol bijgewerkt.';
+  await refreshState();
+  renderTeam();
+}
+
+async function toggleMember(member, message) {
+  const rpc = member.active ? 'operator_deactivate_team_member' : 'operator_reactivate_team_member';
+  const { error } = await db.rpc(rpc, { p_user_id: member.user_id });
+  if (error) throw error;
+  message.textContent = member.active ? 'Gebruiker gedeactiveerd.' : 'Gebruiker geactiveerd.';
+  await refreshState();
+  renderTeam();
+}
+
+function renderTeam(filter = 'ALL', keepInviteOpen = false) {
   const root = el('teamView');
   if (!root) return;
+  const counts = {
+    ACTIVE: team.filter((m) => m.active && m.joined_at).length,
+    INVITED: team.filter((m) => m.active && !m.joined_at).length,
+    INACTIVE: team.filter((m) => !m.active).length
+  };
+  const shown = team.filter((member) => {
+    if (filter === 'ACTIVE') return member.active && member.joined_at;
+    if (filter === 'INVITED') return member.active && !member.joined_at;
+    if (filter === 'INACTIVE') return !member.active;
+    return true;
+  });
+
   root.innerHTML = `
     <div class="workspace-head">
-      <div><h1>Team</h1><p class="subtle">Leden en huidige werkverdeling. Uitnodigen en rolbeheer volgen in de invite-only onboardingstap.</p></div>
+      <div><h1>Team</h1><p class="subtle">Gebruikers, rollen en huidige werkverdeling.</p></div>
+      <button type="button" class="primary" data-open-invite>+ Gebruiker uitnodigen</button>
     </div>
+    <div class="work-filters">
+      <button data-team-filter="ALL" class="scope-button ${filter === 'ALL' ? 'active' : ''}">Alles ${team.length}</button>
+      <button data-team-filter="ACTIVE" class="scope-button ${filter === 'ACTIVE' ? 'active' : ''}">Actief ${counts.ACTIVE}</button>
+      <button data-team-filter="INVITED" class="scope-button ${filter === 'INVITED' ? 'active' : ''}">Uitgenodigd ${counts.INVITED}</button>
+      <button data-team-filter="INACTIVE" class="scope-button ${filter === 'INACTIVE' ? 'active' : ''}">Inactief ${counts.INACTIVE}</button>
+    </div>
+    <div data-invite-slot></div>
     <section class="card team-card">
+      <p class="message" data-team-message></p>
       <div class="team-table" role="table">
-        <div class="team-row team-head" role="row"><span>Medewerker</span><span>Rol</span><span>Dossier</span><span>Design</span><span>Outreach</span></div>
+        <div class="team-row team-head" role="row"><span>Medewerker</span><span>Rol</span><span>Status</span><span>Dossier</span><span>Design</span><span>Outreach</span><span></span></div>
       </div>
     </section>`;
+
+  const invite = inviteCard();
+  root.querySelector('[data-invite-slot]').appendChild(invite);
+  if (keepInviteOpen) invite.classList.remove('hidden');
+  root.querySelector('[data-open-invite]').addEventListener('click', () => invite.classList.toggle('hidden'));
+  root.querySelectorAll('[data-team-filter]').forEach((button) => button.addEventListener('click', () => renderTeam(button.dataset.teamFilter)));
+
+  const message = root.querySelector('[data-team-message]');
   const table = root.querySelector('.team-table');
-  for (const member of team) {
-    const counts = Object.fromEntries(RESPONSIBILITIES.map(([key]) => [key, assignments.filter((a) => a.user_id === member.user_id && a.responsibility === key).length]));
+  for (const member of shown) {
+    const work = Object.fromEntries(RESPONSIBILITIES.map(([key]) => [key, assignments.filter((a) => a.user_id === member.user_id && a.responsibility === key).length]));
     const row = document.createElement('div');
     row.className = 'team-row';
     row.setAttribute('role', 'row');
-    row.innerHTML = `<span><strong></strong><small></small></span><span></span><span>${counts.CASE_LEAD}</span><span>${counts.DESIGN}</span><span>${counts.OUTREACH}</span>`;
+    row.innerHTML = '<span><strong></strong><small></small></span><span data-role></span><span data-status></span><span></span><span></span><span></span><span class="team-actions"></span>';
     row.querySelector('strong').textContent = member.display_name;
     row.querySelector('small').textContent = member.email;
-    row.children[1].textContent = ROLE_LABELS[member.role] || member.role;
+    row.querySelector('[data-status]').textContent = memberStatus(member);
+    row.children[3].textContent = work.CASE_LEAD;
+    row.children[4].textContent = work.DESIGN;
+    row.children[5].textContent = work.OUTREACH;
+
+    const roleCell = row.querySelector('[data-role]');
+    if (currentMember.role === 'ADMIN' && member.active && member.user_id !== currentMember.user_id) {
+      const select = document.createElement('select');
+      select.className = 'compact-select';
+      select.innerHTML = Object.entries(ROLE_LABELS).map(([value,label]) => `<option value="${value}">${label}</option>`).join('');
+      select.value = member.role;
+      select.addEventListener('change', async () => {
+        select.disabled = true;
+        try { await changeRole(member, select.value, message); }
+        catch (error) { message.textContent = error.message; message.classList.add('error'); select.value = member.role; }
+        finally { select.disabled = false; }
+      });
+      roleCell.appendChild(select);
+    } else {
+      roleCell.textContent = ROLE_LABELS[member.role] || member.role;
+    }
+
+    const actions = row.querySelector('.team-actions');
+    if (canManageMember(member)) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'ghost compact-action';
+      button.textContent = member.active ? 'Deactiveer' : 'Activeer';
+      if (member.active && assignmentCount(member.user_id) > 0) {
+        button.disabled = true;
+        button.title = 'Draag eerst de actieve verantwoordelijkheden over.';
+      }
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        message.classList.remove('error');
+        try { await toggleMember(member, message); }
+        catch (error) { message.textContent = error.message; message.classList.add('error'); button.disabled = false; }
+      });
+      actions.appendChild(button);
+    }
     table.appendChild(row);
   }
 }
@@ -252,8 +404,9 @@ function assignmentSelect(prospect, responsibility, label) {
   const select = document.createElement('select');
   select.dataset.assignment = responsibility;
   select.disabled = !canAssign(responsibility, prospect.id);
-  select.innerHTML = '<option value="">Niet toegewezen</option>' + team.map((member) => `<option value="${member.user_id}"></option>`).join('');
-  [...select.options].slice(1).forEach((option, index) => { option.textContent = team[index].display_name; });
+  const members = assignableTeam();
+  select.innerHTML = '<option value="">Niet toegewezen</option>' + members.map((member) => `<option value="${member.user_id}"></option>`).join('');
+  [...select.options].slice(1).forEach((option, index) => { option.textContent = members[index].display_name; });
   select.value = assignmentFor(prospect.id, responsibility)?.user_id || '';
   wrapper.appendChild(select);
   return wrapper;
@@ -281,6 +434,7 @@ async function bindResponsibilityCard() {
       const message = card.querySelector('[data-assignment-message]');
       select.disabled = true;
       message.textContent = 'Verantwoordelijkheid opslaan…';
+      message.classList.remove('error');
       const userId = select.value || null;
       const { error } = await db.rpc('operator_set_assignment', {
         p_prospect_id: prospect.id,
@@ -291,7 +445,6 @@ async function bindResponsibilityCard() {
         message.textContent = error.message || 'Kon verantwoordelijkheid niet opslaan.';
         message.classList.add('error');
       } else {
-        message.classList.remove('error');
         message.textContent = 'Verantwoordelijkheid opgeslagen.';
         await refreshState();
         renderMyWork();
