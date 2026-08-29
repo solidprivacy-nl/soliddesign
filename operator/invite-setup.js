@@ -71,6 +71,8 @@ function setupOverlay() {
     }
 
     message.textContent = 'Account geactiveerd.';
+    // Stay on the exact internal environment that accepted the invite. This keeps
+    // PR acceptance isolated and naturally follows a later cms.<brand>.nl cutover.
     window.setTimeout(() => window.location.replace(window.location.origin), 250);
   });
 
