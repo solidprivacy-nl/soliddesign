@@ -71,6 +71,23 @@ A member with dossier/business history must be deactivated, never hard-deleted m
 
 Invitation metadata such as `solidDesignMustSetPassword` supports onboarding UI/lifecycle behavior only. User-editable metadata is not authorization authority. Roles and access remain derived from authenticated identity plus server/RLS-controlled membership state.
 
+### Auth redirect boundary
+
+Supabase Auth redirect configuration is a security boundary, not cosmetic deployment metadata.
+
+Rules:
+
+- `team-invite` always passes an explicit `redirectTo` to `inviteUserByEmail`; it does not rely on the Supabase Site URL fallback;
+- the Edge Function accepts only the known internal production origin, isolated `pr-<number>` Pages preview origins, or the explicitly configured future `SOLIDDESIGN_INTERNAL_ORIGIN`;
+- arbitrary browser Origins are rejected as invitation destinations;
+- the hosted Supabase project's **Authentication → URL Configuration** must allow the same destinations;
+- `http://localhost:3000` may be used for local development but must not remain the hosted production Site URL;
+- after the future `cms.<brand>.nl` cutover, both Supabase Site URL and `SOLIDDESIGN_INTERNAL_ORIGIN` must be changed and browser-verified before removing the previous internal hostname.
+
+Current/future exact configuration is maintained in `docs/AUTH_REDIRECTS.md`.
+
+Do not solve ordinary Auth redirects with a custom token broker, custom account service or unrestricted open redirect.
+
 ## Password security
 
 Use Supabase Auth's built-in password controls rather than creating a custom password-strength or breached-password service.
