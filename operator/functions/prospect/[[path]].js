@@ -1,10 +1,10 @@
 const SUPABASE_URL = 'https://grderdhnjkeucaaehgqy.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_fRXRtDIHJ98LIN3cfQHtpA_WJ0yPPRh';
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const LEGACY_PREVIEW_HOSTS = new Set([
-  'gate3-v1.soliddesign-cms.pages.dev',
-  'soliddesign-previews-solidprivacy.pages.dev',
-  'gate3-v1.soliddesign-previews-solidprivacy.pages.dev'
+const LEGACY_PREVIEW_HOSTS = new Map([
+  ['gate3-v1.soliddesign-cms.pages.dev', 'gate3-v1.soliddesign-previews-solidprivacy.pages.dev'],
+  ['soliddesign-previews-solidprivacy.pages.dev', 'soliddesign-previews-solidprivacy.pages.dev'],
+  ['gate3-v1.soliddesign-previews-solidprivacy.pages.dev', 'gate3-v1.soliddesign-previews-solidprivacy.pages.dev']
 ]);
 
 function plain(status, message) {
@@ -68,7 +68,13 @@ function legacyBase(previewUrl) {
   let url;
   try { url = new URL(previewUrl); }
   catch { return null; }
-  if (url.protocol !== 'https:' || !LEGACY_PREVIEW_HOSTS.has(url.hostname)) return null;
+  const upstreamHost = LEGACY_PREVIEW_HOSTS.get(url.hostname);
+  if (url.protocol !== 'https:' || !upstreamHost) return null;
+
+  // Some historical records were rewritten to the shortened soliddesign-cms alias.
+  // Proxying that alias would call the current Pages project again. Normalize it to
+  // the original immutable legacy preview host instead.
+  url.hostname = upstreamHost;
   if (!url.pathname.endsWith('/')) url.pathname += '/';
   url.search = '';
   url.hash = '';
