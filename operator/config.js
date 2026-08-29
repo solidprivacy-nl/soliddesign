@@ -6,5 +6,6 @@ window.SOLIDDESIGN_OPERATOR_CONFIG = Object.freeze({
   publicProspectPathPrefix: "/prospect"
 });
 
+import('./invite-setup.js').catch((error) => console.error('Uitnodigingsflow kon niet laden.', error));
 import('./prospect-link.js').catch((error) => console.error('Prospectlink module kon niet laden.', error));
 import('./team-work.js').catch((error) => console.error('Teamwerk module kon niet laden.', error));
