@@ -2,17 +2,33 @@
 
 ## Canonical database definition
 
-The ordered files in `supabase/migrations/` are the **only canonical schema-evolution source** for the current SolidDesign database.
+SolidDesign has one database-evolution model:
 
 ```text
+supabase/schema.sql        = original bootstrap baseline
+supabase/migrations/*.sql  = ordered canonical evolution after that baseline
+
 bootstrap baseline
 → ordered migrations
 → current production schema
 ```
 
-`supabase/schema.sql` predates the integrated multi-user/public-delivery rollout. It is retained only as the original bootstrap snapshot and is **not** a second current schema specification.
+`supabase/schema.sql` predates the integrated multi-user/public-delivery rollout. It is retained as the bootstrap needed before the current migration chain; it is **not** a second current schema specification and must not be manually kept in lockstep with every later migration.
+
+The migrations are the only canonical source for changes made after the bootstrap baseline.
 
 Do not implement a database change by editing only `schema.sql`.
+
+## Fresh environment
+
+Until a deliberately consolidated replacement baseline is created and proven necessary, a fresh SolidDesign database is built by:
+
+1. applying `supabase/schema.sql` once as the historical bootstrap baseline;
+2. replaying the ordered files in `supabase/migrations/`;
+3. applying the normal Supabase/Auth/Storage runtime configuration that is not represented as table DDL;
+4. verifying CI/runtime/security gates.
+
+Do not treat `schema.sql` alone as current production and do not invent a second manually synchronized “current schema” file.
 
 ## Change rule
 
@@ -41,6 +57,6 @@ Prefer one migration that expresses the actual contract change over parallel sch
 
 Browser-called Edge Functions must implement explicit CORS/preflight handling and must still perform their own authentication/authorization where required.
 
-## Historical bootstrap snapshot
+## Consolidation rule
 
-`schema.sql` may be useful when reading the original Phase-1 bootstrap architecture. If a fresh environment needs to be created, use the migration chain rather than assuming the snapshot represents current production.
+Creating a new consolidated bootstrap is allowed only when fresh-environment setup becomes an observed maintenance problem. Until then, the existing baseline + migration chain is simpler, auditable and sufficient.
