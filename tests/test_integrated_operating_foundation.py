@@ -34,6 +34,8 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
             "supabase/migrations/20260829_membership_engagement_correctness_v02.sql",
             "supabase/migrations/20260829_live_artifact_policy_v01.sql",
             "supabase/migrations/20260829_website_key_search_path_hardening_v01.sql",
+            "supabase/migrations/20260829_team_identity_and_safe_delete_v01.sql",
+            "supabase/functions/team-member-admin/index.ts",
         ]
         for relative_path in required:
             with self.subTest(relative_path=relative_path):
@@ -65,6 +67,28 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
         self.assertIn("Team", team_work)
         self.assertIn("corsHeaders", invite)
         self.assertIn("req.method === 'OPTIONS'", invite)
+
+    def test_team_invites_use_a_validated_internal_redirect_not_site_url_fallback(self):
+        invite = self.read("supabase/functions/team-invite/index.ts")
+        operations = self.read("docs/OPERATIONS.md")
+        self.assertIn("redirectTo,", invite)
+        self.assertIn("inviteRedirectFor", invite)
+        self.assertIn("PR_PREVIEW_ORIGIN_RE", invite)
+        self.assertIn("SOLIDDESIGN_INTERNAL_ORIGIN", invite)
+        self.assertIn("Auth → URL Configuration", operations)
+        self.assertIn("soliddesign-cms.pages.dev", operations)
+        self.assertIn("pr-*", operations)
+
+    def test_team_identity_prefers_display_name_and_safe_delete(self):
+        team_work = self.read("operator/team-work.js")
+        migration = self.read("supabase/migrations/20260829_team_identity_and_safe_delete_v01.sql")
+        admin_fn = self.read("supabase/functions/team-member-admin/index.ts")
+        self.assertIn("memberInitials", team_work)
+        self.assertIn("display_name", team_work)
+        self.assertIn("Verwijder", team_work)
+        self.assertIn("operator_update_team_display_name", migration)
+        self.assertIn("business_history", admin_fn)
+        self.assertIn("auth.admin.deleteUser", admin_fn)
 
     def test_engagement_is_minimal_privacy_bounded_and_browser_callable(self):
         schema = self.read("supabase/migrations/20260829_prospect_engagement_v01.sql")
