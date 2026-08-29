@@ -106,26 +106,35 @@ SolidDesign redirects to origins, not Auth subpaths. Keep the application `redir
 
 `http://localhost:3000` is local-development state and must not remain the hosted production Site URL. After a future CMS-domain cutover, set Site URL and the Edge Function `SOLIDDESIGN_INTERNAL_ORIGIN` to `https://cms.<brand>.nl` and re-run the invite gate before removing the old hostname.
 
+### Browser evidence completed — 2026-08-29
+
+A controlled normal-User onboarding was completed end-to-end on the visibly marked PR-28 preview:
+
+```text
+Admin invite from TEST · PR-28
+→ Supabase invite mail
+→ activation returns to PR-28
+→ mandatory password setup
+→ signed-in SolidDesign workspace
+→ team_members active = true / joined_at set
+```
+
+The test account is stored as role `USER` with human-visible `display_name`; the PR-preview environment marker remained visible after sign-in. This closes the basic invite/activation path only. Role-governance, lifecycle safeguards and assignment/activity behavior remain separate browser gates below.
+
 ### Remaining M1 verification/debt
 
 `operator_allowlist` still gates a finite set of older Operator RLS/functions. It is transitional compatibility only; do not add new semantics to it.
 
-**Browser verification gate:**
+**Remaining browser verification gate:**
 
-1. verify hosted Auth URL Configuration matches `docs/AUTH_REDIRECTS.md`;
-2. invite one controlled test colleague through Team from a visibly marked PR preview;
-3. confirm Team and server report the exact PR-preview `activation_origin`;
-4. confirm the received invite returns to that exact PR preview rather than production/localhost;
-5. finish first-login/password activation;
-6. verify `joined_at` is recorded only after that activation finishes;
-7. verify display name/initials and that assignments/activity show names rather than e-mail;
-8. verify normal access and role-specific Team visibility;
-9. verify an Admin can correct a display name;
-10. verify a Key user can invite User but not elevate roles;
-11. verify permanent deletion succeeds for a clean test account and is rejected after dossier/business history exists;
-12. deactivate/reactivate without SQL/admin-console intervention;
-13. verify active assignments block unsafe deactivation/deletion;
-14. verify a rate-limited/failed invitation leaves no duplicate or usable half-account.
+1. verify display name/initials and that assignments/activity show names rather than e-mail;
+2. verify normal access and role-specific Team visibility;
+3. verify an Admin can correct a display name;
+4. verify a Key user can invite User but not elevate roles;
+5. verify permanent deletion succeeds for a clean test account and is rejected after dossier/business history exists;
+6. deactivate/reactivate without SQL/admin-console intervention;
+7. verify active assignments block unsafe deactivation/deletion;
+8. verify a rate-limited/failed invitation leaves no duplicate or usable half-account.
 
 **After this browser gate passes:** perform one explicit access cutover from the remaining `operator_allowlist`-based RLS/function/browser checks to active `team_members`, then remove the compatibility model. Do not dual-maintain both indefinitely.
 
@@ -186,6 +195,7 @@ Implemented:
 - display-name + derived-initials identity in Team instead of e-mail as primary person label;
 - per-prospect responsibility card;
 - shared Prospect filters for `Mijn werk`, missing dossierholder, missing Design and missing Outreach;
+- prospect-list filters remain visually contained within the list column: full-width search plus compact status/work-distribution controls;
 - existing lightweight frontend retained; no framework migration.
 
 **Verification gate:** role-by-role browser walkthrough and mobile/narrow-layout check.
