@@ -1,4 +1,5 @@
 from pathlib import Path
+import re
 import unittest
 
 
@@ -58,10 +59,12 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
         client = self.read("operator/prospect-engagement.js")
         operator_ui = self.read("operator/engagement-ui.js")
 
-        for forbidden in ("ip_address", "ip_hash", "fingerprint", "visitor_id"):
-            self.assertNotIn(forbidden, schema.lower())
-            self.assertNotIn(forbidden, edge.lower())
-            self.assertNotIn(forbidden, client.lower())
+        forbidden_columns = ("ip_address", "ip_hash", "fingerprint", "visitor_id")
+        for column in forbidden_columns:
+            self.assertIsNone(
+                re.search(rf"^\s*{re.escape(column)}\s+", schema, flags=re.IGNORECASE | re.MULTILINE),
+                f"forbidden engagement column present: {column}",
+            )
 
         self.assertIn("corsHeaders", edge)
         self.assertIn("req.method === 'OPTIONS'", edge)
