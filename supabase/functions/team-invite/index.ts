@@ -1,4 +1,5 @@
 import { withSupabase } from 'npm:@supabase/server@1.4.1';
+import { corsHeaders } from 'jsr:@supabase/supabase-js@2/cors';
 
 const ROLE_SET = new Set(['USER', 'KEY_USER']);
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -7,6 +8,7 @@ function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
+      ...corsHeaders,
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff',
@@ -16,6 +18,7 @@ function json(status: number, body: unknown) {
 
 export default {
   fetch: withSupabase({ auth: 'user' }, async (req, ctx) => {
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
     if (req.method !== 'POST') return json(405, { error: 'Alleen POST is toegestaan.' });
 
     const callerId = ctx.userClaims?.id;
@@ -99,7 +102,6 @@ export default {
       return json(502, { error: 'Teamlid kon niet worden aangemaakt.' });
     }
 
-    // Transitional compatibility: the legacy allowlist remains the access gate until M1 cutover is proven.
     const { error: allowlistError } = await ctx.supabaseAdmin
       .from('operator_allowlist')
       .upsert({ email, active: true }, { onConflict: 'email' });
