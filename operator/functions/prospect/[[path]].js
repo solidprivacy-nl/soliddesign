@@ -46,7 +46,7 @@ async function resolveLive(slug) {
 
   const prospectId = prospects[0].id;
   const demos = await apiRows('demos', slug, {
-    select: 'id,preview_url,artifact_path',
+    select: 'preview_url,artifact_path',
     prospect_id: `eq.${prospectId}`,
     status: 'eq.LIVE',
     limit: '1'
