@@ -23,6 +23,12 @@ function memberStatus(member) {
   if (!member.active) return 'Inactief';
   return member.joined_at ? 'Actief' : 'Uitgenodigd';
 }
+function memberInitials(displayName) {
+  const parts = String(displayName || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] || ''}${parts[parts.length - 1][0] || ''}`.toUpperCase();
+}
 
 function addStylesheet() {
   if (document.querySelector('link[data-team-work-style]')) return;
@@ -143,8 +149,11 @@ function installNavigation() {
     setActiveNav(button);
   }, true));
 
-  const email = el('userEmail');
-  if (email) email.title = `SolidDesign rol: ${ROLE_LABELS[currentMember.role] || currentMember.role}`;
+  const userIdentity = el('userEmail');
+  if (userIdentity) {
+    userIdentity.textContent = currentMember.display_name;
+    userIdentity.title = `${currentMember.email} · ${ROLE_LABELS[currentMember.role] || currentMember.role}`;
+  }
 
   renderMyWork();
   showExtensionView(myWorkView, myWorkNav);
@@ -281,13 +290,69 @@ async function changeRole(member, role, message) {
   renderTeam();
 }
 
+async function changeDisplayName(member, message) {
+  const next = window.prompt('Weergavenaam', member.display_name);
+  if (next === null) return;
+  const clean = next.trim().replace(/\s+/g, ' ');
+  if (clean === member.display_name) return;
+  const { error } = await db.rpc('operator_update_team_display_name', {
+    p_user_id: member.user_id,
+    p_display_name: clean
+  });
+  if (error) throw error;
+  message.textContent = 'Naam bijgewerkt.';
+  message.classList.remove('error');
+  await refreshState();
+  renderTeam();
+
+  const userIdentity = el('userEmail');
+  if (member.user_id === currentMember.user_id && userIdentity) {
+    userIdentity.textContent = currentMember.display_name;
+    userIdentity.title = `${currentMember.email} · ${ROLE_LABELS[currentMember.role] || currentMember.role}`;
+  }
+}
+
 async function toggleMember(member, message) {
   const rpc = member.active ? 'operator_deactivate_team_member' : 'operator_reactivate_team_member';
   const { error } = await db.rpc(rpc, { p_user_id: member.user_id });
   if (error) throw error;
   message.textContent = member.active ? 'Gebruiker gedeactiveerd.' : 'Gebruiker geactiveerd.';
+  message.classList.remove('error');
   await refreshState();
   renderTeam();
+}
+
+async function deleteMember(member, message) {
+  if (!window.confirm(`Verwijder ${member.display_name} definitief? Gebruik dit alleen voor een test- of foutaccount zonder dossierhistorie.`)) return;
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) throw new Error('Je bent niet meer ingelogd.');
+
+  const response = await fetch(`${CONFIG.supabaseUrl}/functions/v1/team-member-admin`, {
+    method: 'POST',
+    headers: {
+      apikey: CONFIG.supabasePublishableKey,
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ action: 'delete', user_id: member.user_id })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || 'Gebruiker kon niet definitief worden verwijderd.');
+
+  message.textContent = `${member.display_name} is definitief verwijderd.`;
+  message.classList.remove('error');
+  await refreshState();
+  renderTeam();
+}
+
+function addTeamAction(actions, label, handler, className = 'ghost compact-action') {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className;
+  button.textContent = label;
+  button.addEventListener('click', handler);
+  actions.appendChild(button);
+  return button;
 }
 
 function renderTeam(filter = 'ALL', keepInviteOpen = false) {
@@ -337,7 +402,8 @@ function renderTeam(filter = 'ALL', keepInviteOpen = false) {
     const row = document.createElement('div');
     row.className = 'team-row';
     row.setAttribute('role', 'row');
-    row.innerHTML = '<span><strong></strong><small></small></span><span data-role></span><span data-status></span><span></span><span></span><span></span><span class="team-actions"></span>';
+    row.innerHTML = '<span class="team-person"><span class="team-avatar" aria-hidden="true"></span><span class="team-person-copy"><strong></strong><small></small></span></span><span data-role></span><span data-status></span><span></span><span></span><span></span><span class="team-actions"></span>';
+    row.querySelector('.team-avatar').textContent = memberInitials(member.display_name);
     row.querySelector('strong').textContent = member.display_name;
     row.querySelector('small').textContent = member.email;
     row.querySelector('[data-status]').textContent = memberStatus(member);
@@ -363,23 +429,43 @@ function renderTeam(filter = 'ALL', keepInviteOpen = false) {
     }
 
     const actions = row.querySelector('.team-actions');
+    if (currentMember.role === 'ADMIN') {
+      const nameButton = addTeamAction(actions, 'Naam', async () => {
+        nameButton.disabled = true;
+        try { await changeDisplayName(member, message); }
+        catch (error) { message.textContent = error.message; message.classList.add('error'); }
+        finally { nameButton.disabled = false; }
+      });
+    }
+
     if (canManageMember(member)) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'ghost compact-action';
-      button.textContent = member.active ? 'Deactiveer' : 'Activeer';
-      if (member.active && assignmentCount(member.user_id) > 0) {
-        button.disabled = true;
-        button.title = 'Draag eerst de actieve verantwoordelijkheden over.';
-      }
-      button.addEventListener('click', async () => {
-        button.disabled = true;
+      const toggleButton = addTeamAction(actions, member.active ? 'Deactiveer' : 'Activeer', async () => {
+        toggleButton.disabled = true;
         message.classList.remove('error');
         try { await toggleMember(member, message); }
-        catch (error) { message.textContent = error.message; message.classList.add('error'); button.disabled = false; }
+        catch (error) { message.textContent = error.message; message.classList.add('error'); toggleButton.disabled = false; }
       });
-      actions.appendChild(button);
+      if (member.active && assignmentCount(member.user_id) > 0) {
+        toggleButton.disabled = true;
+        toggleButton.title = 'Draag eerst de actieve verantwoordelijkheden over.';
+      }
     }
+
+    if (currentMember.role === 'ADMIN' && member.user_id !== currentMember.user_id) {
+      const deleteButton = addTeamAction(actions, 'Verwijder', async () => {
+        deleteButton.disabled = true;
+        message.classList.remove('error');
+        try { await deleteMember(member, message); }
+        catch (error) { message.textContent = error.message; message.classList.add('error'); deleteButton.disabled = false; }
+      }, 'ghost compact-action danger-action');
+      if (assignmentCount(member.user_id) > 0) {
+        deleteButton.disabled = true;
+        deleteButton.title = 'Draag eerst de actieve verantwoordelijkheden over.';
+      } else {
+        deleteButton.title = 'Alleen mogelijk zolang er geen dossierhistorie bestaat.';
+      }
+    }
+
     table.appendChild(row);
   }
 }
