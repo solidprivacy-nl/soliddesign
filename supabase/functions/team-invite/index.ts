@@ -133,7 +133,12 @@ export default {
     const invited = inviteData?.user;
     if (inviteError || !invited?.id) {
       console.error('team-invite auth invite failed', inviteError);
-      return json(400, { error: 'Uitnodiging kon niet worden verstuurd. Controleer het e-mailadres en de toegestane Auth-redirects.' });
+      const status = Number((inviteError as { status?: number } | null)?.status || 0);
+      const code = String((inviteError as { code?: string } | null)?.code || '');
+      if (status === 429 || code === 'over_email_send_rate_limit') {
+        return json(429, { error: 'De e-maillimiet van de huidige Auth-mailservice is bereikt. Probeer later opnieuw.' });
+      }
+      return json(400, { error: 'Uitnodiging kon niet worden verstuurd. Controleer het e-mailadres en de Auth-configuratie.' });
     }
 
     const now = new Date().toISOString();
