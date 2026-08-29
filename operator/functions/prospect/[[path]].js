@@ -1,6 +1,11 @@
 const SUPABASE_URL = 'https://grderdhnjkeucaaehgqy.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_fRXRtDIHJ98LIN3cfQHtpA_WJ0yPPRh';
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const LEGACY_PREVIEW_HOSTS = new Set([
+  'gate3-v1.soliddesign-cms.pages.dev',
+  'soliddesign-previews-solidprivacy.pages.dev',
+  'gate3-v1.soliddesign-previews-solidprivacy.pages.dev'
+]);
 
 function plain(status, message) {
   return new Response(message, {
@@ -15,12 +20,9 @@ function plain(status, message) {
   });
 }
 
-async function prospectId(slug) {
-  const endpoint = new URL(`${SUPABASE_URL}/rest/v1/prospects`);
-  endpoint.searchParams.set('select', 'id');
-  endpoint.searchParams.set('public_slug', `eq.${slug}`);
-  endpoint.searchParams.set('limit', '1');
-
+async function apiRows(path, slug, params) {
+  const endpoint = new URL(`${SUPABASE_URL}/rest/v1/${path}`);
+  for (const [name, value] of Object.entries(params)) endpoint.searchParams.set(name, value);
   const response = await fetch(endpoint, {
     headers: {
       apikey: SUPABASE_PUBLISHABLE_KEY,
@@ -29,9 +31,139 @@ async function prospectId(slug) {
     },
     cache: 'no-store'
   });
-  if (!response.ok) throw new Error(`prospect lookup failed (${response.status})`);
+  if (!response.ok) throw new Error(`${path} lookup failed (${response.status})`);
   const rows = await response.json();
-  return Array.isArray(rows) && rows.length === 1 ? rows[0]?.id || null : null;
+  return Array.isArray(rows) ? rows : [];
+}
+
+async function resolveLive(slug) {
+  const prospects = await apiRows('prospects', slug, {
+    select: 'id',
+    public_slug: `eq.${slug}`,
+    limit: '1'
+  });
+  if (prospects.length !== 1 || !prospects[0]?.id) return null;
+
+  const prospectId = prospects[0].id;
+  const demos = await apiRows('demos', slug, {
+    select: 'id,preview_url,artifact_path',
+    prospect_id: `eq.${prospectId}`,
+    status: 'eq.LIVE',
+    limit: '1'
+  });
+  if (demos.length !== 1) return null;
+  return { prospectId, live: demos[0] };
+}
+
+function filteredSearch(incoming) {
+  const params = new URLSearchParams(incoming.search);
+  params.delete('src');
+  params.delete('__sd_staff');
+  const value = params.toString();
+  return value ? `?${value}` : '';
+}
+
+function legacyBase(previewUrl) {
+  if (!previewUrl) return null;
+  let url;
+  try { url = new URL(previewUrl); }
+  catch { return null; }
+  if (url.protocol !== 'https:' || !LEGACY_PREVIEW_HOSTS.has(url.hostname)) return null;
+  if (!url.pathname.endsWith('/')) url.pathname += '/';
+  url.search = '';
+  url.hash = '';
+  return url;
+}
+
+function publicHeaders(upstreamHeaders) {
+  const headers = new Headers(upstreamHeaders);
+  headers.delete('set-cookie');
+  headers.delete('content-length');
+  headers.set('Cache-Control', 'no-store');
+  headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('Referrer-Policy', 'no-referrer');
+  return headers;
+}
+
+function injectTelemetry(response, slug) {
+  const telemetryEndpoint = `${SUPABASE_URL}/functions/v1/prospect-engagement`;
+  return new HTMLRewriter()
+    .on('body', {
+      element(element) {
+        element.append(
+          `<script id="soliddesignProspectEngagement" src="/prospect-engagement.js" data-slug="${slug}" data-endpoint="${telemetryEndpoint}"></script>`,
+          { html: true }
+        );
+      }
+    })
+    .transform(response);
+}
+
+async function serveStored(request, incoming, slug, prospectId, rest) {
+  const assetPath = rest.map(encodeURIComponent).join('/');
+  const suffix = assetPath ? `/${assetPath}` : '/';
+  const target = new URL(`/p/${prospectId}${suffix}`, incoming.origin);
+  target.search = filteredSearch(incoming);
+
+  const upstream = await fetch(target, {
+    method: request.method,
+    redirect: 'manual',
+    headers: { Accept: request.headers.get('Accept') || '*/*' },
+    cache: 'no-store'
+  });
+  const headers = publicHeaders(upstream.headers);
+
+  const location = headers.get('Location');
+  if (location?.startsWith(`${incoming.origin}/p/${prospectId}`)) {
+    headers.set('Location', location.replace(`${incoming.origin}/p/${prospectId}`, `${incoming.origin}/prospect/${slug}`));
+  } else if (location) {
+    return plain(502, 'Deze pagina is momenteel niet beschikbaar.');
+  }
+
+  const response = new Response(request.method === 'HEAD' ? null : upstream.body, {
+    status: upstream.status,
+    statusText: upstream.statusText,
+    headers
+  });
+  const isHtml = request.method === 'GET' && upstream.ok && (headers.get('Content-Type') || '').toLowerCase().includes('text/html');
+  return isHtml ? injectTelemetry(response, slug) : response;
+}
+
+async function serveLegacy(request, incoming, slug, previewUrl, rest) {
+  const base = legacyBase(previewUrl);
+  if (!base) return plain(503, 'Deze pagina is momenteel niet beschikbaar.');
+
+  const relative = rest.map(encodeURIComponent).join('/');
+  const target = relative ? new URL(relative, base) : new URL(base);
+  target.search = filteredSearch(incoming);
+  const upstream = await fetch(target, {
+    method: request.method,
+    redirect: 'manual',
+    headers: { Accept: request.headers.get('Accept') || '*/*' },
+    cache: 'no-store'
+  });
+  const headers = publicHeaders(upstream.headers);
+
+  const location = headers.get('Location');
+  if (location) {
+    let redirected;
+    try { redirected = new URL(location, target); }
+    catch { return plain(502, 'Deze pagina is momenteel niet beschikbaar.'); }
+    if (redirected.origin !== base.origin || !redirected.pathname.startsWith(base.pathname)) {
+      return plain(502, 'Deze pagina is momenteel niet beschikbaar.');
+    }
+    const suffix = redirected.pathname.slice(base.pathname.length);
+    headers.set('Location', `${incoming.origin}/prospect/${encodeURIComponent(slug)}/${suffix}${redirected.search}`);
+  }
+
+  const response = new Response(request.method === 'HEAD' ? null : upstream.body, {
+    status: upstream.status,
+    statusText: upstream.statusText,
+    headers
+  });
+  const isHtml = request.method === 'GET' && upstream.ok && (headers.get('Content-Type') || '').toLowerCase().includes('text/html');
+  return isHtml ? injectTelemetry(response, slug) : response;
 }
 
 export async function onRequest({ request }) {
@@ -64,55 +196,16 @@ export async function onRequest({ request }) {
     });
   }
 
-  let id;
-  try {
-    id = await prospectId(slug);
-  } catch (error) {
+  let resolved;
+  try { resolved = await resolveLive(slug); }
+  catch (error) {
     console.error(error);
     return plain(502, 'Deze pagina is momenteel niet beschikbaar.');
   }
-  if (!id) return plain(404, 'Deze pagina is momenteel niet beschikbaar.');
+  if (!resolved) return plain(404, 'Deze pagina is momenteel niet beschikbaar.');
 
-  const assetPath = rest.map(encodeURIComponent).join('/');
-  const suffix = assetPath ? `/${assetPath}` : '/';
-  const target = new URL(`/p/${id}${suffix}`, incoming.origin);
-  target.search = incoming.search;
-
-  const upstream = await fetch(target, {
-    method: request.method,
-    redirect: 'manual',
-    headers: { Accept: request.headers.get('Accept') || '*/*' },
-    cache: 'no-store'
-  });
-
-  const headers = new Headers(upstream.headers);
-  headers.delete('set-cookie');
-  headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
-  headers.set('Referrer-Policy', 'no-referrer');
-
-  const location = headers.get('Location');
-  if (location?.startsWith(`${incoming.origin}/p/${id}`)) {
-    headers.set('Location', location.replace(`${incoming.origin}/p/${id}`, `${incoming.origin}/prospect/${slug}`));
+  if (resolved.live.artifact_path) {
+    return serveStored(request, incoming, slug, resolved.prospectId, rest);
   }
-
-  const response = new Response(request.method === 'HEAD' ? null : upstream.body, {
-    status: upstream.status,
-    statusText: upstream.statusText,
-    headers
-  });
-
-  const isHtml = request.method === 'GET' && upstream.ok && (headers.get('Content-Type') || '').toLowerCase().includes('text/html');
-  if (!isHtml) return response;
-
-  const telemetryEndpoint = `${SUPABASE_URL}/functions/v1/prospect-engagement`;
-  return new HTMLRewriter()
-    .on('body', {
-      element(element) {
-        element.append(
-          `<script id="soliddesignProspectEngagement" src="/prospect-engagement.js" data-slug="${slug}" data-endpoint="${telemetryEndpoint}"></script>`,
-          { html: true }
-        );
-      }
-    })
-    .transform(response);
+  return serveLegacy(request, incoming, slug, resolved.live.preview_url, rest);
 }
