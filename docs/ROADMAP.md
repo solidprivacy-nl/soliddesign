@@ -1,6 +1,6 @@
 # Roadmap
 
-The roadmap is evidence-gated. Completing code is not success; closing learning gates is success.
+The roadmap is evidence-gated. Completing code is not success; closing the relevant learning/verification gate is success.
 
 ## Gate 0 — Documentation baseline ✅
 
@@ -16,17 +16,21 @@ Closed on 2026-08-25. Overture remains the canonical Phase-1 discovery source an
 
 # Integrated operating-model rollout — verification & pilot preparation ← CURRENT
 
-SolidDesign is being extended from a single-operator prospect tool into a small multi-user commercial work system while preserving one application, one operational state plane, explicit human control and minimal moving parts.
+SolidDesign now has the implemented foundation for a small multi-user commercial work system while preserving one application, one operational state plane, explicit human control and minimal moving parts.
 
 Canonical design:
 
+- `docs/ARCHITECTURE.md`
 - `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`
+- `docs/SECURITY.md`
 - `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md`
 
 Status rule used below:
 
 - **Implemented** means the required code/schema/UI exists on the integration branch and backwards-compatible database/server changes are applied where necessary.
-- **Verified** requires CI plus the relevant real browser/operator smoke test.
+- **Deployment verified** means the relevant real Cloudflare/Supabase request path has passed the automated deployed smoke.
+- **Browser verified** requires the real authenticated/user interaction that cannot be proven by static code or anonymous HTTP alone.
+- Historical evidence or completed plans never override these current statuses.
 
 ## M0 — Architecture contract & truth reconciliation ✅ VERIFIED
 
@@ -47,7 +51,9 @@ TEMPORARY PUBLIC ROUTE
 https://soliddesign-cms.pages.dev/prospect/<public_slug>
 ```
 
-Architecture, security, public-link and Operator documentation now point to one operating model. Domain names are delivery configuration; `public_slug` remains prospect identity.
+Architecture, security, public-link, database-evolution and Operator documentation now point to one operating model. Domain names are delivery configuration; `public_slug` remains prospect identity.
+
+Documentation precedence is explicit in `docs/ARCHITECTURE.md`. Completed Gate-1/2 plans and evidence are marked historical so they cannot silently become competing runtime architecture.
 
 ## M1 — Team identity & invite-only access 🟡 IMPLEMENTED / BROWSER VERIFY
 
@@ -59,18 +65,31 @@ Implemented:
 - server-side Auth invite flow;
 - Admin can invite User/Key user;
 - Key user can invite User only;
-- mandatory first password setup;
-- invited user is not considered joined before password setup finishes;
+- mandatory first password setup flow;
+- invited user is not considered joined before the activation flow finishes;
 - deactivate/reactivate lifecycle;
 - last-Admin and active-assignment safeguards;
 - self-signup hidden in the normal UI;
 - browser CORS/preflight support on the invite function.
 
-Transitional `operator_allowlist` remains in place until invite-only onboarding is proven end-to-end in the deployed UI.
+### Remaining M1 verification/debt
 
-**Verification gate:** invite one controlled test colleague, finish first-login activation, verify role visibility/access, then deactivate/reactivate without SQL/admin-console intervention.
+`operator_allowlist` still gates a finite set of older Operator RLS/functions. It is transitional compatibility only; do not add new semantics to it.
 
-## M2 — Responsibility & actor-aware history 🟢 IMPLEMENTED
+**Browser verification gate:**
+
+1. invite one controlled test colleague through Team;
+2. finish first-login/password activation;
+3. verify normal access and role-specific Team visibility;
+4. verify a Key user can invite User but not elevate roles;
+5. deactivate/reactivate without SQL/admin-console intervention;
+6. verify active assignments block unsafe deactivation.
+
+**After this browser gate passes:** perform one explicit access cutover from the remaining `operator_allowlist`-based RLS/function/browser checks to active `team_members`, then remove the compatibility model. Do not dual-maintain both indefinitely.
+
+**Password hardening before pilot:** use Supabase's built-in password policy. Minimum length must be at least 8; use stronger practical requirements for the small internal team. If the project plan supports it, enable Supabase Leaked Password Protection rather than building a custom breach checker. The current Supabase advisor reports this protection as disabled; Supabase documents it as a Pro-plan-or-above feature.
+
+## M2 — Responsibility & actor-aware history 🟡 IMPLEMENTED / BROWSER VERIFY
 
 Implemented:
 
@@ -82,7 +101,7 @@ Implemented:
 - assignment/lifecycle events;
 - deactivation blocked until active responsibilities are released/reassigned.
 
-**Verification gate:** browser smoke assignment changes with two roles/users and confirm Activity attribution.
+**Verification gate:** browser assignment changes with two real roles/users and confirm current responsibility plus Activity attribution.
 
 ## M3 — Multi-user information architecture 🟡 IMPLEMENTED / BROWSER VERIFY
 
@@ -112,7 +131,7 @@ Implemented:
 
 **Verification gate:** role-by-role browser walkthrough and mobile/narrow-layout check.
 
-## M4 — Brand-agnostic public delivery 🟡 IMPLEMENTED / DEPLOYMENT VERIFY
+## M4 — Brand-agnostic public delivery 🟢 CURRENT ROUTE DEPLOYMENT VERIFIED / CUSTOM DOMAIN PENDING
 
 Temporary configuration:
 
@@ -132,14 +151,32 @@ INTERNAL_ORIGIN=https://cms.<brand>.nl
 Implemented:
 
 - same Pages project / same Supabase / same Storage;
-- public route resolves slug → prospect → current LIVE demo → existing artifact;
+- public route resolves slug → prospect → current LIVE demo → canonical stored artifact;
+- new LIVE publication requires `artifact_path` in UI and database;
 - public URL keeps the slug and hides the UUID route;
-- assets are served through the same public namespace;
+- nested asset requests are mapped through the same public namespace;
 - trailing-slash canonicalization preserves query attribution;
 - public/internal origins are configuration;
-- pull requests can deploy to an isolated `pr-<number>` Pages preview branch for pre-merge browser validation; production still deploys only from `main`.
+- old one-segment `/<slug>` links on the current Pages host are alias redirects to the canonical `/prospect/<slug>/` resolver only;
+- pull requests deploy to an isolated `pr-<number>` Pages preview branch in the same project; production deploys only from `main`.
 
-**Verification gate:** deployed preview smoke for valid slug, assets, invalid slug/404, noindex, query preservation and LIVE-version switching.
+Deployment smoke now proves on the real Pages/Supabase path:
+
+- CMS root responds;
+- invalid public slug returns 404;
+- canonical slash redirect preserves `?src=qr`;
+- public responses carry `noindex, nofollow, noarchive`;
+- a canonical stored-artifact prospect page renders and receives central telemetry injection;
+- old root alias cannot redirect to `/p/<uuid>` or a technical preview host;
+- one representative grandfathered legacy LIVE page renders under the public prospect URL without leaking its historical host.
+
+### Finite legacy compatibility
+
+Six current LIVE records predate artifact-only publication. The compatibility path accepts only the known historical SolidDesign preview hosts. The shortened old `gate3-v1.soliddesign-cms.pages.dev` alias is normalized to its original legacy host to avoid recursive calls into the current application.
+
+Do not add new legacy hosts. Migrate/retire these six records naturally as the dossiers are refreshed or before the compatibility path becomes unnecessary; when the count reaches zero, remove the proxy code and revisit whether anonymous `demos.preview_url` column access can also be removed.
+
+**Remaining M4 gate before final brand cutover:** prove the actual custom hostname root `/<slug>` plus nested local assets and strict hostname capability boundary (`/start-design`, `/brief`, `/p`, CMS/API unavailable on public brand host). Do not implement that final route by copying a second resolver.
 
 ## M5 — Prospect engagement MVP 🟡 IMPLEMENTED / BROWSER VERIFY
 
@@ -162,7 +199,9 @@ Implemented:
 
 Internal QA uses a five-minute server-signed token bound to the prospect slug. A guessable `?internal=1` marker and IP allowlists are not used.
 
-**Verification gate:** real public-page browser opening must create an external visit; staff test must create only an internal visit; active-time/scroll update must be observed; invalid/expired staff token must not become external response.
+Deployment smoke has proven browser preflight/CORS for both `prospect-engagement` and `team-invite` from the Pages preview origin.
+
+**Browser verification gate:** real public-page browser opening must create an external visit; staff test must create only an internal visit; active-time/scroll update must be observed; invalid/expired staff token must not become external response.
 
 ## M6 — Commercial-loop integration 🟡 IMPLEMENTED / BROWSER VERIFY
 
@@ -193,7 +232,7 @@ No automatic lead score or contact-status transition.
 
 ## M7 — Integrated operational pilot — NEXT EVIDENCE GATE
 
-Use multiple real operators and approximately 10–20 real prospect mailings.
+Use multiple real operators and approximately 10–20 real prospect mailings after the browser verification gates above are closed.
 
 Validate:
 
@@ -251,4 +290,6 @@ Automation candidates remain evidence-gated. Do not introduce queues, agentic wo
 3. Prefer existing platform capabilities over new services.
 4. Prefer explicit human actions over hidden automation until evidence justifies automation.
 5. Domain names are delivery configuration, not business identity.
-6. No future milestone is implemented merely because it appears on this roadmap.
+6. Transitional compatibility must have an explicit shrink/remove condition and may not silently become architecture.
+7. Historical evidence/plans do not override current architecture or roadmap status.
+8. No future milestone is implemented merely because it appears on this roadmap.
