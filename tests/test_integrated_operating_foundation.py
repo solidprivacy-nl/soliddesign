@@ -62,6 +62,8 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
         self.assertIn("raw_user_meta_data", migration)
         self.assertIn("operator_mark_joined", setup)
         self.assertIn("joinedError", setup)
+        self.assertIn("window.location.replace(window.location.origin)", setup)
+        self.assertNotIn("CONFIG?.internalOrigin || window.location.origin", setup)
         self.assertNotIn("operator_mark_joined", team_work)
         self.assertIn("import('./team-work.js')", config)
         self.assertIn("Mijn werk", team_work)
@@ -90,7 +92,8 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
         self.assertIn("display_name", team_work)
         self.assertIn("Verwijder", team_work)
         self.assertIn("operator_update_team_display_name", migration)
-        self.assertIn("business_history", admin_fn)
+        self.assertIn("businessEventCount", admin_fn)
+        self.assertIn(".not('prospect_id', 'is', null)", admin_fn)
         self.assertIn("auth.admin.deleteUser", admin_fn)
 
     def test_engagement_is_minimal_privacy_bounded_and_browser_callable(self):
