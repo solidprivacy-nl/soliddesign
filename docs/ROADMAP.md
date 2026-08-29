@@ -68,8 +68,12 @@ Implemented:
 - `ADMIN / KEY_USER / USER`;
 - server-side Auth invite flow;
 - invite flow always passes an explicit `redirectTo` rather than relying on Supabase Site URL fallback;
+- browser explicitly supplies `window.location.origin` and the server validates it against the narrow internal/PR-preview allowlist;
+- `redirectTo` uses the validated `URL.origin` verbatim, with no synthetic trailing slash/path;
+- Team displays the selected activation environment and the server returns the chosen `activation_origin`;
 - invite redirect is limited to the current internal origin, isolated `pr-<number>` Pages previews, or the explicitly configured future `SOLIDDESIGN_INTERNAL_ORIGIN`;
 - arbitrary browser origins are rejected as invitation destinations;
+- Auth mail quota failures (`429 / over_email_send_rate_limit`) are surfaced as mail-delivery failures rather than redirect/address errors;
 - Admin can invite User/Key user;
 - Key user can invite User only;
 - mandatory first password setup flow;
@@ -82,20 +86,23 @@ Implemented:
 - self-signup hidden in the normal UI;
 - browser CORS/preflight support on team management Edge Functions.
 
-### Required hosted Auth configuration
+### Required hosted Auth URL configuration
 
 Supabase **Authentication → URL Configuration** must match the runtime contract in `docs/AUTH_REDIRECTS.md`.
 
-Current rollout target:
+Current rollout:
 
 ```text
 Site URL
 https://soliddesign-cms.pages.dev/
 
-Additional Redirect URLs
-https://soliddesign-cms.pages.dev/**
-https://pr-*.soliddesign-cms.pages.dev/**
+Redirect URLs
+https://soliddesign-cms.pages.dev
+https://pr-28.soliddesign-cms.pages.dev
+https://pr-*.soliddesign-cms.pages.dev
 ```
+
+SolidDesign redirects to origins, not Auth subpaths. Keep the application `redirectTo` and Supabase Redirect URL in the same canonical origin representation; do not add `/**` merely by convention.
 
 `http://localhost:3000` is local-development state and must not remain the hosted production Site URL. After a future CMS-domain cutover, set Site URL and the Edge Function `SOLIDDESIGN_INTERNAL_ORIGIN` to `https://cms.<brand>.nl` and re-run the invite gate before removing the old hostname.
 
@@ -106,18 +113,37 @@ https://pr-*.soliddesign-cms.pages.dev/**
 **Browser verification gate:**
 
 1. verify hosted Auth URL Configuration matches `docs/AUTH_REDIRECTS.md`;
-2. invite one controlled test colleague through Team;
-3. confirm the invite returns to the exact allowed internal/PR-preview origin rather than localhost;
-4. finish first-login/password activation;
-5. verify display name/initials and that assignments/activity show names rather than e-mail;
-6. verify normal access and role-specific Team visibility;
-7. verify an Admin can correct a display name;
-8. verify a Key user can invite User but not elevate roles;
-9. verify permanent deletion succeeds for a clean test account and is rejected after dossier/business history exists;
-10. deactivate/reactivate without SQL/admin-console intervention;
-11. verify active assignments block unsafe deactivation/deletion.
+2. invite one controlled test colleague through Team from a visibly marked PR preview;
+3. confirm Team and server report the exact PR-preview `activation_origin`;
+4. confirm the received invite returns to that exact PR preview rather than production/localhost;
+5. finish first-login/password activation;
+6. verify `joined_at` is recorded only after that activation finishes;
+7. verify display name/initials and that assignments/activity show names rather than e-mail;
+8. verify normal access and role-specific Team visibility;
+9. verify an Admin can correct a display name;
+10. verify a Key user can invite User but not elevate roles;
+11. verify permanent deletion succeeds for a clean test account and is rejected after dossier/business history exists;
+12. deactivate/reactivate without SQL/admin-console intervention;
+13. verify active assignments block unsafe deactivation/deletion;
+14. verify a rate-limited/failed invitation leaves no duplicate or usable half-account.
 
 **After this browser gate passes:** perform one explicit access cutover from the remaining `operator_allowlist`-based RLS/function/browser checks to active `team_members`, then remove the compatibility model. Do not dual-maintain both indefinitely.
+
+### Production Auth readiness before pilot
+
+The Supabase built-in default SMTP service is development/test infrastructure: best-effort and strongly rate-limited. It must not be treated as the operational invitation/password-recovery channel.
+
+Before M7 operational pilot:
+
+```text
+custom SMTP configured through Supabase Auth
+→ sender/domain verified
+→ invite delivery tested
+→ password recovery delivery tested
+→ redirect behavior re-verified
+```
+
+Use a proven SMTP provider through Supabase; do not build a second SolidDesign invitation/mailer subsystem.
 
 **Password hardening before pilot:** use Supabase's built-in password policy. Minimum length must be at least 8; use stronger practical requirements for the small internal team. If the project plan supports it, enable Supabase Leaked Password Protection rather than building a custom breach checker. The current Supabase advisor reports this protection as disabled; Supabase documents it as a Pro-plan-or-above feature.
 
@@ -265,7 +291,7 @@ No automatic lead score or contact-status transition.
 
 ## M7 — Integrated operational pilot — NEXT EVIDENCE GATE
 
-Use multiple real operators and approximately 10–20 real prospect mailings after the browser verification gates above are closed.
+Use multiple real operators and approximately 10–20 real prospect mailings after the browser verification gates above are closed **and production Auth mail delivery is configured**.
 
 Validate:
 
@@ -326,8 +352,9 @@ Automation candidates remain evidence-gated. Do not introduce queues, agentic wo
 4. Prefer explicit human actions over hidden automation until evidence justifies automation.
 5. Domain names are delivery configuration, not business identity.
 6. Auth redirects follow the configured internal origin and never a stale localhost fallback or arbitrary caller destination.
-7. Human identity is display-name/UUID based; e-mail is account metadata, not workflow identity.
-8. Deactivation preserves history; permanent deletion is only for history-free cleanup accounts.
-9. Transitional compatibility must have an explicit shrink/remove condition and may not silently become architecture.
-10. Historical evidence/plans do not override current architecture or roadmap status.
-11. No future milestone is implemented merely because it appears on this roadmap.
+7. Auth mail transport remains a Supabase platform concern; production uses custom SMTP rather than a parallel SolidDesign mailer.
+8. Human identity is display-name/UUID based; e-mail is account metadata, not workflow identity.
+9. Deactivation preserves history; permanent deletion is only for history-free cleanup accounts.
+10. Transitional compatibility must have an explicit shrink/remove condition and may not silently become architecture.
+11. Historical evidence/plans do not override current architecture or roadmap status.
+12. No future milestone is implemented merely because it appears on this roadmap.
