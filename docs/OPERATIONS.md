@@ -225,7 +225,9 @@ Key users may invite normal Users. Admins govern elevated roles. Normal operator
 
 ### Hosted Auth redirect configuration
 
-Supabase **Authentication → URL Configuration** is part of the deployment contract. The application always sends an explicit validated `redirectTo`, but Supabase will only honor destinations that are in its Redirect URL allow list.
+Supabase **Authentication → URL Configuration** is part of the deployment contract. The application sends an explicit, server-validated `redirectTo`; Supabase will only honor destinations allowed by its Redirect URL configuration.
+
+SolidDesign uses one canonical representation: the validated browser `URL.origin` **without an added slash or path**.
 
 Current rollout configuration:
 
@@ -233,10 +235,13 @@ Current rollout configuration:
 Site URL
 https://soliddesign-cms.pages.dev/
 
-Additional Redirect URLs
-https://soliddesign-cms.pages.dev/**
-https://pr-*.soliddesign-cms.pages.dev/**
+Redirect URLs
+https://soliddesign-cms.pages.dev
+https://pr-28.soliddesign-cms.pages.dev
+https://pr-*.soliddesign-cms.pages.dev
 ```
+
+The exact `pr-28` entry is the current acceptance environment; the wildcard covers future numbered PR-preview origins. Do not add `/**` when the application itself redirects only to an origin. Keep the requested `redirectTo` and the configured Redirect URL in the same canonical representation.
 
 `http://localhost:3000` must not remain the hosted production Site URL. It is local-development configuration only.
 
@@ -246,17 +251,43 @@ After the internal custom-domain cutover:
 Site URL
 https://cms.<brand>.nl/
 
-Additional Redirect URLs
-https://cms.<brand>.nl/**
+Redirect URL
+https://cms.<brand>.nl
 ```
 
-and set the `team-invite` Edge Function secret/environment value:
+and set the `team-invite` Edge Function environment value:
 
 ```text
 SOLIDDESIGN_INTERNAL_ORIGIN=https://cms.<brand>.nl
 ```
 
 Re-test invitations before removing the old internal hostname from the allow list. Full rationale and invariants: `docs/AUTH_REDIRECTS.md`.
+
+### Auth e-mail delivery
+
+Redirect correctness and mail delivery are separate operational concerns.
+
+The Supabase built-in default SMTP service is intentionally best-effort and heavily rate-limited. It is adequate for bounded development/acceptance tests, but repeated invites can return:
+
+```text
+HTTP 429
+error_code = over_email_send_rate_limit
+```
+
+`team-invite` surfaces that as a mail-service quota problem. Do not troubleshoot URL Configuration when the server reports this code, and do not create a custom invitation mailer to bypass it.
+
+For operational production onboarding and password recovery, configure a proven custom SMTP provider **through Supabase Auth**. This keeps one identity/invite flow and uses the platform capability instead of creating a parallel mail subsystem.
+
+Production mail readiness requires:
+
+```text
+custom SMTP configured in Supabase
+→ sender/domain verified
+→ invite delivery tested
+→ password recovery delivery tested
+```
+
+SMTP credentials belong in Supabase configuration/secrets, never in repository or browser code. Provider selection can remain independent of SolidDesign architecture.
 
 `operator_allowlist` still exists as **transitional compatibility** for older Operator RLS/access checks. It is not a second membership model and should disappear only after the remaining RLS/access paths have been deliberately cut over and verified.
 
@@ -392,6 +423,7 @@ Do not introduce merely because it is technically possible:
 - generalized preview/reverse proxy;
 - second analytics datastore;
 - second public application;
-- production-site factory.
+- production-site factory;
+- custom Auth invitation mailer when Supabase custom SMTP solves mail transport.
 
 Only an observed customer/operator bottleneck may promote these ideas into the roadmap.
