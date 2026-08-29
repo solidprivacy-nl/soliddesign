@@ -4,10 +4,40 @@
 
 The current operating architecture is defined in:
 
-- `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`
-- `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md`
+- `ENGINEERING_CONSTITUTION.md` — top-level engineering philosophy and decision standard;
+- `docs/INTEGRATED_OPERATING_ARCHITECTURE.md` — current operating/system model;
+- `docs/SECURITY.md` — current trust and authorization boundaries;
+- `docs/ROADMAP.md` — current evidence-gated implementation status;
+- `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md` — current hostname/public-delivery decision.
 
-This document keeps the stable end-to-end business architecture concise. Older implementation details remain available in Git history and must not be treated as a second source of truth.
+This document keeps the stable end-to-end business architecture concise.
+
+## Documentation truth hierarchy
+
+Documentation has different purposes and must not silently compete as multiple sources of truth.
+
+Use this precedence when documents appear to conflict:
+
+```text
+ENGINEERING CONSTITUTION
+        ↓
+CURRENT ARCHITECTURE / SECURITY / OPERATIONS / ROADMAP
+        ↓
+LATEST ACCEPTED ADR / DECISION
+        ↓
+DOMAIN-SPECIFIC CURRENT CONTRACTS
+        ↓
+EVIDENCE / GATE REPORTS / COMPLETED IMPLEMENTATION PLANS
+```
+
+Rules:
+
+- current contract documents describe how the system is intended to work now;
+- a later accepted decision supersedes conflicting earlier decision text;
+- evidence documents preserve what was true at the time of a test and are not runtime contracts;
+- completed implementation plans are historical execution records, not future architecture instructions;
+- Git history preserves removed implementation detail; stale detail does not need to remain in current docs merely for archaeology;
+- when runtime and current documentation diverge, reconcile them explicitly before extending that area further.
 
 ## Architecture objective
 
@@ -72,13 +102,19 @@ CASE_LEAD | DESIGN | OUTREACH
 
 Assignments represent current responsibility. The event log represents history and actor attribution. Personal work queues/portfolios are derived from assignments; there is no task or portfolio subsystem.
 
+During the membership rollout, `operator_allowlist` remains a compatibility access gate for existing Operator RLS. `team_members` is the durable role/membership model. This compatibility layer is transitional and must not be extended into a second user model.
+
 ## Public delivery and engagement
 
-`prospects.public_slug` is the stable public identity. The public resolver maps:
+`prospects.public_slug` is the stable public identity. The canonical public resolver maps:
 
 ```text
-slug → prospect → current LIVE demo → existing artifact
+slug → prospect → current LIVE demo → stored artifact
 ```
+
+New LIVE publication requires a canonical stored artifact. An external HTTPS URL may be used as a DRAFT/review escape hatch but is not a new LIVE delivery source.
+
+A bounded compatibility path exists only for the small set of grandfathered LIVE previews created before this rule. It may proxy only explicitly allowlisted historical SolidDesign preview hosts and should disappear when those records are migrated or retired. It is not a general reverse-proxy capability.
 
 Engagement is first-party, minimal and operational:
 
@@ -122,7 +158,8 @@ Do not add without measured need:
 - second analytics datastore or BI platform;
 - visitor fingerprinting/session replay;
 - autonomous sales workflow;
-- generalized plugin/orchestration framework.
+- generalized plugin/orchestration framework;
+- general-purpose external preview proxy.
 
 ## Change rule
 
