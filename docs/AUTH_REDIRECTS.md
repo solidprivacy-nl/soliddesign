@@ -23,6 +23,10 @@ https://cms.<brand>.nl        # after brand cutover, configured explicitly
 
 The Edge Function validates the browser `Origin` before using it as an invitation destination. Arbitrary origins are rejected; there is no open-redirect fallback.
 
+This means the environment from which the operator presses **Uitnodigen** intentionally determines the activation return environment. Production invites return to production; PR-preview invites return to that exact PR preview.
+
+PR previews share the same operational Supabase state plane during this rollout, so they can look deceptively similar to production. Every `pr-<number>.soliddesign-cms.pages.dev` Operator UI must therefore display an explicit `TEST · PR-<number>` marker and prefix the browser title. Production must not display that marker.
+
 The future custom CMS hostname is supplied to the Edge Function through:
 
 ```text
@@ -78,12 +82,13 @@ Do not create a custom token-exchange/auth service merely to solve ordinary host
 
 Before M1 invite/onboarding is marked browser-verified:
 
-1. invite from the production/internal origin and confirm the email returns there;
-2. invite from `pr-<number>` and confirm the email returns to that exact preview origin;
-3. confirm an unapproved Origin cannot mint an invitation redirect;
-4. finish first-password setup and verify `joined_at` is recorded only afterward;
-5. repeat the test after a future `cms.<brand>.nl` cutover before removing the old internal origin.
+1. verify the visible environment marker before inviting;
+2. invite from the production/internal origin and confirm the email returns there;
+3. invite from `pr-<number>` and confirm the email returns to that exact preview origin;
+4. confirm an unapproved Origin cannot mint an invitation redirect;
+5. finish first-password setup and verify `joined_at` is recorded only afterward;
+6. repeat the test after a future `cms.<brand>.nl` cutover before removing the old internal origin.
 
 ## Invariant
 
-> Authentication redirects follow the configured internal SolidDesign origin. They never depend on a stale localhost Site URL and never follow arbitrary caller-supplied destinations.
+> Authentication redirects follow the approved internal SolidDesign environment from which the invitation is created. Production and PR previews are visibly distinguishable; redirects never depend on a stale localhost Site URL and never follow arbitrary caller-supplied destinations.
