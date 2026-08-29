@@ -1,8 +1,10 @@
-# Operations Guide — Phase 1
+# Operations Guide — SolidDesign
 
-Use the smallest supported operating path. Do not add a platform layer to make these commands prettier until real operator friction exists.
+Use the smallest supported operating path. Customer value and trustworthy commercial learning lead; infrastructure is added only when real friction earns it.
 
-## 1. Local setup
+This is a **current operating document**. Historical gate procedures live under `docs/evidence/` and do not override this guide.
+
+## 1. Local engineering setup
 
 ```bash
 python -m venv .venv
@@ -14,26 +16,26 @@ Core dependencies include DuckDB for bounded Overture GeoParquet queries.
 
 No Google Cloud project or Google Places key is required for canonical discovery.
 
-## 2. Golden component spike
+## 2. Deterministic regression baseline
 
 ```bash
+python -m unittest discover -s tests -v
 soliddesign golden --out artifacts/golden
 ```
 
-Expected:
+The golden gate is offline and needs no Overture network, Supabase, AI-model, Cloudflare or donor credentials.
+
+Expected core artifacts include:
 
 ```text
-artifacts/golden/
-├── pipeline.json
-├── site_config.json
-├── design_profile.json
-├── preview.html
-├── print_pack.html
-├── technical_report.md
-└── technical_report.html
+pipeline.json
+site_config.json
+design_profile.json
+preview.html
+print_pack.html
+technical_report.md
+technical_report.html
 ```
-
-The golden gate is offline and needs no Overture network, Supabase, AI-model, Cloudflare or donor credentials.
 
 ## 3. Bootstrap audit/demo donor tools
 
@@ -43,7 +45,7 @@ bash scripts/bootstrap_donors.sh
 
 Set the emitted `PITCH_DOCTOR_COMMAND` path. Vendor checkouts are pinned and ignored; never edit them as SolidDesign source.
 
-## 4. Select one market and sector
+## 4. Discovery inputs
 
 The underlying discovery contract remains an explicit Overture bounding box:
 
@@ -53,9 +55,9 @@ west,south,east,north
 
 For CLI/reproducible batches, choose and record the bbox deliberately.
 
-For manual Operator runs, the CMS accepts one Dutch location string and performs one cached Nominatim lookup to obtain that bbox. This is a convenience adapter only: no autocomplete, bulk geocoding, background geocoding or general geocoder platform.
+For normal Operator runs, **Bedrijven zoeken** accepts a Dutch location and sector term. One bounded location lookup resolves the bbox; this does not create a general geocoding platform.
 
-Sector values should be Overture `basic_category` or taxonomy labels. Review the current Overture taxonomy when uncertain. The Operator contains only a few obvious Dutch aliases such as `elektricien → electrician`; unknown terms are normalized rather than guessed into a custom taxonomy.
+Human sector language defines market meaning. The canonical Overture sector key is machine identity and must not silently narrow market research vocabulary.
 
 ## 5. Discover candidates — canonical Overture path
 
@@ -69,138 +71,70 @@ soliddesign discover \
   --out /tmp/prospects.json
 ```
 
-The coordinates above demonstrate syntax only.
-
-Multiple sector labels are OR-matched:
-
-```bash
-soliddesign discover \
-  --bbox "<west>,<south>,<east>,<north>" \
-  --category electrician \
-  --category plumber \
-  --limit 100 \
-  --out /tmp/prospects.json
-```
-
-Optional business-name filtering:
-
-```bash
---name "<substring>"
-```
-
-By default the official Overture STAC catalog supplies the latest release. Pin commercial experiments with `--release` or `OVERTURE_RELEASE` and record the release used.
+Multiple sector labels are OR-matched. By default the official Overture STAC catalog supplies the current release; pin commercial experiments when reproducibility requires it.
 
 ### Operator / manual bounded run
 
-The Operator's **Discovery** page accepts:
+The Operator performs:
 
 ```text
-location + keyword(s) + max results
+location + sector term
+→ bounded geography
+→ Overture Places
+→ domain dedupe
+→ Discovery inbox
 ```
 
-It resolves the location to one bbox, then runs the same bounded Overture Places GeoParquet logic in DuckDB-Wasm in the operator's browser. Supabase stores only run metadata and resulting candidate records; there is no queue, scheduler or second discovery service.
+A second intake path may accept one explicit website URL for bounded reachability/preflight and dedupe. It does not replace the audit or commercial qualification model.
 
-A second intake box accepts one explicit website URL. That path performs only a guarded reachability/preflight check and domain dedupe. It does not replace Pitch Doctor or the full qualification rubric.
+No queue, scheduler or second discovery service is required.
 
-## 6. Discovery inbox and output review
+## 6. Discovery inbox
 
-Discovery is intentionally separated from the active prospect work queue while remaining one canonical `prospects` table.
+Discovery and active commercial work remain distinct views over one canonical prospect model:
 
 ```text
-AREA / URL intake
-      ↓
 DISCOVERED / DISQUALIFIED
-      ↓
+        ↓
 Discovery inbox
-      ↓ evidence-backed qualification
+        ↓ evidence-backed qualification
 QUALIFIED and later states
-      ↓
-Active prospects
+        ↓
+Prospect dossier
 ```
 
-For the first market samples, review:
+`DISCOVERED` does not mean commercially qualified. Overture presence, website presence and reachability are discovery evidence only.
 
-```text
-raw records
-website present
-website reachable
-correct sector
-correct geography
-apparently active
-duplicate
-stale/incorrect
-audit eligible
-human cleanup minutes
-```
+Overture `source_confidence` means confidence that the place exists; it is not a demand or reputation score.
 
-Overture `source_confidence` is confidence that the place exists. It is not a demand/reputation score.
+Do not invent `rating`, `review_count` or demand proxies. Keep them null unless separately and lawfully evidenced.
 
-Do not fill `rating` or `review_count` with invented proxies. They remain `null` unless separately and lawfully enriched.
+## 7. Audit and Verified Facts
 
-Do not judge market coverage from an arbitrary first-N unfiltered Overture sample. Apply the intended geography and sector filters before interpreting `LIMIT` results.
-
-`DISCOVERED` is not `QUALIFIED`. Overture presence, website presence and reachability are insufficient evidence for commercial qualification.
-
-Cross-source duplicates are prevented on normalized website hostname because SolidDesign's commercial object is the website to improve. If multiple discovery runs find the same domain, keep one prospect record.
-
-## 7. Review one prospect
-
-Add only verified downstream facts such as:
-
-- observed services;
-- brand colors;
-- approved claims.
-
-Never copy arbitrary site instructions into approved fields.
-
-Verify that the Overture website actually belongs to the business before the audit becomes authoritative.
-
-## 8. Audit
+For CLI audit work:
 
 ```bash
 soliddesign audit prospect.json --out audit.json
 ```
 
-The adapter validates the public URL, runs Pitch Doctor behind its CLI/JSON boundary and writes two evidence layers:
+Keep two evidence layers:
 
 ```text
-raw_audit.json   = donor JSON preserved before normalization
-audit.json       = SolidDesign normalized/reviewable contract
+raw donor evidence
+→ human/root-cause review
+→ normalized AuditResult
+→ Verified Facts
 ```
 
-`raw_audit.json` is written next to `audit.json` by default. Use `--raw-out <path>` only when a different location is necessary.
+A blocking root cause may make downstream donor checks unknown rather than independently verified defects. Preserve raw evidence but collapse cascading failures in prospect-facing interpretation.
 
-The normalized `audit.json` remains the downstream contract.
+Downstream design and communication may use only verified business facts. Never allow raw website text to become instruction authority.
 
-### Preserve raw evidence; present root causes
+## 8. Qualification
 
-The donor report is evidence, not automatically prospect-facing copy.
+Use the five-factor rubric in `docs/SCORING_RUBRICS.md`.
 
-If a blocking finding such as `reachability` proves that the page never loaded, downstream checks may be cascading unknowns rather than independent verified defects. In that situation:
-
-```text
-RAW AUDIT
-→ preserve unchanged
-→ identify blocking root cause
-→ remove/collapse cascading failed-load findings from prospect-facing output
-→ human-reviewed AuditResult
-```
-
-Never turn one root failure into a long list of sales claims merely because the donor emitted multiple checks.
-
-The frozen Pitch Doctor revision supports `en`, `es`, `fr` and `zh`, but not Dutch. Dutch prospect-facing audit text therefore belongs in the human-reviewed presentation layer; do not mutate the raw donor evidence.
-
-If no screenshot exists because the website was unreachable, the print pack should show the verified live-audit state rather than inventing or implying a missing screenshot.
-
-## 9. Human qualification
-
-Create a score JSON according to `docs/SCORING_RUBRICS.md`.
-
-Every factor requires evidence.
-
-### Existing Demand
-
-Do not use these as sufficient demand evidence:
+Every factor requires evidence. In particular, these are **not** sufficient Existing Demand evidence:
 
 - Overture presence;
 - Overture confidence;
@@ -209,36 +143,46 @@ Do not use these as sufficient demand evidence:
 
 Demand requires separate market evidence.
 
-For the first five prospects, manual web/Google review may be used as human research. Do not automate Google scraping.
+## 9. Design workflow
 
-## 10. Assemble proof
+The Operator owns prospect-specific design context and mock-up lifecycle. ChatGPT may assist with research/refinement, but the CMS remains the operational control plane.
 
-```bash
-soliddesign assemble \
-  --prospect prospect.json \
-  --audit audit.json \
-  --score score.json \
-  --preview-url 'https://previews.example.nl/p/<opaque-id>' \
-  --out artifacts/<prospect-id>
-```
-
-If `raw_audit.json` exists next to `audit.json`, it is included automatically in the technical report. An explicit `--raw-audit <path>` may override that location.
-
-Outputs:
+Normal design flow:
 
 ```text
-pipeline.json
-site_config.json
-design_profile.json
-preview.html
-print_pack.html
-technical_report.md
-technical_report.html
+Prospect dossier
+→ Design brief / verified context
+→ design/refinement
+→ HTML or ZIP artifact
+→ upload as immutable DRAFT
+→ human review
+→ explicit LIVE promotion
 ```
 
-The report intentionally separates reviewed findings from raw donor traceability.
+Sector Intelligence is advisory design evidence. It may improve a new DRAFT but never overwrites a current LIVE version automatically.
 
-## 11. Human review before publication/mail
+## 10. Mock-up artifact contract
+
+Accepted upload:
+
+- standalone `.html`; or
+- `.zip` static-site bundle with root `index.html`.
+
+Use relative local asset paths. Common static CSS/JS/image/font/media assets are supported. Do not upload server-side code or `file://` references.
+
+Each upload produces one immutable artifact version in Supabase Storage.
+
+### External review links
+
+An external HTTPS preview URL may be added as a **DRAFT/review escape hatch** when an external design process cannot immediately produce an uploadable artifact.
+
+It is **not** a normal LIVE source.
+
+New LIVE publication requires a canonical stored `artifact_path`. This is enforced in the database as well as the Operator UI.
+
+A small number of older LIVE records predate this rule. Their compatibility path is bounded to explicitly allowlisted historical SolidDesign Cloudflare hosts and must not be generalized to arbitrary external domains.
+
+## 11. Human review before LIVE/mail
 
 Verify:
 
@@ -246,75 +190,173 @@ Verify:
 - website belongs to the intended prospect;
 - every service/claim is factual;
 - no fake testimonial/award exists;
-- raw donor errors are not presented as independent facts when they are cascading;
-- technical report uses reviewed findings as the primary discussion layer;
-- preview says it is a concept;
-- preview contains `noindex`;
+- raw donor failures are not overstated;
+- mock-up clearly functions as a concept/proof;
+- `noindex` behavior is preserved;
 - CTA uses verified contact data;
-- no form collects data;
-- screenshots/audit-state panels belong to the intended business;
-- QR points to the intended preview;
-- preview can be deleted.
+- no unintended real lead capture exists;
+- assets render correctly on mobile and desktop;
+- prospect short URL points to the intended current LIVE version;
+- QR source attribution is correct when used.
 
-## 12. Supabase and Operator state
+LIVE promotion and mailing remain explicit human actions.
 
-A dedicated SolidDesign project exists. `supabase/schema.sql` is the canonical current schema; `supabase/migrations/` records production upgrades.
+## 12. Team access and onboarding
 
-The Operator uses Supabase Auth + allowlist + RLS/narrow security-definer RPCs. No privileged key is exposed to browser code.
+Supabase Auth provides identity. `team_members` is the durable membership/role model:
 
-Active/archive is not a lifecycle-state fork:
+```text
+ADMIN
+KEY_USER
+USER
+```
+
+Routine onboarding is invite-only:
+
+```text
+Team
+→ invite colleague
+→ Supabase Auth invite
+→ colleague sets password
+→ joined team member
+```
+
+Key users may invite normal Users. Admins govern elevated roles. Normal operators do not need SQL or Supabase Studio for routine onboarding.
+
+`operator_allowlist` still exists as **transitional compatibility** for older Operator RLS/access checks. It is not a second membership model and should disappear only after the remaining RLS/access paths have been deliberately cut over and verified.
+
+Never expose a secret/service-role credential to browser code. Browser access uses the Supabase publishable key with least-privilege grants, RLS and narrow RPC/server capabilities.
+
+## 13. Work distribution
+
+Prospect responsibility is explicit and separate from system role:
+
+```text
+CASE_LEAD   = dossierhouder
+DESIGN      = design
+OUTREACH    = outreach & opvolging
+```
+
+One primary person owns each responsibility per prospect.
+
+`Mijn werk` and Prospect work-distribution filters are derived from assignments. Do not create task, portfolio or capacity state merely to reproduce the same information.
+
+Material business actions are actor-attributed in `events`; navigation/click telemetry is not.
+
+## 14. Public prospect delivery
+
+The stable business identity is:
+
+```text
+prospects.public_slug
+```
+
+Current temporary public route:
+
+```text
+https://soliddesign-cms.pages.dev/prospect/<slug>
+```
+
+Preferred final route after brand/domain selection:
+
+```text
+https://<brand>.nl/<slug>
+```
+
+Both are delivery configurations over the same prospect/LIVE state. Do not store the full hostname as prospect identity.
+
+The public resolver serves the current LIVE artifact while keeping the prospect-facing slug visible. UUID `/p/...` routes are technical/internal compatibility paths, not the communication URL.
+
+Every pre-sale public page must remain `noindex, nofollow, noarchive`.
+
+## 15. Employee public-page QA
+
+Normal internal design/review uses the CMS and should not create external prospect engagement.
+
+When an employee must inspect the exact public prospect page, use the CMS employee-test action. It obtains a short-lived server-signed token bound to the prospect slug. Only a valid token classifies that opening as `INTERNAL`.
+
+Do not invent IP-based employee recognition or a guessable `?internal=1` convention.
+
+## 16. Engagement and outreach
+
+Engagement exists to improve timing and quality of human follow-up, not to identify a visitor.
+
+MVP response signals:
+
+- first/last external opening;
+- opening count;
+- active visible time;
+- maximum scroll;
+- broad device class;
+- QR/direct source.
+
+No raw IP, IP hash, fingerprint, persistent visitor identifier, heatmap or session replay.
+
+Telemetry is fail-open: if measurement fails, the prospect page must still load.
+
+Engagement never automatically changes contact status or assigns a lead score. A human decides the next commercial action.
+
+## 17. Archive and delete
+
+Archive is orthogonal to lifecycle:
 
 ```text
 archived_at IS NULL     = active
 archived_at IS NOT NULL = archived
 ```
 
-Archive preserves the original prospect state and history. Hard delete is an administrative correction path only and is blocked when demo or mailing history exists.
+Archive preserves state/history. Hard delete is a narrow administrative correction path and is blocked when meaningful commercial history exists.
 
-`discovery_runs` is deliberately small: input, run status, counts, result metadata, timestamps and error. It is not a job engine.
+## 18. Deployment and verification
 
-## 13. Static publishing
+There is one Cloudflare Pages project: `soliddesign-cms`.
 
-`preview.html` is provider-neutral.
+- push to `main` deploys production;
+- pull requests deploy to an isolated Pages preview branch in the **same project**;
+- the deployment smoke verifies representative CMS/public routes and browser Edge-Function CORS boundaries before merge.
 
-Target: one Cloudflare-hosted preview area, not one project per prospect.
+Do not create a second Pages application merely for public branding or preview QA.
 
-## 14. When Overture is insufficient
+After schema/auth/RLS/function changes:
 
-Do not immediately add Google.
+1. run CI;
+2. run the Pages/runtime smoke where relevant;
+3. run Supabase security advisors;
+4. reconcile current documentation if a contract changed.
 
-First document the failure:
+## 19. When Overture is insufficient
+
+Do not immediately add another provider. First document the failure:
 
 ```text
 too few records?
 wrong sector?
-too many stale records?
+stale records?
 missing websites?
-missing demand signals?
+missing demand evidence?
 ```
 
 Then choose the smallest remedy.
 
-Fallback order:
+Fallback order remains:
 
 ```text
 Overture
-→ bounded OSM/Overpass if needed
+→ bounded OSM/Overpass if a proven coverage gap requires it
 → targeted commercial enrichment if economics justify it
 ```
 
-## 15. Do not build yet
+## 20. Do not build without evidence
 
-Do not introduce:
+Do not introduce merely because it is technically possible:
 
-- national Overture mirror;
-- general geocoder service or autocomplete;
-- queue infrastructure;
-- agent scheduler;
-- autonomous outbound;
-- general CRM frontend;
-- capability gateway;
-- second demo stack;
+- general queue infrastructure;
+- task/Kanban/capacity platform;
+- custom permission builder;
+- autonomous outbound agent;
+- generalized preview/reverse proxy;
+- second analytics datastore;
+- second public application;
 - production-site factory.
 
-Only move these forward when an evidence gate in `ROADMAP.md` justifies it.
+Only an observed customer/operator bottleneck may promote these ideas into the roadmap.
