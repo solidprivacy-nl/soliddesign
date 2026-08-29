@@ -44,10 +44,13 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
     def test_invite_activation_cannot_mark_joined_before_password_setup(self):
         migration = self.read("supabase/migrations/20260829_membership_engagement_correctness_v02.sql")
         setup = self.read("operator/invite-setup.js")
+        invite = self.read("supabase/functions/team-invite/index.ts")
         self.assertIn("solidDesignMustSetPassword", migration)
         self.assertIn("raw_user_meta_data", migration)
         self.assertIn("operator_mark_joined", setup)
         self.assertIn("joinedError", setup)
+        self.assertIn("corsHeaders", invite)
+        self.assertIn("req.method === 'OPTIONS'", invite)
 
     def test_engagement_is_minimal_privacy_bounded_and_browser_callable(self):
         schema = self.read("supabase/migrations/20260829_prospect_engagement_v01.sql")
