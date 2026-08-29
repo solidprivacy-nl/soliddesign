@@ -41,6 +41,32 @@ Rules:
 
 `operator_allowlist` is transitional compatibility during rollout, not the target user-management model. It still gates a finite set of older Operator RLS/functions, so it must not be deleted piecemeal or extended with new semantics. After the invite/role browser gate is proven, cut the remaining access checks over to active `team_members` in one explicit migration/change set and then remove the compatibility path.
 
+### Human team identity
+
+`team_members.display_name` is the canonical visible person identity in SolidDesign work surfaces. E-mail is login/account metadata and must not become the normal assignment or activity label.
+
+The UI derives an initials avatar from `display_name`. No avatar image, upload or Storage object is required for identity.
+
+Display-name correction is Admin-only and actor-aware. It changes presentation identity without changing the stable Auth UUID used by assignments/events.
+
+### Deactivation and permanent deletion
+
+Deactivation is the normal offboarding path and preserves historical attribution.
+
+Permanent deletion is deliberately narrower and is only for mistaken/test/non-business accounts. It is executed server-side because deleting a Supabase Auth user requires privileged Auth administration.
+
+The deletion capability must re-check all of the following on the server:
+
+- caller is an active Admin;
+- target is not the caller;
+- target has no active `prospect_assignments`;
+- target has no prospect-linked event/business history;
+- an active Admin deletion cannot remove the last active Admin.
+
+The Auth foreign key on `team_members.user_id` cascades only after those checks pass. `events.actor_user_id` may be cleared for lifecycle-only account events, while a metadata snapshot of the deleted account is recorded in the Admin deletion event.
+
+A member with dossier/business history must be deactivated, never hard-deleted merely to tidy the Team list.
+
 ### Invite lifecycle state
 
 Invitation metadata such as `solidDesignMustSetPassword` supports onboarding UI/lifecycle behavior only. User-editable metadata is not authorization authority. Roles and access remain derived from authenticated identity plus server/RLS-controlled membership state.
