@@ -1,6 +1,6 @@
 # Security Baseline
 
-Security is part of the operating design, not a later subsystem. The canonical system model is `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`.
+Security is part of the operating design, not a later subsystem. The canonical system model is `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`; documentation precedence is defined in `docs/ARCHITECTURE.md`.
 
 ## Primary trust boundaries
 
@@ -39,7 +39,26 @@ Rules:
 - privileged/service credentials never enter browser code;
 - sensitive mutations use RLS or narrow server/RPC capabilities that re-check the authenticated user and role.
 
-`operator_allowlist` is transitional compatibility during rollout, not the target user-management model.
+`operator_allowlist` is transitional compatibility during rollout, not the target user-management model. It still gates a finite set of older Operator RLS/functions, so it must not be deleted piecemeal or extended with new semantics. After the invite/role browser gate is proven, cut the remaining access checks over to active `team_members` in one explicit migration/change set and then remove the compatibility path.
+
+### Invite lifecycle state
+
+Invitation metadata such as `solidDesignMustSetPassword` supports onboarding UI/lifecycle behavior only. User-editable metadata is not authorization authority. Roles and access remain derived from authenticated identity plus server/RLS-controlled membership state.
+
+## Password security
+
+Use Supabase Auth's built-in password controls rather than creating a custom password-strength or breached-password service.
+
+Current verification checklist before the multi-user operational pilot:
+
+- minimum password length must be at least 8 characters; prefer a stronger practical setting for this small internal team;
+- use Supabase's built-in required-character policy where operationally appropriate;
+- if the project plan supports it, enable Supabase **Leaked Password Protection** so known-compromised passwords are rejected through the platform's HaveIBeenPwned integration;
+- do not implement a second password database, custom breach API or home-grown password checker merely to replace a platform capability.
+
+The Supabase security advisor currently reports leaked-password protection as disabled. Supabase documents this protection as available on Pro Plan and above. This is a configuration hardening item, not an application-architecture requirement.
+
+Reference: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
 
 ## Public/internal surface separation
 
@@ -57,6 +76,18 @@ The public hostname is never an alias for the CMS. A public slug is an address, 
 Public delivery resolves only the information required to serve the current LIVE mock-up. Drafts and internal dossier capability remain inaccessible.
 
 Every prospect page remains `noindex, nofollow, noarchive` during the pre-sale workflow.
+
+## LIVE artifact and legacy-delivery boundary
+
+New LIVE publication requires a canonical stored artifact. External HTTPS previews are review/DRAFT inputs only.
+
+Six grandfathered LIVE records predate that rule. Their compatibility route is deliberately finite:
+
+- only explicitly allowlisted historical SolidDesign Cloudflare preview hosts may be fetched;
+- the shortened historical `gate3-v1.soliddesign-cms.pages.dev` alias is normalized server-side to its original legacy preview host so the current Pages project cannot recursively call itself;
+- redirects are allowed only inside the expected legacy origin/path;
+- the prospect-facing URL remains visible;
+- this path must shrink as those records are migrated/retired and must never become a general external reverse proxy.
 
 ## Prospect engagement privacy boundary
 
@@ -103,6 +134,14 @@ The prospect-engagement Edge Function intentionally accepts public start/update 
 
 Browser invocation requires explicit CORS/preflight handling. The internal-preview token minting action separately authenticates the requesting team member using the supplied Supabase Auth access token and verifies active membership server-side.
 
+## Database access boundary
+
+The public resolver uses the publishable key with narrow column grants plus RLS. Do not solve resolver failures by broadening anonymous table access when the requested column is not actually necessary.
+
+`prospect_visits` has no direct `anon` or `authenticated` table grants. Operational reads go through authenticated, authorization-checking RPCs; public writes go through the bounded Edge Function.
+
+Database evolution follows `supabase/schema.sql` as bootstrap baseline plus ordered `supabase/migrations/` as canonical post-bootstrap evolution. See `supabase/README.md`.
+
 ## URL / SSRF rules
 
 Network fetchers must reject or guard:
@@ -114,6 +153,8 @@ Network fetchers must reject or guard:
 - link-local addresses;
 - cloud metadata endpoints;
 - redirects into blocked ranges.
+
+A compatibility proxy is not exempt from these principles merely because its targets are historical; its allowed origin/path set must remain explicit and finite.
 
 ## Verified facts
 
@@ -133,4 +174,12 @@ Because the repository can be public:
 
 ## Security review rule
 
-After schema/auth/RLS/function changes, run Supabase security advisors and distinguish new regressions from known legacy lint. Do not silence warnings by broadening permissions or adding `SECURITY DEFINER`; authorization must remain explicit.
+After schema/auth/RLS/function changes:
+
+1. run CI and relevant deployed runtime smokes;
+2. run Supabase security advisors;
+3. distinguish new regressions from intentional capabilities or explicitly tracked configuration debt;
+4. fix cheap, correct hardening at the source rather than silencing the advisor;
+5. do not broaden permissions or add `SECURITY DEFINER` merely to make a warning disappear.
+
+The `website_key_from_url` helper now pins its `search_path` through migration, removing the previous mutable-search-path warning without changing its capability.
