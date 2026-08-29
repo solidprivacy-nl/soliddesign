@@ -60,6 +60,9 @@ Documentation precedence is explicit in `docs/ARCHITECTURE.md`. Completed Gate-1
 Implemented:
 
 - `team_members` with stable Supabase Auth UUID;
+- `display_name` is the canonical human-visible identity; e-mail remains secondary account metadata;
+- Team derives initials avatars client-side with no avatar/profile storage subsystem;
+- Admin can correct display names through an actor-aware RPC;
 - current operators backfilled without access loss;
 - `ADMIN / KEY_USER / USER`;
 - server-side Auth invite flow;
@@ -68,9 +71,12 @@ Implemented:
 - mandatory first password setup flow;
 - invited user is not considered joined before the activation flow finishes;
 - deactivate/reactivate lifecycle;
+- Admin-only permanent deletion for mistaken/test/non-business accounts;
+- permanent deletion is server-guarded: no self-delete, no active assignments, no prospect-linked business history and no removal of the last active Admin;
+- Auth deletion cascades only after those guards pass; users with business history must be deactivated instead;
 - last-Admin and active-assignment safeguards;
 - self-signup hidden in the normal UI;
-- browser CORS/preflight support on the invite function.
+- browser CORS/preflight support on team management Edge Functions.
 
 ### Remaining M1 verification/debt
 
@@ -80,10 +86,13 @@ Implemented:
 
 1. invite one controlled test colleague through Team;
 2. finish first-login/password activation;
-3. verify normal access and role-specific Team visibility;
-4. verify a Key user can invite User but not elevate roles;
-5. deactivate/reactivate without SQL/admin-console intervention;
-6. verify active assignments block unsafe deactivation.
+3. verify display name/initials and that assignments/activity show names rather than e-mail;
+4. verify normal access and role-specific Team visibility;
+5. verify an Admin can correct a display name;
+6. verify a Key user can invite User but not elevate roles;
+7. verify permanent deletion succeeds for a clean test account and is rejected after dossier/business history exists;
+8. deactivate/reactivate without SQL/admin-console intervention;
+9. verify active assignments block unsafe deactivation/deletion.
 
 **After this browser gate passes:** perform one explicit access cutover from the remaining `operator_allowlist`-based RLS/function/browser checks to active `team_members`, then remove the compatibility model. Do not dual-maintain both indefinitely.
 
@@ -101,7 +110,7 @@ Implemented:
 - assignment/lifecycle events;
 - deactivation blocked until active responsibilities are released/reassigned.
 
-**Verification gate:** browser assignment changes with two real roles/users and confirm current responsibility plus Activity attribution.
+**Verification gate:** browser assignment changes with two real roles/users and confirm current responsibility plus Activity attribution using display names.
 
 ## M3 — Multi-user information architecture 🟡 IMPLEMENTED / BROWSER VERIFY
 
@@ -125,6 +134,7 @@ Implemented:
 - `Mijn werk` as default personal work surface derived from assignments;
 - context opening into Design/Outreach where responsibility is unambiguous;
 - Team membership/work-distribution view;
+- display-name + derived-initials identity in Team instead of e-mail as primary person label;
 - per-prospect responsibility card;
 - shared Prospect filters for `Mijn werk`, missing dossierholder, missing Design and missing Outreach;
 - existing lightweight frontend retained; no framework migration.
@@ -199,7 +209,7 @@ Implemented:
 
 Internal QA uses a five-minute server-signed token bound to the prospect slug. A guessable `?internal=1` marker and IP allowlists are not used.
 
-Deployment smoke has proven browser preflight/CORS for both `prospect-engagement` and `team-invite` from the Pages preview origin.
+Deployment smoke proves browser preflight/CORS for `prospect-engagement`, `team-invite` and the Admin-only `team-member-admin` capability from the Pages preview origin.
 
 **Browser verification gate:** real public-page browser opening must create an external visit; staff test must create only an internal visit; active-time/scroll update must be observed; invalid/expired staff token must not become external response.
 
@@ -237,6 +247,7 @@ Use multiple real operators and approximately 10–20 real prospect mailings aft
 Validate:
 
 - onboarding and role clarity;
+- human-readable identity and handover clarity;
 - assignments/handover;
 - My Work and unassigned work;
 - actor/event quality;
@@ -255,6 +266,7 @@ Only after M7 evidence may we consider:
 - simple funnel reporting;
 - `tel:` / `mailto:` interaction telemetry;
 - first-view notifications;
+- optional photo/avatar support only if initials demonstrably fail for real team use;
 - separate public runtime for proven reliability/security needs;
 - per-dossier authorization for proven confidentiality requirements;
 - task management only if responsibility + `next_action_at` repeatedly proves insufficient.
@@ -290,6 +302,8 @@ Automation candidates remain evidence-gated. Do not introduce queues, agentic wo
 3. Prefer existing platform capabilities over new services.
 4. Prefer explicit human actions over hidden automation until evidence justifies automation.
 5. Domain names are delivery configuration, not business identity.
-6. Transitional compatibility must have an explicit shrink/remove condition and may not silently become architecture.
-7. Historical evidence/plans do not override current architecture or roadmap status.
-8. No future milestone is implemented merely because it appears on this roadmap.
+6. Human identity is display-name/UUID based; e-mail is account metadata, not workflow identity.
+7. Deactivation preserves history; permanent deletion is only for history-free cleanup accounts.
+8. Transitional compatibility must have an explicit shrink/remove condition and may not silently become architecture.
+9. Historical evidence/plans do not override current architecture or roadmap status.
+10. No future milestone is implemented merely because it appears on this roadmap.
