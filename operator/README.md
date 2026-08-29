@@ -11,14 +11,14 @@ SolidDesign Operator remains deliberately narrow. It supports:
 - **Mijn werk** — personal work derived from current prospect responsibilities;
 - **Prospects** — shared prospect register and dossiers;
 - **Bedrijven zoeken** — manual discovery/intake;
-- **Team** — invite, role/status, human identity and work-distribution view for Key users/Admins;
+- **Team** — invite, role/status and work-distribution view for Key users/Admins;
 - per-prospect **Overzicht / Design / Outreach / Activiteit**;
 - immutable mock-up versions with explicit LIVE promotion;
 - stable public prospect links;
 - minimal prospect engagement in Outreach;
 - actor-aware dossier history.
 
-It is explicitly not a general CRM, website builder, task engine, workflow platform, HR system, capacity planner, profile/avatar platform or analytics suite.
+It is explicitly not a general CRM, website builder, task engine, workflow platform, HR system, capacity planner or analytics suite.
 
 ## One dossier, phase responsibilities
 
@@ -52,27 +52,15 @@ There is deliberately no Owner/Eigenaar role.
 
 ## Human team identity
 
-The work interface identifies colleagues by `team_members.display_name`, not by e-mail address.
+`team_members.display_name` is the primary visible identity. The e-mail address remains secondary account/login metadata.
 
-```text
-AJ  Anne Jansen
-    anne@example.nl
-```
+Team renders an automatically derived initials avatar from the display name. No profile-photo upload or avatar Storage subsystem is required.
 
-Rules:
-
-- display name is the primary visible identity in Team, assignments and activity;
-- e-mail is secondary account/login metadata and is only shown where account management benefits from it;
-- the circular initials avatar is derived from the display name and is not stored;
-- there is no image-avatar upload/storage/crop workflow;
-- Admin may correct a display name through Team;
-- changing a display name does not change the stable Auth UUID behind assignments/history.
-
-This keeps names readable throughout the workflow without creating a user-profile subsystem.
+Assignments and normal activity labels use display names, not e-mail addresses. Admin can correct a display name without changing the stable Auth UUID behind assignments and actor history.
 
 ## Invite-only onboarding
 
-Routine onboarding does not require SQL or Supabase dashboard changes.
+Routine onboarding does not require SQL or Supabase database changes.
 
 ```text
 Admin / Key user
@@ -94,22 +82,17 @@ Rules:
 - a member with active responsibilities must be reassigned before deactivation;
 - no service/admin secret is exposed to the browser.
 
+The invite Edge Function always supplies an explicit validated Auth `redirectTo`. Current hosted Site URL / Redirect URL configuration and the future `cms.<brand>.nl` cutover are defined in `docs/AUTH_REDIRECTS.md`. `http://localhost:3000` is local-development configuration and is not a valid hosted production fallback.
+
 `team_members` is the durable membership/role model. `operator_allowlist` remains a temporary compatibility gate for existing Operator RLS/access paths during rollout; do not build new membership semantics on top of it.
 
 The invitation metadata that drives the password-setup overlay is onboarding UX state, not a role/authorization source. Authorization remains server/RLS/team-membership based.
 
-## Deactivate versus remove
+## Deactivation versus deletion
 
-**Deactiveer** is normal offboarding. The account loses active access but remains in Team/history so previous work still has a human actor.
+**Deactiveren** is normal offboarding and preserves historical attribution.
 
-**Verwijder** is Admin-only cleanup for a mistaken/test/non-business account. The server permits permanent deletion only when the user:
-
-- is not the calling Admin;
-- has no current prospect responsibilities;
-- has no prospect-linked business activity/history;
-- is not the last active Admin.
-
-If business history exists, the delete action is rejected and the correct operation is deactivation. Permanent deletion also removes the Supabase Auth account; it is never implemented as a browser-side table delete.
+**Verwijderen** is Admin-only cleanup for mistaken/test accounts that have no active responsibilities or prospect-linked business history. The server also prevents self-delete and removal of the last active Admin. If business history exists, the account must be deactivated instead.
 
 ## Discovery workflow
 
@@ -235,8 +218,7 @@ Examples:
 - mock-up created or promoted LIVE;
 - mailing sent;
 - archive/restore;
-- team lifecycle actions;
-- display-name changes.
+- team lifecycle actions.
 
 Routine UI navigation is not logged.
 
@@ -251,8 +233,6 @@ Current rollout access is composed from:
 - transitional `operator_allowlist` checks on older Operator RLS/access paths;
 - RLS and narrow authenticated RPC/server capabilities;
 - server-side role checks for privileged operations.
-
-Permanent user deletion is a server-side Admin capability because it must remove the Auth identity and enforce assignment/history safeguards. The browser never receives a service/admin credential.
 
 The allowlist is compatibility debt, not a target parallel user model. Remove it only through an explicit tested cutover of the remaining policies/access checks.
 
