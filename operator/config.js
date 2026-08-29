@@ -9,5 +9,6 @@ window.SOLIDDESIGN_OPERATOR_CONFIG = Object.freeze({
 import('./invite-setup.js').catch((error) => console.error('Uitnodigingsflow kon niet laden.', error));
 import('./prospect-link.js').catch((error) => console.error('Prospectlink module kon niet laden.', error));
 import('./team-work.js').catch((error) => console.error('Teamwerk module kon niet laden.', error));
+import('./prospect-work-filter.js').catch((error) => console.error('Werkverdelingsfilter kon niet laden.', error));
 import('./dossier-tabs.js').catch((error) => console.error('Dossierweergave kon niet laden.', error));
 import('./engagement-ui.js').catch((error) => console.error('Digitale respons kon niet laden.', error));
