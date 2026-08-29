@@ -3,6 +3,8 @@ import { corsHeaders } from 'jsr:@supabase/supabase-js@2/cors';
 
 const ROLE_SET = new Set(['USER', 'KEY_USER']);
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DEFAULT_INTERNAL_ORIGIN = 'https://soliddesign-cms.pages.dev';
+const PR_PREVIEW_ORIGIN_RE = /^https:\/\/pr-\d+\.soliddesign-cms\.pages\.dev$/;
 
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -16,6 +18,33 @@ function json(status: number, body: unknown) {
   });
 }
 
+function configuredInternalOrigin() {
+  const configured = String(Deno.env.get('SOLIDDESIGN_INTERNAL_ORIGIN') || DEFAULT_INTERNAL_ORIGIN).trim();
+  try {
+    const url = new URL(configured);
+    if (url.protocol !== 'https:' || url.username || url.password) return DEFAULT_INTERNAL_ORIGIN;
+    return url.origin;
+  } catch {
+    return DEFAULT_INTERNAL_ORIGIN;
+  }
+}
+
+function inviteRedirectFor(req: Request) {
+  const configured = configuredInternalOrigin();
+  const rawOrigin = String(req.headers.get('Origin') || '').trim();
+  if (!rawOrigin) return `${configured}/`;
+
+  try {
+    const requestOrigin = new URL(rawOrigin).origin;
+    const allowed = requestOrigin === DEFAULT_INTERNAL_ORIGIN
+      || requestOrigin === configured
+      || PR_PREVIEW_ORIGIN_RE.test(requestOrigin);
+    return allowed ? `${requestOrigin}/` : null;
+  } catch {
+    return null;
+  }
+}
+
 export default {
   fetch: withSupabase({ auth: 'user' }, async (req, ctx) => {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -23,6 +52,11 @@ export default {
 
     const callerId = ctx.userClaims?.id;
     if (!callerId) return json(401, { error: 'Niet ingelogd.' });
+
+    const redirectTo = inviteRedirectFor(req);
+    if (!redirectTo) {
+      return json(400, { error: 'Deze SolidDesign-omgeving is niet toegestaan als uitnodigingsbestemming.' });
+    }
 
     const { data: caller, error: callerError } = await ctx.supabaseAdmin
       .from('team_members')
@@ -70,6 +104,7 @@ export default {
     }
 
     const { data: inviteData, error: inviteError } = await ctx.supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+      redirectTo,
       data: {
         display_name: displayName,
         solidDesignMustSetPassword: true,
@@ -79,7 +114,7 @@ export default {
     const invited = inviteData?.user;
     if (inviteError || !invited?.id) {
       console.error('team-invite auth invite failed', inviteError);
-      return json(400, { error: 'Uitnodiging kon niet worden verstuurd. Controleer of het e-mailadres al als account bestaat.' });
+      return json(400, { error: 'Uitnodiging kon niet worden verstuurd. Controleer het e-mailadres en de toegestane Auth-redirects.' });
     }
 
     const now = new Date().toISOString();
