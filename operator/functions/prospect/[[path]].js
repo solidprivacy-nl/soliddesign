@@ -94,9 +94,24 @@ export async function onRequest({ request }) {
     headers.set('Location', location.replace(`${incoming.origin}/p/${id}`, `${incoming.origin}/prospect/${slug}`));
   }
 
-  return new Response(request.method === 'HEAD' ? null : upstream.body, {
+  const response = new Response(request.method === 'HEAD' ? null : upstream.body, {
     status: upstream.status,
     statusText: upstream.statusText,
     headers
   });
+
+  const isHtml = request.method === 'GET' && upstream.ok && (headers.get('Content-Type') || '').toLowerCase().includes('text/html');
+  if (!isHtml) return response;
+
+  const telemetryEndpoint = `${SUPABASE_URL}/functions/v1/prospect-engagement`;
+  return new HTMLRewriter()
+    .on('body', {
+      element(element) {
+        element.append(
+          `<script id="soliddesignProspectEngagement" src="/prospect-engagement.js" data-slug="${slug}" data-endpoint="${telemetryEndpoint}"></script>`,
+          { html: true }
+        );
+      }
+    })
+    .transform(response);
 }
