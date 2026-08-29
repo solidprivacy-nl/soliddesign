@@ -13,27 +13,32 @@ class TeamIdentityLifecycleTests(unittest.TestCase):
 
     def test_team_identity_uses_display_name_and_derived_initials(self):
         config = self.read("operator/config.js")
-        identity = self.read("operator/team-identity.js")
+        team_work = self.read("operator/team-work.js")
         architecture = self.read("docs/INTEGRATED_OPERATING_ARCHITECTURE.md")
 
-        self.assertIn("team-identity.js", config)
-        self.assertIn("function initials", identity)
-        self.assertIn("member-avatar", identity)
-        self.assertIn("display_name", identity)
-        self.assertIn("display_name` is the canonical human-readable identity", architecture)
-        self.assertNotIn("avatar_url", identity)
+        self.assertIn("import('./team-work.js')", config)
+        self.assertNotIn("team-identity.js", config)
+        self.assertFalse((ROOT / "operator/team-identity.js").exists())
+        self.assertIn("function memberInitials", team_work)
+        self.assertIn("team-avatar", team_work)
+        self.assertIn("display_name", team_work)
+        self.assertIn("team_members.display_name", architecture)
+        self.assertIn("primary human-readable identity", architecture)
+        self.assertNotIn("avatar_url", team_work)
 
     def test_display_name_change_is_admin_only_and_actor_aware(self):
         migration = self.read("supabase/migrations/20260829_team_identity_and_safe_delete_v01.sql")
+        team_work = self.read("operator/team-work.js")
         self.assertIn("operator_update_team_display_name", migration)
         self.assertIn("caller_role <> 'ADMIN'", migration)
         self.assertIn("user_display_name_changed", migration)
         self.assertIn("actor_user_id", migration)
+        self.assertIn("operator_update_team_display_name", team_work)
 
     def test_permanent_delete_is_server_side_and_history_guarded(self):
         migration = self.read("supabase/migrations/20260829_team_identity_and_safe_delete_v01.sql")
         edge = self.read("supabase/functions/team-member-admin/index.ts")
-        identity = self.read("operator/team-identity.js")
+        team_work = self.read("operator/team-work.js")
         security = self.read("docs/SECURITY.md")
 
         self.assertIn("on delete cascade", migration.lower())
@@ -42,7 +47,7 @@ class TeamIdentityLifecycleTests(unittest.TestCase):
         self.assertIn("prospect_id", edge)
         self.assertIn("deleteUser", edge)
         self.assertIn("user_deleted", edge)
-        self.assertIn("team-member-admin", identity)
+        self.assertIn("team-member-admin", team_work)
         self.assertIn("Deze gebruiker heeft dossierhistorie", edge)
         self.assertIn("A member with dossier/business history must be deactivated", security)
 
