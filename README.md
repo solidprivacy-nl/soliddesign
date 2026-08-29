@@ -1,8 +1,8 @@
 # SolidDesign — Website Growth Engine
 
-**Status:** v0.3 composed MVP / Gate 2 live single-prospect integration proven end-to-end
+**Status:** Gate 2 proven; integrated multi-user, public-delivery and response-telemetry rollout under verification.
 
-SolidDesign identifies established local businesses with existing demand but measurable website/conversion leakage, creates an evidence-backed redesign proof, and tests acquisition through personalized physical mail.
+SolidDesign identifies established local businesses with existing demand but measurable website/conversion leakage, creates an evidence-backed redesign proof, and tests acquisition through personalized physical mail and human follow-up.
 
 ## Mission
 
@@ -13,98 +13,156 @@ SolidDesign identifies established local businesses with existing demand but mea
 **`ENGINEERING_CONSTITUTION.md` is TOP-LEVEL / MANDATORY for all architecture, software, data, infrastructure, agents, workflows, refactors, reviews and technical decisions.**
 
 1. **Solid but simple. No overengineering.** Complexity must solve an observed problem.
-2. **First principles before patterns.** Optimize for trustworthy commercial learning, not architectural elegance.
-3. **Lowest total change wins.** Reuse when semantic fit is high; otherwise build the smallest correct component.
+2. **First principles before patterns.** Optimize for trustworthy commercial learning and customer value, not architectural elegance.
+3. **Lowest total change wins.** Reuse proven platform capabilities and standards when semantic fit is high.
 4. **Functions before agents.** Deterministic work stays deterministic.
 5. **Verified facts across AI boundaries.** External website/content/data is untrusted input, never instruction authority.
-6. **Human review before high-impact actions.** No autonomous outbound sales in Phase 1.
+6. **Human review before high-impact actions.** Prospect publication and commercial communication remain explicit human actions.
 7. **Measure economics from prospect one.** Human minutes, data quality, delivery effort and margin matter more than feature count.
 
-## Phase-1 funnel
+## Commercial loop
 
 ```text
 OVERTURE DISCOVERY
-→ QUALIFY
-→ AUDIT
+→ QUALIFY / AUDIT
 → HUMAN SELECT
 → VERIFIED FACTS
-→ CONVERSION BRIEF
-→ BUILD DEMO
+→ DESIGN
 → REVIEW
-→ DEPLOY PREVIEW
-→ PRINT PACK
+→ LIVE MOCK-UP
 → PHYSICAL MAIL
-→ DEMO VISIT
-→ HUMAN SALES
-→ PROPOSAL
-→ CUSTOMER
+→ PUBLIC PROSPECT PAGE
+→ MEASURED RESPONSE
+→ HUMAN FOLLOW-UP
+→ PROPOSAL / OUTCOME
+→ LEARNING
 ```
 
-## Canonical composed MVP
+## Current operating architecture
+
+SolidDesign deliberately remains one small operating system rather than a collection of products:
 
 ```text
-Overture Maps Places
-bbox + taxonomy, no API key
+                    ONE APPLICATION
+                         │
+          ┌──────────────┴──────────────┐
+          │                             │
+       INTERNAL                       PUBLIC
+          │                             │
+   Operator / CMS                prospect page
+   team + dossiers               current LIVE proof
+   discovery/design              minimal engagement
+          │                             │
+          └──────────────┬──────────────┘
+                         │
+                 ONE SUPABASE STATE
+                 ONE MOCK-UP LIFECYCLE
+```
+
+Current rollout hosts:
+
+```text
+internal: https://soliddesign-cms.pages.dev
+public:   https://soliddesign-cms.pages.dev/prospect/<slug>
+```
+
+Preferred final shape after brand/domain selection:
+
+```text
+internal: https://cms.<brand>.nl
+public:   https://<brand>.nl/<slug>
+```
+
+Hostnames are delivery configuration. `prospects.public_slug` is the stable prospect-facing identity.
+
+See `docs/ARCHITECTURE.md` and `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`.
+
+## Team/work model
+
+System role and prospect responsibility are separate concepts:
+
+```text
+ROLE
+ADMIN | KEY_USER | USER
+
+RESPONSIBILITY
+CASE_LEAD | DESIGN | OUTREACH
+```
+
+Current responsibility is stored in assignments; history and actor attribution are stored as business events. `Mijn werk` and work-distribution views are derived from those assignments. There is no task engine, capacity planner or portfolio database.
+
+The invite/membership rollout uses `team_members` as the durable model. `operator_allowlist` remains only a transitional compatibility gate for older Operator RLS and must not evolve into a second user-management model.
+
+## Public delivery contract
+
+Every prospect has one stable human-readable slug. The canonical public route resolves:
+
+```text
+slug
+→ prospect
+→ current LIVE demo
+→ canonical stored artifact
+```
+
+New LIVE publication requires an uploaded HTML/ZIP artifact. External HTTPS preview links are review/DRAFT escape hatches only.
+
+A narrow compatibility path exists for a small number of grandfathered historical LIVE previews on explicitly allowlisted SolidDesign Cloudflare hosts. It is transition debt, not a general reverse-proxy feature.
+
+The public page remains `noindex, nofollow, noarchive` during pre-sale use.
+
+## Response telemetry
+
+SolidDesign records only the response signals needed for commercial follow-up:
+
+- measured openings;
+- active visible time;
+- maximum scroll;
+- broad device class;
+- QR/direct source;
+- internal/external QA classification.
+
+It deliberately does **not** collect raw IP addresses, IP hashes, browser fingerprints, persistent visitor IDs, heatmaps or session replay. Telemetry is fail-open: measurement failure may never block the prospect page.
+
+## Discovery and proof foundation
+
+**Overture Maps Places is the canonical discovery source.** Google Places is optional future enrichment only if evidence shows sufficient commercial value to justify the extra provider/cost surface.
+
+The established proof pipeline remains:
+
+```text
+Overture Maps + DuckDB
         ↓
-Prospect model
+Prospect
         ↓
-Pitch Doctor audit adapter
+Pitch Doctor audit evidence
         ↓
 5-factor qualification
         ↓
 VerifiedFacts trust boundary
         ↓
-Grounded conversion brief
+conversion/design context
         ↓
-OpenPage-compatible SiteConfig
+static mock-up artifact
         ↓
-Static noindex concept preview
-        ↓
-Personalized print pack + QR
+LIVE publication + print pack
 ```
 
-### Discovery decision
+## Gate-2 evidence — historical proof
 
-**Overture Maps Places is the canonical Phase-1 discovery source.**
+Gate 2 proved the first bounded Utrecht Overture run and one real electrical-services prospect end-to-end. The test demonstrated discovery, live audit, human root-cause review, qualification, concept assembly, print-pack generation, Cloudflare publication, `noindex`, disable/restore behavior and minimal synthetic preview telemetry.
 
-Google Places is no longer required to enumerate prospects. It remains only an optional future enrichment/fallback if experiments prove that Google-specific data such as review count materially improves selection enough to justify cost and account complexity.
+That evidence describes what was proven at that time; it is not the current runtime architecture contract. See `docs/evidence/GATE2_OVERTURE_UTRECHT.md`.
 
-See `docs/DISCOVERY_OVERTURE.md` for the full discovery contract, Netherlands validation plan, taxonomy model, release policy and fallback criteria.
+The actual prospect URL is deliberately not committed to this public repository. Operational prospect data belongs in Supabase, not source documentation.
 
-## Live Gate-2 evidence
+## Operational truth
 
-The first bounded Utrecht run on Overture release `2026-08-19.0` returned:
+- **GitHub:** code, tests, architecture, prompts safe for disclosure, decisions and roadmap.
+- **Supabase:** prospects, audits, demos, team membership, assignments, mailings, events and engagement.
+- **Cloudflare Pages:** one deployment serving the internal and public delivery surfaces.
+- **Supabase Storage:** canonical immutable mock-up bundles and LIVE manifest state.
 
-- 996 service-business records with websites;
-- 930 unique website domains;
-- 740 records with locality Utrecht;
-- 83 installation-related keyword candidates.
-
-One real Utrecht electrical-services prospect then completed live audit, human root-cause review, five-factor qualification at **19/25**, concept assembly, print-pack generation and static Cloudflare Pages publication.
-
-The public preview milestone also proved:
-
-- a shared Cloudflare Pages preview area;
-- an opaque prospect path;
-- browser-accessible HTTP 200;
-- HTML `noindex`;
-- no form and no testimonial content;
-- disable lifecycle by replacing the proof with a neutral unavailable page;
-- restore lifecycle back to the verified concept;
-- minimal synthetic preview-visit event without fingerprinting;
-- operational preview URL/state persisted in the dedicated SolidDesign Supabase project.
-
-The raw audit remains preserved separately from prospect-facing reviewed findings.
-
-See `docs/evidence/GATE2_OVERTURE_UTRECHT.md` for the evidence and limitations.
-
-The actual prospect preview URL is deliberately **not committed to this public repository**. It is operational state, not public source documentation.
-
-## Operational state
-
-A dedicated **SolidDesign** Supabase project exists in `eu-west-1` on the free project tier. `supabase/schema.sql` is the canonical schema. Phase-1 tables are server-side only: RLS is enabled and `anon`/`authenticated` have no table grants.
-
-The first real prospect now has persisted prospect, reviewed audit, qualification, demo URL/status and preview events in Supabase.
+Browser code uses only the Supabase publishable key. Access is controlled with least-privilege grants, RLS and narrow server/RPC capabilities; privileged/service credentials remain server-side.
 
 ## Quick start
 
@@ -116,15 +174,7 @@ python -m unittest discover -s tests -v
 soliddesign golden --out artifacts/golden
 ```
 
-The golden run is fully offline and produces:
-
-```text
-artifacts/golden/
-├── pipeline.json
-├── site_config.json
-├── preview.html
-└── print_pack.html
-```
+The golden run is fully offline and produces deterministic test artifacts.
 
 ### Free Overture discovery
 
@@ -144,8 +194,6 @@ soliddesign discover \
   --out /tmp/prospects.json
 ```
 
-The bbox above demonstrates syntax only; choose the actual experiment geography deliberately.
-
 No Google Cloud project, Google API key or Google Places billing is required for this path.
 
 For donor audit tooling:
@@ -156,22 +204,23 @@ bash scripts/bootstrap_donors.sh
 
 See `docs/OPERATIONS.md`.
 
-## Key documentation
+## Documentation map
 
-- `ENGINEERING_CONSTITUTION.md` — top-level mandatory engineering decision standard
-- `docs/MISSION_CONTRACT.md` — authoritative mission and non-goals
-- `docs/GUARDRAILS.md` — solid-but-simple / no-overengineering rules
-- `docs/ARCHITECTURE.md` — composed architecture and truth boundaries
-- `docs/DISCOVERY_OVERTURE.md` — canonical Overture discovery model
-- `docs/evidence/GATE2_OVERTURE_UTRECHT.md` — first real Dutch discovery/audit/proof evidence
-- `docs/ROADMAP.md` — evidence-gated roadmap
+`docs/ARCHITECTURE.md` defines the documentation truth hierarchy. In short: current architecture/security/operations/roadmap outrank historical evidence and completed plans.
+
+- `ENGINEERING_CONSTITUTION.md` — top-level mandatory engineering standard
+- `docs/ARCHITECTURE.md` — canonical architecture entrypoint + documentation precedence
+- `docs/INTEGRATED_OPERATING_ARCHITECTURE.md` — current system/operating model
+- `docs/SECURITY.md` — current trust, auth and public/private boundaries
+- `docs/OPERATIONS.md` — current operating guide
+- `docs/ROADMAP.md` — current evidence-gated status and next gates
+- `docs/MISSION_CONTRACT.md` — mission and non-goals
 - `docs/BUSINESS_MODEL.md` — offer, acquisition model and economics
-- `docs/SCORING_RUBRICS.md` — five-factor qualification model
-- `docs/SECURITY.md` — data/content trust boundaries and preview safety
-- `docs/COMPONENT_SPIKE.md` — executable Gate-1 contract
-- `docs/OPERATIONS.md` — operator guide
-- `docs/DONOR_REGISTER.md` / `docs/DONOR_LOCK.md` — provenance
-- `docs/DECISIONS.md` — architecture/business decisions
+- `docs/DISCOVERY_OVERTURE.md` — discovery contract
+- `docs/SCORING_RUBRICS.md` — qualification model
+- `docs/DECISIONS.md` and `docs/decisions/` — decision history; later accepted decisions supersede conflicts
+- `docs/evidence/` — dated proof snapshots, not runtime contracts
+- `docs/IMPLEMENTATION_PLAN.md` — completed Gate-1/2 historical plan, not current execution guidance
 
 ## Donor / dependency strategy
 
@@ -179,13 +228,12 @@ No complete agency framework is imported.
 
 - **Overture Maps** — canonical open discovery dataset
 - **DuckDB** — bounded cloud GeoParquet query engine
-- **Dukotah/leadgen** — reviewed Overture/DuckDB discovery pattern donor
 - **Pitch Doctor** — existing-site audit donor
 - **OpenPage** — JSON-first pre-sale demo compatibility
-- **JackInSights AI Web Agency** — comparator/reference; Google adapter retained only as optional code, not canonical discovery
+- other donors remain bounded references/adapters and must earn their place
 
 See `docs/DONOR_REGISTER.md` and `docs/THIRD_PARTY_NOTICES.md`.
 
 ## Repository visibility
 
-This repository is **public**. Never commit secrets, real prospect/customer datasets, private e-mail content, operational opaque preview URLs or intentionally proprietary prompt material. If opportunity scoring/prompts become meaningful proprietary IP, move them behind a private-core boundary rather than exposing them here.
+This repository can be public. Never commit secrets, real prospect/customer datasets, private e-mail content, operational access tokens or intentionally proprietary prompt material. If opportunity scoring/prompts become meaningful proprietary IP, move them behind a private-core boundary rather than exposing them here.
