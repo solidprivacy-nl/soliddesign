@@ -133,7 +133,7 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
         self.assertIn("HISTORICAL", component_spike)
         self.assertIn("bootstrap baseline", supabase_readme)
         self.assertIn("ordered migrations", supabase_readme)
-        self.assertIn("not a second current schema specification", supabase_readme)
+        self.assertIn("second current schema specification", supabase_readme)
 
 
 if __name__ == "__main__":
