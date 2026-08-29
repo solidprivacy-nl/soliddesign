@@ -44,15 +44,30 @@
 .work-item strong { display: block; font-size: 1rem; }
 .work-item > div > span { display: block; margin-top: 3px; color: #667085; }
 .work-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; color: #667085; font-size: .88rem; }
-
 .empty-work { padding: 24px; }
 
+.invite-card { margin-bottom: 18px; }
+.invite-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(240px, 1.5fr) minmax(150px, .7fr);
+  gap: 14px;
+  align-items: end;
+}
+.invite-form label { display: grid; gap: 6px; font-size: .86rem; font-weight: 600; }
+.invite-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
 .team-card { overflow-x: auto; }
-.team-table { min-width: 700px; }
+.team-table { min-width: 940px; }
 .team-row {
   display: grid;
-  grid-template-columns: minmax(220px, 2fr) 1fr .7fr .7fr .7fr;
-  gap: 16px;
+  grid-template-columns: minmax(210px, 1.8fr) 1fr .9fr .65fr .65fr .65fr .9fr;
+  gap: 14px;
   align-items: center;
   padding: 13px 4px;
   border-bottom: 1px solid var(--border, #e5e7eb);
@@ -61,6 +76,9 @@
 .team-row strong, .team-row small { display: block; }
 .team-row small { margin-top: 3px; color: #667085; }
 .team-head { color: #667085; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.team-actions { display: flex; justify-content: flex-end; }
+.compact-select { min-width: 110px; }
+.compact-action { white-space: nowrap; }
 
 .responsibility-card { margin-top: 18px; }
 .responsibility-card h3 { margin-bottom: 4px; }
@@ -75,6 +93,9 @@
 
 @media (max-width: 800px) {
   .workspace-page { width: min(100% - 24px, 1180px); padding-top: 20px; }
+  .workspace-head { align-items: stretch; flex-direction: column; }
+  .invite-form { grid-template-columns: 1fr; }
+  .invite-actions { grid-column: 1; align-items: stretch; flex-direction: column; }
   .responsibility-grid { grid-template-columns: 1fr; }
   .work-item { align-items: flex-start; flex-direction: column; }
   .work-meta { align-items: flex-start; }
