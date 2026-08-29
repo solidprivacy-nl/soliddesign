@@ -44,7 +44,7 @@ with the CMS optionally on:
 https://cms.<brand>.nl
 ```
 
-Example only if Dizein were selected:
+Example only if Dizein is selected:
 
 ```text
 https://dizein.nl/siberg
@@ -55,18 +55,37 @@ Changing hosts requires no migration of prospects, demos, LIVE state, assignment
 
 ## LIVE resolution
 
-The public resolver performs one simple mapping:
+The canonical public resolver performs:
 
 ```text
 public slug
 → prospect
 → current LIVE demo
-→ existing static artifact / LIVE manifest
+→ canonical stored artifact
 ```
 
-The browser stays on the public URL. Internal UUID routes such as `/p/<uuid>/` remain implementation/compatibility routes, not customer-facing addresses.
+The browser stays on the prospect-facing URL. Internal UUID routes such as `/p/<uuid>/` are technical/compatibility routes, not communication addresses.
 
-A new LIVE mock-up therefore changes content but not the prospect's shared URL.
+A new LIVE mock-up changes content but not the prospect's shared URL.
+
+### LIVE artifact rule
+
+New LIVE publication requires an immutable HTML/ZIP artifact stored in the existing `mockup-sites` lifecycle. An external HTTPS preview URL may exist as a DRAFT/review escape hatch but is not a new LIVE delivery source.
+
+This rule is enforced both in the Operator experience and in the database, so future clients cannot accidentally reintroduce external-URL LIVE publication.
+
+### Grandfathered legacy LIVE previews
+
+A small finite set of LIVE records predates the artifact-only rule. Until migrated or retired, the public resolver may serve them through a narrow compatibility path that:
+
+- accepts only explicitly allowlisted historical SolidDesign Cloudflare preview hosts;
+- keeps the public prospect URL visible;
+- strips internal/source classification parameters before upstream fetches;
+- blocks redirects outside the expected legacy origin/path;
+- injects the same central engagement telemetry into HTML;
+- is not available for newly published external previews.
+
+This is transition debt, not a general reverse-proxy architecture. Do not add arbitrary hosts to make unrelated external sites work; upload a canonical artifact instead.
 
 ## Slug lifecycle
 
@@ -84,7 +103,7 @@ The operator sees:
 - **Kopieer link**
 - **Test als medewerker**
 
-The full link is always derived from `publicProspectOrigin`, `publicProspectPathPrefix` and the slug rather than hardcoded business logic.
+The full link is always derived from `publicProspectOrigin`, `publicProspectPathPrefix` and the slug rather than stored as business state.
 
 ## Internal testing
 
@@ -107,7 +126,7 @@ Minimal signals:
 - QR/direct source;
 - internal/external classification.
 
-The data is keyed to prospect/demo, not to the full URL, so a later custom-domain cutover preserves the complete engagement history.
+The data is keyed to prospect/demo, not to the full URL, so a later custom-domain cutover preserves engagement history.
 
 ## Query parameters
 
@@ -117,14 +136,26 @@ Communication may use a minimal source marker such as:
 ?src=qr
 ```
 
-Canonical trailing-slash redirects preserve the query before the telemetry client consumes/removes it from the displayed URL.
+Canonical trailing-slash redirects preserve the marker so the telemetry client can classify the opening. Internal classification tokens are never forwarded to legacy upstream previews.
 
 ## Public data boundary
 
-Anonymous clients do not receive general prospect-table access. The public route may resolve only the narrow prospect/LIVE metadata required to serve the requested slug. Drafts, assignments, contact data, qualification detail and internal CMS capability remain private.
+The browser receives no general anonymous prospect/demos access. The Data API grants only the specific public resolver columns and RLS restricts rows to the requested slug/current LIVE demo using the resolver request header.
+
+Public resolver data is limited to:
+
+```text
+prospects: id, public_slug
+demos: prospect_id, status, preview_url, artifact_path
+```
+
+`preview_url` remains exposed only because grandfathered legacy LIVE resolution still needs it. Once that compatibility path is removed, revisit whether this public column grant can be reduced further.
+
+Drafts, assignments, contact data, qualification detail and internal CMS capability remain private.
 
 See also:
 
+- `docs/ARCHITECTURE.md`
 - `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`
 - `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md`
 - `docs/SECURITY.md`
