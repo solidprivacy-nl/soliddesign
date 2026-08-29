@@ -7,6 +7,7 @@ The current operating architecture is defined in:
 - `ENGINEERING_CONSTITUTION.md` — top-level engineering philosophy and decision standard;
 - `docs/INTEGRATED_OPERATING_ARCHITECTURE.md` — current operating/system model;
 - `docs/SECURITY.md` — current trust and authorization boundaries;
+- `docs/AUTH_REDIRECTS.md` — current Supabase Auth Site URL / redirect contract for invite and login flows;
 - `docs/ROADMAP.md` — current evidence-gated implementation status;
 - `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md` — current hostname/public-delivery decision.
 
@@ -87,6 +88,8 @@ https://<brand>.nl/<slug>
 ```
 
 There is no second public application. Both surfaces use the same prospect/demo state and LIVE artifact lifecycle.
+
+Supabase Auth invitation/login redirects follow the **internal** hostname contract, never the public prospect hostname. The current/future allowed destinations and preview rules are defined in `docs/AUTH_REDIRECTS.md`.
 
 ## Team and work model
 
