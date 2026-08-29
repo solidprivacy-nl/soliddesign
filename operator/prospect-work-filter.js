@@ -9,6 +9,15 @@ let applying = false;
 
 function el(id) { return document.getElementById(id); }
 
+function addStylesheet() {
+  if (document.querySelector('link[data-prospect-work-filter-style]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = './prospect-work-filter.css';
+  link.dataset.prospectWorkFilterStyle = 'true';
+  document.head.appendChild(link);
+}
+
 async function refreshData() {
   const { data: { session } } = await db.auth.getSession();
   if (!session) return false;
@@ -88,7 +97,6 @@ function installFilter() {
     <option value="NO_DESIGN">Zonder design</option>
     <option value="NO_OUTREACH">Zonder outreach</option>`;
   filters.appendChild(select);
-  filters.style.gridTemplateColumns = 'minmax(180px, 1fr) minmax(140px, 160px) minmax(170px, 210px)';
 
   select.addEventListener('change', () => {
     workFilter = select.value;
@@ -119,6 +127,7 @@ function installFilter() {
 async function initialize() {
   if (!db) return;
   if (!await refreshData()) return;
+  addStylesheet();
   installFilter();
 }
 
