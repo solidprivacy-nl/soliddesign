@@ -15,6 +15,8 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
     def test_required_runtime_and_schema_files_exist(self):
         required = [
             "operator/invite-setup.js",
+            "operator/team-work.js",
+            "operator/team-work.css",
             "operator/dossier-tabs.js",
             "operator/dossier-tabs.css",
             "operator/engagement-ui.js",
@@ -51,10 +53,16 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
         migration = self.read("supabase/migrations/20260829_membership_engagement_correctness_v02.sql")
         setup = self.read("operator/invite-setup.js")
         invite = self.read("supabase/functions/team-invite/index.ts")
+        team_work = self.read("operator/team-work.js")
+        config = self.read("operator/config.js")
         self.assertIn("solidDesignMustSetPassword", migration)
         self.assertIn("raw_user_meta_data", migration)
         self.assertIn("operator_mark_joined", setup)
         self.assertIn("joinedError", setup)
+        self.assertNotIn("operator_mark_joined", team_work)
+        self.assertIn("import('./team-work.js')", config)
+        self.assertIn("Mijn werk", team_work)
+        self.assertIn("Team", team_work)
         self.assertIn("corsHeaders", invite)
         self.assertIn("req.method === 'OPTIONS'", invite)
 
