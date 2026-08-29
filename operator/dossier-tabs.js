@@ -13,6 +13,8 @@ const EVENT_LABELS = {
   prospect_restored: 'Prospect hersteld'
 };
 
+let pendingWorkTab = null;
+
 function addStylesheet() {
   if (document.querySelector('link[data-dossier-tabs-style]')) return;
   const link = document.createElement('link');
@@ -159,6 +161,8 @@ async function bindDossier(root) {
   placeLateComponents(root);
 
   nav.querySelectorAll('[data-dossier-tab]').forEach((button) => button.addEventListener('click', () => activateTab(root, button.dataset.dossierTab)));
+  activateTab(root, pendingWorkTab || 'overview');
+  pendingWorkTab = null;
   await loadActivity(prospect.id, activity);
 
   new MutationObserver(() => placeLateComponents(root)).observe(root, { childList: true, subtree: true });
@@ -175,6 +179,15 @@ if (panel) {
   new MutationObserver(bindCurrent).observe(panel, { childList: true, subtree: true });
   bindCurrent();
 }
+
+document.addEventListener('click', (event) => {
+  const item = event.target.closest?.('.work-item');
+  if (!item) return;
+  const responsibility = item.querySelector('.work-meta span')?.textContent?.trim() || '';
+  if (responsibility === 'Design') pendingWorkTab = 'design';
+  else if (responsibility === 'Outreach & opvolging') pendingWorkTab = 'outreach';
+  else pendingWorkTab = 'overview';
+}, true);
 
 document.addEventListener('soliddesign:open-dossier-tab', (event) => {
   const root = document.querySelector('#detailPanel .detail-content');
