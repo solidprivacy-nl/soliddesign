@@ -19,6 +19,7 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
             "operator/engagement-ui.js",
             "operator/engagement-ui.css",
             "operator/prospect-engagement.js",
+            "operator/prospect-work-filter.js",
             "supabase/functions/team-invite/index.ts",
             "supabase/functions/prospect-engagement/index.ts",
             "supabase/migrations/20260829_team_membership_workflow_v01.sql",
@@ -52,6 +53,7 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
         schema = self.read("supabase/migrations/20260829_prospect_engagement_v01.sql")
         edge = self.read("supabase/functions/prospect-engagement/index.ts")
         client = self.read("operator/prospect-engagement.js")
+        operator_ui = self.read("operator/engagement-ui.js")
 
         for forbidden in ("ip_address", "ip_hash", "fingerprint", "visitor_id"):
             self.assertNotIn(forbidden, schema.lower())
@@ -63,7 +65,9 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
         self.assertIn("mint_internal", edge)
         self.assertIn("validInternalToken", edge)
         self.assertIn("__sd_staff", client)
+        self.assertIn("__sd_staff", operator_ui)
         self.assertNotIn("__internal", client)
+        self.assertNotIn("__internal", operator_ui)
 
     def test_first_open_is_attributed_only_to_a_prior_mailing(self):
         migration = self.read("supabase/migrations/20260829_membership_engagement_correctness_v02.sql")
@@ -74,6 +78,14 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
         self.assertIn("pendingWorkTab", dossier)
         self.assertIn("responsibility === 'Design'", dossier)
         self.assertIn("responsibility === 'Outreach & opvolging'", dossier)
+
+    def test_prospect_register_exposes_only_simple_work_distribution_filters(self):
+        work_filter = self.read("operator/prospect-work-filter.js")
+        self.assertIn("Mijn werk", work_filter)
+        self.assertIn("Zonder dossierhouder", work_filter)
+        self.assertIn("Zonder design", work_filter)
+        self.assertIn("Zonder outreach", work_filter)
+        self.assertNotIn("kanban", work_filter.lower())
 
     def test_public_route_preserves_noindex_and_tracking_query_on_canonicalization(self):
         route = self.read("operator/functions/prospect/[[path]].js")
