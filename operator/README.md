@@ -1,176 +1,220 @@
 # SolidDesign Operator
 
-Small internal operator frontend for the human commercial/design workflow.
+Small internal multi-user workspace for the human prospect, design and outreach workflow.
 
-## Scope
+The canonical system model is `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`.
 
-Only:
-- active prospect list/search/filter;
-- archive + restore, with guarded hard delete for administrative corrections;
-- manual discovery runs by location + keyword(s);
-- one-URL intake/preflight;
-- Discovery inbox for `DISCOVERED` / `DISQUALIFIED` candidates;
-- current website link;
-- technical report;
-- audit + qualification score;
-- contact status, note, next action and last-contact timestamp;
-- per-prospect ChatGPT design workspace URL and design note;
-- two-URL design-project bootstrap;
-- mock-up version upload, preview, history and explicit LIVE promotion.
+## Product boundary
 
-Explicitly not a general CRM or website builder. No pipeline builder, task engine, scheduler, queue, mailer or autonomous design agent.
+SolidDesign Operator remains deliberately narrow. It supports:
+
+- **Mijn werk** — personal work derived from current prospect responsibilities;
+- **Prospects** — shared prospect register and dossiers;
+- **Bedrijven zoeken** — manual discovery/intake;
+- **Team** — invite, role/status and work-distribution view for Key users/Admins;
+- per-prospect **Overzicht / Design / Outreach / Activiteit**;
+- immutable mock-up versions with explicit LIVE promotion;
+- stable public prospect links;
+- minimal prospect engagement in Outreach;
+- actor-aware dossier history.
+
+It is explicitly not a general CRM, website builder, task engine, workflow platform, HR system, capacity planner or analytics suite.
+
+## One dossier, phase responsibilities
+
+A prospect is the dossier. Current responsibility is stored separately from user role:
+
+```text
+CASE_LEAD   → Dossierhouder
+DESIGN      → Design
+OUTREACH    → Outreach & opvolging
+```
+
+One primary assignee exists per responsibility. **Mijn werk** is derived from these assignments; no task/portfolio table exists.
+
+Opening work contextually lands on the relevant dossier phase where unambiguous.
+
+## Roles
+
+Application roles are:
+
+```text
+ADMIN
+KEY_USER
+USER
+```
+
+- **Admin** — governance, all normal team lifecycle and role changes.
+- **Key user** — operational coordination, User invitations and User management.
+- **User** — normal prospect/design/outreach work.
+
+There is deliberately no Owner/Eigenaar role.
+
+## Invite-only onboarding
+
+Routine onboarding does not require SQL or Supabase dashboard changes.
+
+```text
+Admin / Key user
+→ Team
+→ Gebruiker uitnodigen
+→ Supabase Auth invite e-mail
+→ invited colleague opens invite
+→ chooses own password
+→ membership becomes Active
+→ normal login / Mijn werk
+```
+
+Rules:
+
+- Admin can invite User or Key user;
+- Key user can invite User only;
+- invited users are not assignable until first activation is completed;
+- at least one active Admin must remain;
+- a member with active responsibilities must be reassigned before deactivation;
+- no service/admin secret is exposed to the browser.
+
+`operator_allowlist` remains a temporary compatibility gate during rollout. `team_members` is the durable target membership model.
 
 ## Discovery workflow
 
-Discovery and active prospect work are intentionally separated in the UI while remaining one canonical `prospects` model in Supabase.
+Discovery and active prospect work remain separate views while using the same canonical `prospects` model.
 
 ```text
 AREA / URL intake
-      ↓
-DISCOVERED / DISQUALIFIED
-      ↓
-Discovery inbox
-      ↓ evidence-backed qualification
-QUALIFIED and later states
-      ↓
-Active prospect work queue
+→ DISCOVERED / DISQUALIFIED
+→ evidence-backed qualification
+→ QUALIFIED and later states
+→ active prospect dossier
 ```
 
-`DISCOVERED` does **not** mean qualified. Overture presence, website presence and reachability are discovery evidence only. The existing SolidDesign qualification rubric still requires independent demand, economics, conversion-opportunity, execution-fit and competitive-context evidence before promotion to `QUALIFIED`.
+Overture remains the Phase-1 primary discovery source. Reachability/presence is discovery evidence, not proof of demand or qualification.
 
-### Area discovery
+The existing area-discovery, URL preflight, run-history and qualification safeguards remain unchanged by the multi-user architecture.
 
-The Operator accepts:
-- one Dutch location;
-- one or more comma-separated sector/category keywords;
-- a small result limit (10/25/50).
+## Design workflow
 
-One explicit operator action performs:
+A selected prospect retains the existing design context and mock-up lifecycle:
 
 ```text
-location
-→ cached Nominatim lookup
-→ bbox
-→ bounded Overture GeoParquet query in DuckDB-Wasm
-→ domain dedupe
-→ Discovery inbox
+verified prospect context
+→ design brief / ChatGPT design workflow
+→ DRAFT mock-up version
+→ review
+→ explicit Maak live
+→ stable public prospect link
 ```
 
-Nominatim is only used for explicit single-query location-to-bbox conversion. There is no autocomplete, bulk geocoding or background geocoding. The UI includes OpenStreetMap attribution.
-
-Overture remains the canonical Phase-1 business discovery source. The browser query uses the same current Overture Places fields and category semantics as the existing Python CLI; no Google scraping or second discovery model is introduced.
-
-### Specific URL intake
-
-The URL path performs a small authenticated Pages Function preflight:
-- HTTP(S) only;
-- local/private literal addresses are rejected;
-- redirects are bounded and revalidated;
-- response reading is bounded;
-- title/description are collected only as intake metadata;
-- normalized hostname is the cross-source dedupe key.
-
-A clearly unreachable root website may be marked `DISQUALIFIED` on that objective hard gate. A reachable website stays `DISCOVERED`; this preflight does not replace Pitch Doctor or the full commercial qualification rubric.
-
-### Run history
-
-`discovery_runs` stores only a small operator audit trail: input, state, counts, result metadata, timestamps and any error. There is no job scheduler or orchestration layer.
-
-## Active work queue and archive
-
-The normal prospect query exposes only non-archived prospects that have progressed beyond `DISCOVERED` / `DISQUALIFIED`.
-
-Archiving is orthogonal to lifecycle state:
-
-```text
-archived_at IS NULL     = active
-archived_at IS NOT NULL = archived
-```
-
-Archive preserves the original state and history. Restore clears `archived_at`.
-
-Hard delete is intentionally narrow. It is only available for discovery/archived administrative corrections and is blocked when demo or mailing history exists. Real commercial history should be archived, not erased.
-
-## Design project workflow
-
-Each selected prospect has one opaque `design_brief_token` and may store one shared ChatGPT project URL.
-
-The Operator exposes one stable methodological entrypoint:
+Current methodological entrypoint:
 
 ```text
 https://soliddesign-cms.pages.dev/start-design
 ```
 
-`/start-design` is only a stable pointer. GitHub remains the canonical source of truth for the prompt architecture at `prompts/SOLIDDESIGN_BOOTSTRAP.md` and its required secondary prompts.
-
-The prospect-specific context is published as a small Markdown snapshot under:
+Prospect-specific design brief:
 
 ```text
 https://soliddesign-cms.pages.dev/brief/<opaque-token>
 ```
 
-`Copy project start` first saves the design note/workspace metadata, refreshes the Markdown brief in the public `design-briefs` Storage bucket, then copies exactly these two URLs:
+These are internal/design-workflow infrastructure and may later move with `INTERNAL_ORIGIN` to `cms.<brand>.nl` without changing dossier identity.
+
+## Mock-up storage and LIVE state
+
+Accepted inputs remain:
+
+- standalone `.html`;
+- static-site `.zip` with root `index.html` and relative static assets;
+- external HTTPS preview as a deliberate escape hatch.
+
+Immutable bundle versions live in the existing `mockup-sites` Storage model. The existing read-only preview serving path remains the canonical artifact mechanism.
+
+Internal technical routes may include:
 
 ```text
-https://soliddesign-cms.pages.dev/start-design
-https://soliddesign-cms.pages.dev/brief/<opaque-token>
+/p/<prospect-id>/
+/p/<prospect-id>/v/<demo-id>/
 ```
 
-The design brief deliberately excludes contact workflow state and other CRM noise. It contains the business identity, verified facts, qualification context, latest audit evidence, current mock-up state and the operator's explicit design note. Public read is intentional because ChatGPT must be able to retrieve it without a CMS login; the opaque token is the access boundary. Only allowlisted operators may create or refresh a brief.
+They are not the prospect-facing communication URL.
 
-After creating the shared ChatGPT customer project, paste its project URL back into the Operator so either human operator can reopen the customer design workspace directly.
+## Public prospect link
 
-## Mock-up workflow
-
-Each upload creates a new immutable DRAFT demo record.
-
-Accepted input:
-- one standalone `.html` file; or
-- one `.zip` static-site bundle.
-
-ZIP contract:
-- `index.html` at the root (one wrapper folder is tolerated and stripped);
-- relative paths for local CSS/JS/images;
-- common static assets only;
-- no server-side code;
-- `file://` references are rejected.
-
-Files are stored under the public `mockup-sites` Supabase Storage bucket at an opaque immutable version path. Public read is intentional for prospect previews; upload/update/delete remain protected by Operator RLS.
-
-Supabase Storage intentionally does not render uploaded HTML as a website. One small public read-only Edge Function, `mockup-preview`, therefore serves the static artifacts with the correct content type. It has no write capability and no service-role credential.
-
-Immutable version preview:
+Temporary rollout URL:
 
 ```text
-/functions/v1/mockup-preview/v/<prospect-id>/<demo-id>/
+https://soliddesign-cms.pages.dev/prospect/<slug>
 ```
 
-Stable prospect URL after `Maak live`:
+Preferred final shape after brand selection:
 
 ```text
-/functions/v1/mockup-preview/p/<prospect-id>/
+https://<brand>.nl/<slug>
 ```
 
-`Maak live` only replaces `live/<prospect-id>/manifest.json`, which points to the selected immutable artifact bundle (or an external HTTPS preview). Previous versions remain untouched and become `ARCHIVED`. The public prospect URL therefore stays stable for future QR codes and print packs.
+with the internal CMS optionally at:
 
-An external HTTPS preview can also be added as a DRAFT version as a simple escape hatch.
-
-## Access
-
-The browser uses the Supabase publishable key. That key is public by design; access is enforced by RLS and narrow security-definer RPCs that re-check `operator_allowlist`.
-
-1. User creates/signs into a Supabase Auth email/password account.
-2. The user's email must also exist as an active row in `public.operator_allowlist`.
-3. RLS/RPC checks gate prospect, discovery, demo, design-brief and mock-up operations.
-4. Authenticated operators do not receive service-role credentials.
-5. Public prospect previews and design briefs are intentionally read-only and reachable without login through opaque URLs.
-
-Authorize an operator through a privileged SQL/admin route:
-
-```sql
-insert into public.operator_allowlist(email)
-values ('operator@example.nl')
-on conflict (email) do update set active = true;
+```text
+https://cms.<brand>.nl
 ```
 
-Do not expose service-role credentials to this frontend.
+The slug is stable prospect state; full URLs are derived from configuration. A domain cutover therefore requires no data migration.
+
+See `docs/PROSPECT_PUBLIC_LINKS.md`.
+
+## Outreach and engagement
+
+Outreach combines contact follow-up with the commercially relevant digital-response summary.
+
+Minimal response signals:
+
+- external opening count;
+- first and last opening;
+- active visible time;
+- maximum scroll;
+- broad device type;
+- QR/direct source;
+- detail view of measured openings.
+
+Engagement is observational. It does not automatically change contact status or lead score.
+
+### Staff testing
+
+Normal design work uses internal previews.
+
+**Test als medewerker** requests a short-lived signed token from the backend and opens the public URL with that one-time context. The public telemetry endpoint validates the token and classifies the opening as internal, so staff QA does not inflate prospect response.
+
+No IP allowlist or guessable `?internal=1` flag is used.
+
+## Activity
+
+The Activity dossier tab shows material business changes and the actor where known. Current state is read from the canonical tables; `events` is history, not a second state model.
+
+Examples:
+
+- responsibility changed;
+- contact status/contact moment;
+- mock-up created or promoted LIVE;
+- mailing sent;
+- archive/restore;
+- team lifecycle actions.
+
+Routine UI navigation is not logged.
+
+## Access and security
+
+The frontend uses only the Supabase publishable key.
+
+Internal access is enforced through:
+
+- Supabase Auth identity;
+- active `team_members` membership;
+- transitional allowlist compatibility during rollout;
+- RLS and narrow authenticated RPC/server capabilities;
+- server-side role checks for privileged operations.
+
+Public prospect delivery and engagement are intentionally narrow read/telemetry surfaces. Drafts and internal dossier state are never made public.
+
+Do not expose service-role/secret credentials to this frontend.
+
+See `docs/SECURITY.md`.
