@@ -25,7 +25,9 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
             "operator/prospect-work-filter.js",
             "operator/mockup-policy.js",
             "supabase/README.md",
+            "docs/AUTH_REDIRECTS.md",
             "supabase/functions/team-invite/index.ts",
+            "supabase/functions/team-member-admin/index.ts",
             "supabase/functions/prospect-engagement/index.ts",
             "supabase/migrations/20260829_team_membership_workflow_v01.sql",
             "supabase/migrations/20260829_activity_timeline_v01.sql",
@@ -35,7 +37,6 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
             "supabase/migrations/20260829_live_artifact_policy_v01.sql",
             "supabase/migrations/20260829_website_key_search_path_hardening_v01.sql",
             "supabase/migrations/20260829_team_identity_and_safe_delete_v01.sql",
-            "supabase/functions/team-member-admin/index.ts",
         ]
         for relative_path in required:
             with self.subTest(relative_path=relative_path):
@@ -70,14 +71,16 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
 
     def test_team_invites_use_a_validated_internal_redirect_not_site_url_fallback(self):
         invite = self.read("supabase/functions/team-invite/index.ts")
-        operations = self.read("docs/OPERATIONS.md")
+        auth_redirects = self.read("docs/AUTH_REDIRECTS.md")
+        architecture = self.read("docs/ARCHITECTURE.md")
         self.assertIn("redirectTo,", invite)
         self.assertIn("inviteRedirectFor", invite)
         self.assertIn("PR_PREVIEW_ORIGIN_RE", invite)
         self.assertIn("SOLIDDESIGN_INTERNAL_ORIGIN", invite)
-        self.assertIn("Auth → URL Configuration", operations)
-        self.assertIn("soliddesign-cms.pages.dev", operations)
-        self.assertIn("pr-*", operations)
+        self.assertIn("Authentication → URL Configuration", auth_redirects)
+        self.assertIn("soliddesign-cms.pages.dev", auth_redirects)
+        self.assertIn("pr-*", auth_redirects)
+        self.assertIn("docs/AUTH_REDIRECTS.md", architecture)
 
     def test_team_identity_prefers_display_name_and_safe_delete(self):
         team_work = self.read("operator/team-work.js")
