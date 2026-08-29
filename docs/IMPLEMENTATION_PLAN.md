@@ -1,37 +1,36 @@
-# Implementation Plan — Composed MVP
+# Implementation Plan — Gate 1/2 historical record
 
-## Goal
+**Status:** COMPLETED / HISTORICAL  
+**Current execution plan:** `docs/ROADMAP.md`  
+**Current architecture:** `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`
 
-Prove one real Dutch prospect can move through the complete internal pre-sale pipeline without importing a large platform or requiring a paid discovery API.
+## Purpose of this file
 
-## Offline vertical slice — complete
+This file records the implementation sequence that established the original composed MVP and the first live Dutch proof. It is retained for traceability, not as an instruction set for current or future architecture work.
 
-```text
-fixture Prospect
-→ qualification
-→ normalized audit
-→ verified facts
-→ conversion brief
-→ OpenPage-compatible SiteConfig
-→ deterministic HTML preview
-→ print-pack HTML
-```
+If anything here conflicts with the current architecture, security baseline, roadmap or a later accepted decision, the current documents take precedence as defined in `docs/ARCHITECTURE.md`.
 
-## Live integration order
+## Completed objective
+
+The original objective was to prove that one real Dutch prospect could move through the internal pre-sale pipeline without importing a large platform or requiring a paid discovery API.
+
+The proven sequence was:
 
 ```text
-Overture Places bounded discovery
-→ one selected real prospect
-→ Pitch Doctor live audit
-→ human score
-→ assemble proof
-→ Supabase state
-→ Cloudflare static publishing
+Overture bounded discovery
+→ selected real prospect
+→ Pitch Doctor audit
+→ human qualification
+→ Verified Facts
+→ conversion/design proof
+→ Supabase operational state
+→ Cloudflare preview delivery
+→ print-pack / physical-mail preparation
 ```
 
-Each integration is proven independently.
+The offline vertical slice and Gate-2 live integration are complete. Evidence lives under `docs/evidence/`.
 
-## Repository modules
+## Components established by this phase
 
 ```text
 src/soliddesign/
@@ -41,8 +40,8 @@ src/soliddesign/
 ├── verified_facts.py
 ├── brief.py
 ├── discovery/
-│   ├── overture.py          # canonical Phase-1 source
-│   └── google_places.py     # optional future fallback/enrichment
+│   ├── overture.py
+│   └── google_places.py     # optional fallback/enrichment only
 ├── audit/
 │   └── adapter.py
 ├── demo/
@@ -52,70 +51,16 @@ src/soliddesign/
 └── cli.py
 ```
 
-## Discovery implementation
+Stable conclusions from this phase remain valid:
 
-Canonical implementation:
+- Overture is the canonical discovery source unless evidence justifies a fallback;
+- raw external evidence remains untrusted until validated;
+- the pre-sale proof remains separate from customer production delivery;
+- deterministic logic should remain deterministic;
+- infrastructure is added only when an observed bottleneck earns it.
 
-```text
-explicit west,south,east,north
-+
-current Overture taxonomy label(s)
-+
-DuckDB
-→
-Overture cloud GeoParquet
-→
-Prospect[]
-```
+## No longer current planning guidance
 
-Requirements:
+The original plan predates the integrated multi-user Operator, prospect assignments, invite workflow, public prospect resolver and engagement telemetry. Statements in earlier revisions about a server-only Supabase model, a generic static preview area, single-operator operation or the absence of role/membership state are therefore historical, not current architecture.
 
-- official STAC latest-release lookup or explicit release pin;
-- no arbitrary storage path input;
-- current `basic_category` / `taxonomy` fields;
-- existing website required;
-- `permanently_closed` excluded;
-- source/release/confidence/status recorded;
-- no Google key required.
-
-See `DISCOVERY_OVERTURE.md`.
-
-## Definition of done — offline component spike
-
-- `soliddesign golden` succeeds without network credentials;
-- deterministic fixture produces a score and decision;
-- VerifiedFacts contains only approved structured facts;
-- demo config validates;
-- preview contains `noindex` and concept banner;
-- print pack generated;
-- tests cover scoring/trust/preview/print pack;
-- CI green.
-
-## Definition of done — Overture live discovery
-
-- one bounded Dutch market query succeeds;
-- Overture release recorded;
-- source uses new taxonomy fields;
-- sample data quality manually measured;
-- one candidate with matching/reachable website reaches audit;
-- no Google Cloud project, billing or key required.
-
-## Definition of done — live proof
-
-- Pitch Doctor adapter audits one real URL;
-- human qualification stores evidence;
-- Supabase state reflects source provenance;
-- static preview deploys only at final provider-specific step;
-- preview can be deleted/disabled.
-
-## Deferred
-
-- geocoder;
-- OSM fallback;
-- Google enrichment;
-- queues;
-- dashboards;
-- agents;
-- production builder.
-
-Only measured failure or operator friction may promote them.
+Do not extend those earlier concepts. Use `docs/ROADMAP.md` for current implementation work.
