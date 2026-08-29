@@ -63,33 +63,35 @@
 }
 
 .team-card { overflow-x: auto; }
-.team-table { min-width: 1040px; }
+.team-table { min-width: 1060px; }
 .team-row {
   display: grid;
-  grid-template-columns: minmax(260px, 1.9fr) 1fr .9fr .65fr .65fr .65fr minmax(180px, 1.25fr);
+  grid-template-columns: minmax(270px, 1.9fr) 1fr .9fr .65fr .65fr .65fr minmax(230px, 1.5fr);
   gap: 14px;
   align-items: center;
   padding: 13px 4px;
   border-bottom: 1px solid var(--border, #e5e7eb);
 }
 .team-row:last-child { border-bottom: 0; }
-.team-row strong, .team-row small { display: block; }
-.team-row small { margin-top: 3px; color: #667085; }
 .team-head { color: #667085; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-.team-actions { display: flex; justify-content: flex-end; }
-.team-actions-expanded { gap: 6px; flex-wrap: wrap; }
+.team-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
 .compact-select { min-width: 110px; }
 .compact-action { white-space: nowrap; }
 .danger-action { color: #9b2c2c; }
 .danger-action:disabled { color: #98a2b3; }
 
-.member-identity {
+.team-person {
   display: flex;
   align-items: center;
   gap: 11px;
   min-width: 0;
 }
-.member-avatar {
+.team-avatar {
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -104,28 +106,15 @@
   font-weight: 800;
   letter-spacing: .02em;
 }
-.member-identity-copy { min-width: 0; }
-.member-identity-copy strong,
-.member-identity-copy small {
+.team-person-copy { min-width: 0; }
+.team-person-copy strong,
+.team-person-copy small {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.member-name-dialog {
-  width: min(460px, calc(100% - 32px));
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 16px;
-  padding: 0;
-  background: var(--surface, #fff);
-  color: inherit;
-  box-shadow: 0 24px 70px rgb(24 36 28 / 20%);
-}
-.member-name-dialog::backdrop { background: rgb(24 36 28 / 24%); }
-.member-name-form { display: grid; gap: 18px; padding: 24px; }
-.member-name-form h3 { margin: 0 0 5px; }
-.member-name-form label { display: grid; gap: 7px; font-size: .86rem; font-weight: 700; }
-.member-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.team-person-copy small { margin-top: 3px; color: #667085; }
 
 .responsibility-card { margin-top: 18px; }
 .responsibility-card h3 { margin-bottom: 4px; }
