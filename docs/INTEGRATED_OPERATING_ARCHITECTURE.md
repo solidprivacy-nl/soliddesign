@@ -61,6 +61,8 @@ https://<brand>.nl/<public_slug>
 
 See `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md`.
 
+Authentication invitations/login flows belong to the **internal** origin, not the public prospect origin. Their hosted Supabase Site URL / Redirect URL contract is maintained in `docs/AUTH_REDIRECTS.md`. Application invite code uses an explicit validated `redirectTo`; a stale localhost Site URL is never intended runtime behavior.
+
 ## Identity and governance
 
 Durable application membership is `team_members` and uses the stable Supabase Auth user UUID.
@@ -81,34 +83,27 @@ There is no Owner/Eigenaar application role.
 
 System role answers what a person may administer. It does not determine prospect responsibility.
 
-### Human-visible team identity
+### Human identity
 
-`team_members.display_name` is the canonical human-readable identity in the work interface.
+`team_members.display_name` is the primary human-readable identity in SolidDesign. E-mail is secondary login/account metadata and is not used as the normal prospect-assignment or activity label.
 
-Rules:
+The UI derives a lightweight initials avatar from `display_name`; there is no avatar-upload/profile-storage subsystem in the current architecture.
 
-- assignments, responsibility controls and activity attribution use `display_name`, never e-mail as the normal visible identity;
-- e-mail remains secondary account/login information and may be shown on Team/account-management surfaces only;
-- the Team view derives a compact initials avatar from `display_name`; initials are presentation only and are not stored as profile state;
-- no photo/avatar upload, crop or Storage subsystem is introduced without an observed need;
-- Admin may correct a team member's `display_name`; the change is actor-aware history.
+Admin may correct a display name without changing the stable Auth UUID that assignments and event attribution use.
 
-This keeps operational identity human-readable without creating a profile/HR subsystem.
+### Membership lifecycle
 
-### Deactivate versus permanently delete
+```text
+INVITED
+→ ACTIVE
+→ INACTIVE
+```
 
-These actions have deliberately different semantics.
+The visible status is derived from `active`, `joined_at` and `deactivated_at`; there is no second lifecycle state machine.
 
-**Deactivate** is the normal offboarding operation. It removes access while retaining the team member and historical attribution. Active responsibilities must be reassigned first.
+Deactivation is normal offboarding and preserves history.
 
-**Permanent delete** is an Admin-only cleanup operation for mistaken, test or otherwise non-business accounts. It is permitted only when:
-
-- the target is not the calling Admin;
-- no current `prospect_assignments` reference the user;
-- no prospect-linked business event is attributed to the user;
-- deleting an active Admin would still leave at least one active Admin.
-
-Permanent deletion removes the Supabase Auth identity and cascades the now-history-free `team_members` row. Lifecycle-only account events may retain a metadata snapshot, but a user with dossier/business history must never be hard-deleted; deactivate instead.
+Permanent deletion is a narrow Admin cleanup capability for mistaken/test accounts only. Server-side guards reject deletion when the target is the caller, has active assignments, has prospect-linked business history, or would remove the last active Admin. Accounts with business history are deactivated instead.
 
 ### Membership rollout compatibility
 
@@ -220,8 +215,6 @@ Shared active/archive register with status and simple work-distribution filters,
 
 Combines membership lifecycle and current work-distribution visibility. It is not an HR system or capacity-planning platform.
 
-The primary row identity is display name plus derived initials. E-mail is secondary account metadata. Admin-only name correction and guarded permanent deletion live here because they are team-lifecycle operations, not separate profile/admin-center concepts.
-
 ### Outreach
 
 Owns the commercial feedback loop:
@@ -249,7 +242,7 @@ prospect_visits
 
 Existing prospects, demos, mailings, audits, discovery and Storage remain authoritative.
 
-No task table, portfolio table, user-profile table, avatar store or analytics database was introduced.
+No task table, portfolio table or analytics database was introduced.
 
 ## Database evolution
 
@@ -286,7 +279,6 @@ Do not add without observed need:
 - time tracking;
 - workflow builder;
 - separate portfolio data model;
-- user-profile or avatar-upload subsystem;
 - custom permission builder;
 - per-dossier ACLs;
 - separate public application;
@@ -295,7 +287,8 @@ Do not add without observed need:
 - automated lead scoring;
 - marketing automation;
 - separate BI platform;
-- generalized external-preview/reverse-proxy platform.
+- generalized external-preview/reverse-proxy platform;
+- user-profile/avatar image subsystem.
 
 ## Architecture invariants
 
@@ -306,17 +299,17 @@ Do not add without observed need:
 5. One primary assignee per responsibility.
 6. Assignment is current state; event log is history.
 7. Material user actions are attributable.
-8. `display_name` is the normal human identity; e-mail is secondary account metadata.
-9. Initials/avatar presentation is derived, not stored profile state.
-10. Users with business/dossier history are deactivated, not permanently deleted.
-11. Portfolio is derived, not stored separately.
-12. Domain/brand names are delivery configuration.
-13. Preferred final hosts are `cms.<brand>.nl` and `<brand>.nl/<slug>`.
+8. Human work identity is stable Auth UUID + `display_name`; e-mail is account metadata.
+9. Deactivation preserves history; permanent deletion is only for history-free correction/test accounts.
+10. Portfolio is derived, not stored separately.
+11. Domain/brand names are delivery configuration.
+12. Preferred final hosts are `cms.<brand>.nl` and `<brand>.nl/<slug>`.
+13. Auth redirects follow the configured internal origin and never a stale localhost fallback or arbitrary browser origin.
 14. Public slug is an address, not an authorization secret.
 15. Public delivery never exposes internal CMS capability.
 16. Engagement measures campaign response, not personal identity.
 17. Telemetry failure never blocks the prospect page.
-18. Routine onboarding does not require manual SQL/admin-console work.
+18. Routine onboarding does not require manual SQL/admin-console work; hosted Auth URL configuration remains normal platform deployment configuration.
 19. `operator_allowlist` is rollout compatibility, not a second durable membership model.
 20. Historical external LIVE compatibility is finite and must not expand into a general proxy.
 21. Database changes after bootstrap are expressed as ordered migrations.
