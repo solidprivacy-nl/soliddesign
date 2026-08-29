@@ -51,9 +51,17 @@ Prefer one migration that expresses the actual contract change over parallel sch
 - service/secret credentials stay server-side;
 - public prospect resolution exposes only the minimum resolver columns required by the current public contract.
 
+Human-visible team identity is `team_members.display_name`; the stable Auth UUID remains the relational identity. E-mail is account metadata, not the normal assignment/activity label.
+
 ## Edge Functions
 
-`supabase/functions/` contains server capabilities such as team invitations and public prospect engagement.
+`supabase/functions/` contains bounded server capabilities such as:
+
+- team invitations;
+- Admin-only permanent deletion of history-free/test team accounts;
+- public prospect engagement.
+
+Permanent team deletion belongs server-side because it must use the Supabase Auth Admin API and re-check role, assignment, history and last-Admin safeguards before deleting the Auth user.
 
 Browser-called Edge Functions must implement explicit CORS/preflight handling and must still perform their own authentication/authorization where required.
 
