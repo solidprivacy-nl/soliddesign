@@ -10,10 +10,10 @@
 
   const url = new URL(window.location.href);
   const source = url.searchParams.get('src') === 'qr' ? 'QR' : 'DIRECT';
-  const internal = url.searchParams.get('__internal') === '1';
-  if (url.searchParams.has('src') || url.searchParams.has('__internal')) {
+  const internalToken = url.searchParams.get('__sd_staff') || '';
+  if (url.searchParams.has('src') || url.searchParams.has('__sd_staff')) {
     url.searchParams.delete('src');
-    url.searchParams.delete('__internal');
+    url.searchParams.delete('__sd_staff');
     window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
   }
 
@@ -60,7 +60,13 @@
   async function start() {
     if (started || starting || document.visibilityState !== 'visible') return;
     starting = true;
-    const response = await post({ action: 'start', slug, source, device_type: deviceType, internal });
+    const response = await post({
+      action: 'start',
+      slug,
+      source,
+      device_type: deviceType,
+      internal_token: internalToken || undefined
+    });
     starting = false;
     if (!response?.ok) return;
     const data = await response.json().catch(() => null);
