@@ -14,61 +14,77 @@ Closed with CI safety invariants.
 
 Closed on 2026-08-25. Overture remains the canonical Phase-1 discovery source and one shared Cloudflare/Supabase operating path is proven. See `docs/evidence/GATE2_OVERTURE_UTRECHT.md`.
 
-## Integrated operating-model rollout ← CURRENT
+# Integrated operating-model rollout — verification & pilot preparation ← CURRENT
 
-SolidDesign is now being extended from a single-operator prospect tool into a small multi-user commercial work system while preserving the existing architecture character: one application, one operational state plane, explicit human control and minimal moving parts.
+SolidDesign is being extended from a single-operator prospect tool into a small multi-user commercial work system while preserving one application, one operational state plane, explicit human control and minimal moving parts.
 
-The integrated target is documented in `docs/INTEGRATED_OPERATING_ARCHITECTURE.md` and the hostname decision in `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md`.
+Canonical design:
 
-### M0 — Architecture contract & truth reconciliation
+- `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`
+- `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md`
 
-- freeze system roles: `ADMIN`, `KEY_USER`, `USER`;
-- freeze prospect responsibilities: `CASE_LEAD`, `DESIGN`, `OUTREACH`;
-- reconcile canonical schema with later migrations;
-- define actor-aware event rules;
-- define public-host route contract;
-- define engagement MVP and retention/privacy rules;
-- make internal/public origins explicit configuration;
-- preserve the preferred final pattern:
+Status rule used below:
+
+- **Implemented** means the required code/schema/UI exists on the integration branch and backwards-compatible database/server changes are applied where necessary.
+- **Verified** requires CI plus the relevant real browser/operator smoke test.
+
+## M0 — Architecture contract & truth reconciliation ✅ VERIFIED
+
+Frozen contracts:
 
 ```text
+SYSTEM ROLES
+ADMIN | KEY_USER | USER
+
+RESPONSIBILITIES
+CASE_LEAD | DESIGN | OUTREACH
+
+FINAL HOST SHAPE
 https://cms.<brand>.nl
 https://<brand>.nl/<public_slug>
-```
 
-Temporary rollout:
-
-```text
+TEMPORARY PUBLIC ROUTE
 https://soliddesign-cms.pages.dev/prospect/<public_slug>
 ```
 
-**Exit:** repository documentation and runtime contracts tell one coherent story.
+Architecture, security, public-link and Operator documentation now point to one operating model. Domain names are delivery configuration; `public_slug` remains prospect identity.
 
-### M1 — Team identity & invite-only access
+## M1 — Team identity & invite-only access 🟡 IMPLEMENTED / BROWSER VERIFY
 
-- add `team_members`;
-- migrate current authorized operators without losing access;
-- introduce `ADMIN / KEY_USER / USER`;
-- trusted invite flow;
-- Key user may invite User;
-- Admin may manage Key users and Admin governance;
-- remove normal self-signup after invite flow is proven;
-- deactivate rather than delete members with history.
+Implemented:
 
-**Exit:** normal onboarding/offboarding needs no SQL or database-console intervention.
+- `team_members` with stable Supabase Auth UUID;
+- current operators backfilled without access loss;
+- `ADMIN / KEY_USER / USER`;
+- server-side Auth invite flow;
+- Admin can invite User/Key user;
+- Key user can invite User only;
+- mandatory first password setup;
+- invited user is not considered joined before password setup finishes;
+- deactivate/reactivate lifecycle;
+- last-Admin and active-assignment safeguards;
+- self-signup hidden in the normal UI;
+- browser CORS/preflight support on the invite function.
 
-### M2 — Responsibility & actor-aware history
+Transitional `operator_allowlist` remains in place until invite-only onboarding is proven end-to-end in the deployed UI.
 
-- add `prospect_assignments`;
-- add `events.actor_user_id`;
-- one primary assignee for `CASE_LEAD`, `DESIGN`, `OUTREACH`;
-- assignment changes become meaningful business events;
-- material existing mutations record the authenticated actor;
-- deactivation is blocked until active responsibilities are reassigned/released.
+**Verification gate:** invite one controlled test colleague, finish first-login activation, verify role visibility/access, then deactivate/reactivate without SQL/admin-console intervention.
 
-**Exit:** every active prospect answers who is responsible now and who performed material actions.
+## M2 — Responsibility & actor-aware history 🟢 IMPLEMENTED
 
-### M3 — Multi-user information architecture
+Implemented:
+
+- `prospect_assignments`;
+- one primary `CASE_LEAD`, `DESIGN`, `OUTREACH` per prospect;
+- guarded assignment changes;
+- `events.actor_user_id`;
+- actor-aware material history;
+- assignment/lifecycle events;
+- deactivation blocked until active responsibilities are released/reassigned.
+
+**Verification gate:** browser smoke assignment changes with two roles/users and confirm Activity attribution.
+
+## M3 — Multi-user information architecture 🟡 IMPLEMENTED / BROWSER VERIFY
 
 Top-level navigation:
 
@@ -85,68 +101,72 @@ Prospect dossier:
 Overzicht | Design | Outreach | Activiteit
 ```
 
-- `Mijn werk` becomes default landing page;
-- portfolio is derived from assignments, never stored separately;
-- Prospects gains responsibility/unassigned filters;
-- Team combines membership and work-distribution visibility;
-- keep the existing lightweight frontend; no framework migration merely for routing.
+Implemented:
 
-**Exit:** each role reaches normal daily work in one or two interactions.
+- `Mijn werk` as default personal work surface derived from assignments;
+- context opening into Design/Outreach where responsibility is unambiguous;
+- Team membership/work-distribution view;
+- per-prospect responsibility card;
+- shared Prospect filters for `Mijn werk`, missing dossierholder, missing Design and missing Outreach;
+- existing lightweight frontend retained; no framework migration.
 
-### M4 — Brand-agnostic public delivery
+**Verification gate:** role-by-role browser walkthrough and mobile/narrow-layout check.
 
-Build public delivery before the final brand is chosen.
+## M4 — Brand-agnostic public delivery 🟡 IMPLEMENTED / DEPLOYMENT VERIFY
 
-Temporary:
+Temporary configuration:
 
 ```text
 PUBLIC_PROSPECT_ORIGIN=https://soliddesign-cms.pages.dev
 PUBLIC_PROSPECT_PATH_PREFIX=/prospect
 ```
 
-Result:
-
-```text
-https://soliddesign-cms.pages.dev/prospect/<slug>
-```
-
-After the brand is chosen:
+Final configuration after brand selection:
 
 ```text
 PUBLIC_PROSPECT_ORIGIN=https://<brand>.nl
 PUBLIC_PROSPECT_PATH_PREFIX=
-INTERNAL_ORIGIN=https://cms.<brand>.nl   # optional later CMS cutover
+INTERNAL_ORIGIN=https://cms.<brand>.nl
 ```
 
-- same Pages project;
-- same Supabase and Storage;
-- same `public_slug` and LIVE state;
-- strict public-host allowlist on the final branded host;
-- no UUID/internal-route exposure;
-- no second deployment just for naming;
-- temporary links may redirect during cutover.
+Implemented:
 
-**Exit:** public delivery is independent of the selected brand hostname.
+- same Pages project / same Supabase / same Storage;
+- public route resolves slug → prospect → current LIVE demo → existing artifact;
+- public URL keeps the slug and hides the UUID route;
+- assets are served through the same public namespace;
+- trailing-slash canonicalization preserves query attribution;
+- public/internal origins are configuration;
+- pull requests can deploy to an isolated `pr-<number>` Pages preview branch for pre-merge browser validation; production still deploys only from `main`.
 
-### M5 — Prospect engagement MVP
+**Verification gate:** deployed preview smoke for valid slug, assets, invalid slug/404, noindex, query preservation and LIVE-version switching.
 
-- add `prospect_visits`;
-- central first-party instrumentation at the delivery layer;
-- measured visible opening;
+## M5 — Prospect engagement MVP 🟡 IMPLEMENTED / BROWSER VERIFY
+
+Implemented:
+
+- one `prospect_visits` row per measured opening;
+- central telemetry injection at public delivery, not inside uploaded mock-ups;
+- visible opening after a short dwell threshold;
 - active visible time;
-- max scroll;
+- maximum scroll;
 - broad device class;
 - QR/direct source;
 - internal/external classification;
 - demo snapshot;
-- no raw IP, fingerprint or persistent visitor identity;
-- telemetry failure never blocks the prospect experience.
+- no direct client grants on `prospect_visits`;
+- no raw IP, IP hash, fingerprint or persistent visitor identity;
+- public update capability uses a random per-opening token;
+- Edge Function has browser CORS/preflight handling;
+- telemetry failure never blocks the prospect artifact.
 
-**Exit:** response telemetry is useful and does not create a second analytics product.
+Internal QA uses a five-minute server-signed token bound to the prospect slug. A guessable `?internal=1` marker and IP allowlists are not used.
 
-### M6 — Commercial-loop integration
+**Verification gate:** real public-page browser opening must create an external visit; staff test must create only an internal visit; active-time/scroll update must be observed; invalid/expired staff token must not become external response.
 
-Outreach view combines:
+## M6 — Commercial-loop integration 🟡 IMPLEMENTED / BROWSER VERIFY
+
+Outreach now combines:
 
 ```text
 mailing
@@ -156,21 +176,39 @@ mailing
 → human contact/outcome
 ```
 
-Show first/last measured opening, time from mailing to first opening, external opening count, active time, max scroll, device/source and a simple detail table.
+Implemented summary/detail UI:
+
+- first/last measured opening;
+- opening count;
+- time from the most recent mailing preceding first opening;
+- active time;
+- maximum scroll;
+- device/source;
+- internal/external detail table;
+- explicit **Test als medewerker** action.
 
 No automatic lead score or contact-status transition.
 
-**Exit:** outreach users can make follow-up decisions from the prospect dossier alone.
+**Verification gate:** operator can make a follow-up decision from one prospect dossier without consulting a separate analytics tool.
 
-### M7 — Integrated operational pilot
+## M7 — Integrated operational pilot — NEXT EVIDENCE GATE
 
 Use multiple real operators and approximately 10–20 real prospect mailings.
 
-Validate onboarding, role clarity, assignments, handovers, My Work, unassigned work, event quality, public URL usability, QR behavior, engagement false positives/internal traffic and maintenance burden.
+Validate:
+
+- onboarding and role clarity;
+- assignments/handover;
+- My Work and unassigned work;
+- actor/event quality;
+- short public URL usability and QR behavior;
+- engagement false positives/internal traffic;
+- outreach decision usefulness;
+- maintenance burden.
 
 **Exit:** added commercial clarity demonstrably exceeds added operational complexity.
 
-### M8 — Evidence-gated extensions only
+## M8 — Evidence-gated extensions only
 
 Only after M7 evidence may we consider:
 
@@ -184,15 +222,11 @@ Only after M7 evidence may we consider:
 
 ## Gate 3 — Five-prospect operational feasibility
 
-This business evidence gate remains active alongside the operating-model rollout.
-
-Run five real prospects through the composed path and measure discovery, audit, human-selection, design, correction, print-pack and total cost/effort. Automate only repeated observed friction.
-
-**Exit:** five prospect packs can be produced safely and consistently with measured effort/cost and no unresolved recurring technical blocker.
+The original business evidence gate remains conceptually separate from the operating-model rollout: prove that real prospect packs can be produced safely and consistently with measured effort/cost. Automate only repeated observed friction.
 
 ## Gate 4 — 30–50 physical-mail offer validation
 
-Measure mail delivered, measured demo visit rate, response rate, meeting rate, cost and human minutes. Track the full funnel:
+Measure mail delivered, measured demo visit rate, response rate, meeting rate, cost and human minutes. Track:
 
 ```text
 raw → valid → audited → qualified → mailed → viewed → responded
