@@ -29,20 +29,34 @@ function configuredInternalOrigin() {
   }
 }
 
-function inviteRedirectFor(req: Request) {
-  const configured = configuredInternalOrigin();
-  const rawOrigin = String(req.headers.get('Origin') || '').trim();
-  if (!rawOrigin) return `${configured}/`;
-
+function allowedInternalOrigin(raw: unknown, configured: string) {
+  const value = String(raw || '').trim();
+  if (!value) return null;
   try {
-    const requestOrigin = new URL(rawOrigin).origin;
-    const allowed = requestOrigin === DEFAULT_INTERNAL_ORIGIN
-      || requestOrigin === configured
-      || PR_PREVIEW_ORIGIN_RE.test(requestOrigin);
-    return allowed ? `${requestOrigin}/` : null;
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || url.username || url.password) return null;
+    const origin = url.origin;
+    return origin === DEFAULT_INTERNAL_ORIGIN
+      || origin === configured
+      || PR_PREVIEW_ORIGIN_RE.test(origin)
+      ? origin
+      : null;
   } catch {
     return null;
   }
+}
+
+function inviteRedirectFor(req: Request, requestedOrigin: unknown) {
+  const configured = configuredInternalOrigin();
+  const explicitOrigin = allowedInternalOrigin(requestedOrigin, configured);
+  if (!explicitOrigin) return null;
+
+  const rawHeaderOrigin = String(req.headers.get('Origin') || '').trim();
+  const headerOrigin = rawHeaderOrigin ? allowedInternalOrigin(rawHeaderOrigin, configured) : null;
+  if (rawHeaderOrigin && !headerOrigin) return null;
+  if (headerOrigin && headerOrigin !== explicitOrigin) return null;
+
+  return `${explicitOrigin}/`;
 }
 
 export default {
@@ -53,10 +67,19 @@ export default {
     const callerId = ctx.userClaims?.id;
     if (!callerId) return json(401, { error: 'Niet ingelogd.' });
 
-    const redirectTo = inviteRedirectFor(req);
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      return json(400, { error: 'Ongeldige aanvraag.' });
+    }
+
+    const redirectTo = inviteRedirectFor(req, body.invite_origin);
     if (!redirectTo) {
       return json(400, { error: 'Deze SolidDesign-omgeving is niet toegestaan als uitnodigingsbestemming.' });
     }
+    const activationOrigin = new URL(redirectTo).origin;
+    console.info('team-invite activation origin selected', { activation_origin: activationOrigin });
 
     const { data: caller, error: callerError } = await ctx.supabaseAdmin
       .from('team_members')
@@ -70,13 +93,6 @@ export default {
     }
     if (!caller?.active || !['ADMIN', 'KEY_USER'].includes(caller.role)) {
       return json(403, { error: 'Je mag geen gebruikers uitnodigen.' });
-    }
-
-    let body: Record<string, unknown>;
-    try {
-      body = await req.json();
-    } catch {
-      return json(400, { error: 'Ongeldige aanvraag.' });
     }
 
     const email = String(body.email || '').trim().toLowerCase();
@@ -156,6 +172,7 @@ export default {
     if (eventError) console.error('team-invite event write failed', eventError);
 
     return json(201, {
+      activation_origin: activationOrigin,
       user: {
         user_id: invited.id,
         email,
