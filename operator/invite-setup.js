@@ -62,7 +62,14 @@ function setupOverlay() {
       return;
     }
 
-    await db.rpc('operator_mark_joined').catch(() => {});
+    const { error: joinedError } = await db.rpc('operator_mark_joined');
+    if (joinedError) {
+      submit.disabled = false;
+      message.textContent = 'Account is geactiveerd, maar de teamstatus kon niet worden bijgewerkt. Vernieuw de pagina of log opnieuw in.';
+      message.classList.add('error');
+      return;
+    }
+
     message.textContent = 'Account geactiveerd.';
     window.setTimeout(() => window.location.replace(CONFIG?.internalOrigin || window.location.origin), 250);
   });
