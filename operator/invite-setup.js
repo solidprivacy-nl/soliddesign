@@ -71,12 +71,12 @@ function setupOverlay() {
     }
 
     message.textContent = 'Account geactiveerd.';
-    window.setTimeout(() => window.location.replace(CONFIG?.internalOrigin || window.location.origin), 250);
+    window.setTimeout(() => window.location.replace(window.location.origin), 250);
   });
 
   overlay.querySelector('[data-invite-setup-signout]').addEventListener('click', async () => {
     await db.auth.signOut();
-    window.location.replace(CONFIG?.internalOrigin || window.location.origin);
+    window.location.replace(window.location.origin);
   });
 }
 
