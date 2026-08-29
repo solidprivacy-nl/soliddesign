@@ -21,6 +21,8 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
             "operator/engagement-ui.css",
             "operator/prospect-engagement.js",
             "operator/prospect-work-filter.js",
+            "operator/mockup-policy.js",
+            "supabase/README.md",
             "supabase/functions/team-invite/index.ts",
             "supabase/functions/prospect-engagement/index.ts",
             "supabase/migrations/20260829_team_membership_workflow_v01.sql",
@@ -28,6 +30,8 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
             "supabase/migrations/20260829_actor_audit_triggers_v01.sql",
             "supabase/migrations/20260829_prospect_engagement_v01.sql",
             "supabase/migrations/20260829_membership_engagement_correctness_v02.sql",
+            "supabase/migrations/20260829_live_artifact_policy_v01.sql",
+            "supabase/migrations/20260829_website_key_search_path_hardening_v01.sql",
         ]
         for relative_path in required:
             with self.subTest(relative_path=relative_path):
@@ -41,6 +45,7 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
         self.assertIn('publicProspectPathPrefix: "/prospect"', config)
         self.assertIn("cms.<brand>.nl", decision)
         self.assertIn("<brand>.nl/<public_slug>", decision)
+        self.assertIn("hostname routing boundary", decision)
 
     def test_invite_activation_cannot_mark_joined_before_password_setup(self):
         migration = self.read("supabase/migrations/20260829_membership_engagement_correctness_v02.sql")
@@ -98,6 +103,37 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
         self.assertIn("noindex, nofollow, noarchive", route)
         self.assertIn("incoming.search", route)
         self.assertIn("prospect-engagement.js", route)
+        self.assertIn("LEGACY_PREVIEW_HOSTS", route)
+        self.assertNotIn("select: 'id,preview_url,artifact_path'", route)
+
+    def test_old_root_slug_route_is_only_an_alias_to_the_canonical_public_resolver(self):
+        route = self.read("operator/functions/[slug].js")
+        self.assertIn("/prospect/", route)
+        self.assertNotIn("SUPABASE_URL", route)
+        self.assertNotIn("preview_url", route)
+        self.assertNotIn("/p/${", route)
+
+    def test_new_live_publication_requires_a_stored_artifact(self):
+        migration = self.read("supabase/migrations/20260829_live_artifact_policy_v01.sql")
+        policy = self.read("operator/mockup-policy.js")
+        public_links = self.read("docs/PROSPECT_PUBLIC_LINKS.md")
+        self.assertIn("artifact_path", migration)
+        self.assertIn("External link", policy)
+        self.assertIn("New LIVE publication requires", public_links)
+        self.assertIn("transition debt", public_links.lower())
+
+    def test_database_and_documentation_have_one_explicit_truth_hierarchy(self):
+        architecture = self.read("docs/ARCHITECTURE.md")
+        implementation_plan = self.read("docs/IMPLEMENTATION_PLAN.md")
+        component_spike = self.read("docs/COMPONENT_SPIKE.md")
+        supabase_readme = self.read("supabase/README.md")
+
+        self.assertIn("Documentation truth hierarchy", architecture)
+        self.assertIn("HISTORICAL", implementation_plan)
+        self.assertIn("HISTORICAL", component_spike)
+        self.assertIn("bootstrap baseline", supabase_readme)
+        self.assertIn("ordered migrations", supabase_readme)
+        self.assertIn("not a second current schema specification", supabase_readme)
 
 
 if __name__ == "__main__":
