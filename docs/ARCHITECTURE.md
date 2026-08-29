@@ -1,341 +1,129 @@
-# Architecture v0.3 — Composed MVP
+# Architecture — SolidDesign
+
+## Canonical architecture
+
+The current operating architecture is defined in:
+
+- `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`
+- `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md`
+
+This document keeps the stable end-to-end business architecture concise. Older implementation details remain available in Git history and must not be treated as a second source of truth.
 
 ## Architecture objective
 
-The architecture exists to support one commercial learning loop with the smallest possible operational surface.
+SolidDesign exists to support one commercial learning loop with the smallest reliable operational surface.
 
 ```text
-OVERTURE PLACES
-    │
-    ▼
-DISCOVERY ADAPTER
-    │
-    ▼
-SUPABASE / STATE
-    │
-    ▼
-QUALIFICATION
-    │
-    ▼
-AUDIT
-    │
-    ▼
-HUMAN SELECT
-    │
-    ▼
-VERIFIED FACTS BOUNDARY
-    │
-    ▼
-CONVERSION BRIEF
-    │
-    ▼
-DESIGN PROFILE
-    │
-    ▼
-DEMO BUILDER / PREMIUM RENDERER
-    │
-    ▼
-DESIGN QA + HUMAN REVIEW
-    │
-    ▼
-STATIC PREVIEW
-    │
-    ▼
-PRINT PACK
-    │
-    ▼
-PHYSICAL MAIL
-    │
-    ▼
-HUMAN SALES
-    │
-    ▼
-CUSTOMER / OUTCOME DATA
-    │
-    └────────────→ BETTER SELECTION
+DISCOVERY
+→ QUALIFICATION / AUDIT
+→ VERIFIED FACTS
+→ DESIGN
+→ LIVE MOCK-UP
+→ PHYSICAL OUTREACH
+→ PUBLIC PROSPECT PAGE
+→ ENGAGEMENT
+→ HUMAN FOLLOW-UP
+→ OUTCOME
+→ LEARNING
 ```
 
-## Architecture principle
+The architecture is governed by four boundaries:
 
-> **The business pipeline is stable; individual providers are replaceable.**
+1. **GitHub is software/design truth.** Code, tests, architecture, prompts, decisions and roadmap live here.
+2. **Supabase is operational truth.** Prospects, users, assignments, demos, mailings, events and engagement live in one state plane.
+3. **Cloudflare Pages is delivery.** Internal and public hostnames are replaceable delivery configuration, not business identity.
+4. **Verified facts are the AI trust boundary.** External content is untrusted until extracted/validated.
 
-SolidDesign owns the contracts between components. It does not import a vendor's entire business model.
+## One system, two audiences
 
-A second governing principle applies to design:
-
-> **Premium quality may increase craft, but it may not increase platform complexity without measured need.**
-
-## Truth boundaries
-
-### GitHub — software truth
-
-GitHub stores:
-
-- mission and business contracts;
-- schemas;
-- code and tests;
-- discovery contract;
-- scoring rubrics;
-- design contracts and donor locks;
-- prompts safe to expose;
-- donor/provenance records;
-- decisions and roadmap.
-
-### Supabase — operational truth
-
-The dedicated SolidDesign Supabase project stores operational:
-
-- prospects;
-- source/release provenance;
-- audits;
-- demos;
-- mailing status;
-- engagement events;
-- sales outcome;
-- later delivery economics.
-
-For the offline component spike, fixtures/local artifacts remain valid so core logic never depends on live credentials.
-
-## Component strategy
-
-### Discovery — Overture primary
-
-Canonical Phase-1 source:
+Current rollout:
 
 ```text
-Overture Maps Places
-+
-explicit bbox
-+
-current taxonomy
-+
-DuckDB
+INTERNAL
+https://soliddesign-cms.pages.dev
+
+PUBLIC, TEMPORARY
+https://soliddesign-cms.pages.dev/prospect/<slug>
 ```
 
-Rules:
-
-- no Google API key or billing required;
-- existing website required;
-- `permanently_closed` records excluded;
-- source release recorded;
-- Overture GERS/place ID retained where available;
-- source confidence retained as **existence evidence**, never interpreted as demand;
-- use `basic_category` and `taxonomy`; do not build new logic on deprecated `categories`.
-
-Detailed contract: `DISCOVERY_OVERTURE.md`.
-
-#### Why bbox is explicit
-
-Phase 1 deliberately accepts `west,south,east,north` rather than building a geocoder. This is deterministic, reproducible and removes another external dependency. A market-name resolver is only justified if repeated operator friction proves it necessary.
-
-#### Google Places
-
-Google Places is no longer canonical discovery.
-
-It remains an optional future enrichment/fallback candidate for signals such as rating/review count if measured commercial value justifies the additional provider, billing and credential surface.
-
-No automated Google scraping is part of the architecture.
-
-#### Discovery fallback ladder
+Preferred final shape:
 
 ```text
-Overture only
-    ↓ if empirical coverage is insufficient
-bounded OSM/Overpass enrichment
-    ↓ if still insufficient and economics justify it
-targeted commercial source
+INTERNAL
+https://cms.<brand>.nl
+
+PUBLIC
+https://<brand>.nl/<slug>
 ```
 
-Do not activate multiple sources before evidence demands them.
+There is no second public application. Both surfaces use the same prospect/demo state and LIVE artifact lifecycle.
 
-### Audit
+## Team and work model
 
-Primary donor: `NezbiT/pitch-doctor`.
-
-Why:
-
-- existing-site semantics;
-- Playwright screenshots;
-- technical/UX/contact/SEO/trust checks;
-- business-language output;
-- HTML/PDF reporting patterns;
-- MIT license.
-
-The adapter normalizes donor output into SolidDesign's own `AuditResult`; donor internals never become the operational state model.
-
-### Qualification
-
-Owned thin logic.
-
-Five factors, each 0–5:
-
-1. Customer Economics
-2. Existing Demand
-3. Conversion Opportunity
-4. Execution Fit
-5. Competitive Context
-
-Hard gates precede ranking.
-
-Important separation:
+System permissions and prospect responsibility are deliberately separate.
 
 ```text
-OVERTURE DISCOVERY
-= candidate universe
+SYSTEM ROLE
+ADMIN | KEY_USER | USER
 
-EXISTING DEMAND SCORE
-= separate commercial evidence
+PROSPECT RESPONSIBILITY
+CASE_LEAD | DESIGN | OUTREACH
 ```
 
-Overture confidence, website presence or operating status alone cannot prove demand.
+Assignments represent current responsibility. The event log represents history and actor attribution. Personal work queues/portfolios are derived from assignments; there is no task or portfolio subsystem.
 
-### AI trust boundary
+## Public delivery and engagement
+
+`prospects.public_slug` is the stable public identity. The public resolver maps:
 
 ```text
-OVERTURE / EXTERNAL WEBSITE / THIRD-PARTY DATA
-→ UNTRUSTED INPUT
-→ extraction + validation
-→ VERIFIED_FACTS
-→ conversion brief / demo
+slug → prospect → current LIVE demo → existing artifact
 ```
 
-Downstream generation receives structured verified facts, not raw external instructions.
-
-### Conversion brief
-
-Structured artifact, initially ChatGPT-assisted and human-reviewed. No autonomous service required.
-
-The concept-facing message is customer-facing. Audit/opportunity language remains in the owner-facing print pack and does not leak into the concept website.
-
-### DesignProfile
-
-Owned thin deterministic contract.
-
-Purpose:
+Engagement is first-party, minimal and operational:
 
 ```text
-VerifiedFacts + ConversionBrief
-→ bounded art direction
-→ SiteConfig
+opening
+active visible time
+max scroll
+device class
+QR/direct
+internal/external
 ```
 
-Phase 1 supports one strong `authority_service` composition. Category/brand signals may alter bounded tokens such as accent color, but do not create a template zoo.
+It does not identify a person and stores no raw IP, IP hash, browser fingerprint or persistent visitor identifier.
 
-`DesignProfile` contains only design decisions such as palette, typography, radius, block variants, media strategy, motion level and anti-patterns.
+## Existing pipeline components remain valid
 
-It contains no generated code, agent state or arbitrary CSS.
+The existing discovery, audit, qualification, Verified Facts, conversion/design, mock-up and print-pack components remain part of the same architecture. Providers can be replaced behind their owned contracts without changing the business model.
 
-Detailed contract: `PREMIUM_DESIGN.md`.
-
-### Demo / premium renderer
-
-OpenPage-compatible JSON-first SiteConfig remains the preferred pre-sale representation.
-
-Benefits:
-
-- deterministic rendering;
-- visual correction without free-form source generation;
-- portable JSON;
-- standalone HTML;
-- no universal production builder needed in Phase 1.
-
-SolidDesign owns a small renderer. It deliberately supports a limited premium block vocabulary rather than importing a second visual-builder runtime.
-
-### Design QA
-
-`pbakaus/impeccable` is used as a pinned CI-only deterministic design scanner.
+Important stable abstractions include:
 
 ```text
-impeccable@3.6.0
+DiscoverySource → Prospect[]
+
+External evidence
+→ validation
+→ VerifiedFacts
+
+VerifiedFacts + design context
+→ SiteConfig / static mock-up
 ```
 
-It is not an application dependency and does not create an autonomous retry loop.
+## Explicit non-goals
 
-Gate 3 keeps one short human visual acceptance step. Only repeated observed design failures justify new deterministic rules.
+Do not add without measured need:
 
-### Preview
-
-Static, provider-neutral preview output.
-
-Target hosting: one Cloudflare static preview area.
-
-Preview invariants:
-
-- `noindex`;
-- opaque identifier;
-- concept/non-affiliation notice;
-- no secrets;
-- no real lead-capture forms;
-- easy disable/delete.
-
-### Print pack
-
-Thin owned module. Produces current/concept proof, concise findings and personal QR/URL.
-
-## Data model implications
-
-`Prospect` records preserve discovery provenance:
-
-```text
-discovery_source
-discovery_version
-source_confidence
-operating_status
-place_id
-```
-
-For Overture:
-
-```text
-discovery_source = overture
-discovery_version = release ID
-place_id = Overture GERS/place ID
-rating/review_count = null unless separately enriched
-```
-
-The Supabase schema mirrors these fields.
-
-DesignProfile is an artifact, not operational relational state. It travels with the generated proof and can be persisted inside demo/site config JSON when useful; no new table is introduced.
-
-## Deliberately absent
-
-Not architectural dependencies yet:
-
-- geocoding service;
-- national Overture mirror;
-- multi-source entity-resolution engine;
-- queue service;
-- realtime dashboard;
-- Cloudflare Worker capability gateway;
-- ChatGPT MCP;
-- automated sales agent;
-- production-site factory;
-- Figma integration;
-- design agent or reviewer agent;
-- design database/server;
-- image-to-code pipeline;
-- second website-builder runtime;
-- template marketplace/catalog.
-
-These become candidates only after a measured bottleneck.
+- second frontend/application;
+- second operational database;
+- task/workflow engine;
+- Kanban/Gantt/capacity planner;
+- permission builder or per-dossier ACL framework;
+- second analytics datastore or BI platform;
+- visitor fingerprinting/session replay;
+- autonomous sales workflow;
+- generalized plugin/orchestration framework.
 
 ## Change rule
 
-A provider can be replaced without changing the business model if it continues to satisfy the owned boundary.
-
-For discovery:
-
-```text
-DiscoverySource
-→ Prospect[]
-```
-
-For design:
-
-```text
-VerifiedFacts + ConversionBrief
-→ DesignProfile
-→ SiteConfig
-```
-
-These are sufficient abstractions. Do not add generalized plugin frameworks until two live implementations are actually required.
+A new architectural component must solve an observed customer or operator problem materially better than the existing simple path. Technical possibility is not sufficient justification.
