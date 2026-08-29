@@ -1,77 +1,109 @@
 # Security Baseline
 
-Security is scoped to Phase 1 but is not optional.
+Security is part of the operating design, not a later subsystem. The canonical system model is `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`.
 
-## Threat model
+## Primary trust boundaries
 
-The system processes third-party place data, adversarial external web content, AI-generated output and later real prospect/customer data.
-
-Primary risks:
-
-- malformed or stale discovery data;
-- prompt injection from crawled websites;
-- SSRF/private-network access;
-- malicious redirects;
-- secret leakage;
-- hallucinated business facts;
-- publishing previews with privileged credentials;
-- accidental indexing/impersonation;
-- excessive personal-data retention;
-- supply-chain/license risk.
-
-## Discovery-data trust boundary
-
-Overture data is useful structured evidence but is still third-party input.
+SolidDesign processes third-party place data, public websites, AI output, authenticated team actions and public prospect-page engagement.
 
 ```text
-OVERTURE
-→ Prospect candidate
-→ identity / website validation
-→ audit + human review
+EXTERNAL DATA / WEBSITE
+→ untrusted input
+→ extraction + validation
 → VERIFIED FACTS
+→ design / communication
 ```
 
-Never infer from an Overture record that:
+Raw external content cannot choose tools, request secrets, authorize publication or trigger outbound communication.
 
-- the website definitely belongs to the business;
-- the business has high demand;
-- contact details are current;
-- a high `confidence` value means commercial quality.
+## Authentication and internal authorization
 
-`confidence` means confidence that the place exists.
+Supabase Auth is the identity provider. Durable application membership is `team_members` using the Auth user UUID.
 
-## Overture query safety
-
-The discovery adapter:
-
-- obtains releases only from the official Overture STAC catalog or an explicitly pinned release;
-- validates release IDs before interpolating storage paths;
-- parameterizes geography/category/name filters;
-- queries only the Places dataset;
-- does not accept arbitrary S3/Parquet paths from CLI input;
-- records source/release provenance.
-
-## External-content trust boundary
-
-Mandatory flow:
+Roles:
 
 ```text
-EXTERNAL WEBSITE
-→ UNTRUSTED FETCH/AUDIT
-→ EXTRACTION + VALIDATION
-→ STRUCTURED VERIFIED FACTS
-→ AI/DEMO GENERATION
+ADMIN
+KEY_USER
+USER
 ```
 
-Raw external text is data. It cannot:
+Rules:
 
-- change system instructions;
-- choose tools;
-- request secrets;
-- trigger deployments;
-- trigger outbound communication.
+- routine onboarding is invite-only;
+- Admin may invite/manage Users and Key users;
+- Key user may invite/manage normal Users only;
+- at least one active Admin must remain;
+- deactivation is blocked while active prospect responsibilities remain;
+- browser code receives only a Supabase publishable key;
+- privileged/service credentials never enter browser code;
+- sensitive mutations use RLS or narrow server/RPC capabilities that re-check the authenticated user and role.
 
-## URL/SSRF rules
+`operator_allowlist` is transitional compatibility during rollout, not the target user-management model.
+
+## Public/internal surface separation
+
+Preferred final hosts:
+
+```text
+cms.<brand>.nl       = authenticated CMS
+<brand>.nl/<slug>    = public prospect surface
+```
+
+Temporary public delivery is `/prospect/<slug>` on the existing Pages host.
+
+The public hostname is never an alias for the CMS. A public slug is an address, not an authorization secret.
+
+Public delivery resolves only the information required to serve the current LIVE mock-up. Drafts and internal dossier capability remain inaccessible.
+
+Every prospect page remains `noindex, nofollow, noarchive` during the pre-sale workflow.
+
+## Prospect engagement privacy boundary
+
+Engagement exists to answer operational questions such as whether a prospect opened and seriously viewed the concept. It is not intended to identify an individual visitor.
+
+Stored MVP signals:
+
+- prospect/demo;
+- internal/external opening;
+- QR/direct source;
+- broad device type;
+- first/last telemetry time;
+- active visible seconds;
+- maximum scroll percentage.
+
+Explicitly not stored:
+
+- raw IP address;
+- IP hash;
+- fingerprint;
+- persistent visitor/browser identifier;
+- session replay;
+- heatmap.
+
+One `prospect_visits` row represents one measured opening, not one human identity.
+
+Browser telemetry is fail-open: if measurement fails, the public mock-up still loads.
+
+## Internal QA traffic
+
+Employee/public-page testing must not be confused with prospect response.
+
+The CMS therefore requests a short-lived, server-signed internal-preview token bound to the prospect slug. The public telemetry endpoint validates that token before classifying an opening as `INTERNAL`.
+
+Do not use:
+
+- IP allowlists as the primary employee distinction;
+- a guessable `?internal=1` flag;
+- cross-domain cookie assumptions between CMS and public hosts.
+
+## Public telemetry endpoint
+
+The prospect-engagement Edge Function intentionally accepts public start/update telemetry. It uses short random per-opening capability tokens for updates and exposes no general database write surface.
+
+Browser invocation requires explicit CORS/preflight handling. The internal-preview token minting action separately authenticates the requesting team member using the supplied Supabase Auth access token and verifies active membership server-side.
+
+## URL / SSRF rules
 
 Network fetchers must reject or guard:
 
@@ -83,66 +115,22 @@ Network fetchers must reject or guard:
 - cloud metadata endpoints;
 - redirects into blocked ranges.
 
-An Overture-provided website URL must pass the same checks as any other external URL.
-
 ## Verified facts
 
-The demo may only use business facts that are:
+Prospect-facing designs may only use business facts that are directly evidenced, validated from the official site, or explicitly supplied/approved by a human.
 
-- directly observed in structured provider data and validated where material;
-- extracted and validated from the official site;
-- explicitly supplied/approved by a human.
+No invented testimonials, services, awards, opening hours or commercial claims.
 
-No invented testimonials, services, awards, opening hours or claims.
+## Repository and dependency rules
 
-## Preview requirements
+Because the repository can be public:
 
-Every prospect preview must:
+- no `.env` or secrets;
+- no raw private prospect/customer datasets;
+- no privileged API keys;
+- dependencies are pinned/recorded where practical;
+- every imported dependency must earn its operational complexity.
 
-- include `noindex`;
-- include a clear concept/non-affiliation indication;
-- contain no secrets;
-- contain no real customer data;
-- avoid real lead-capture unless explicitly approved later;
-- be disableable/deletable;
-- use an opaque identifier rather than a guessable customer name where practical.
+## Security review rule
 
-## Supabase rules
-
-The dedicated SolidDesign project is server-only in Phase 1:
-
-- never expose privileged/service secret in browser/client code;
-- RLS enabled on Phase-1 tables;
-- `anon` and `authenticated` have no table grants;
-- privileged server access stays separate from preview code.
-
-## Privacy / prospect data
-
-- minimize personal data;
-- prefer business entity/contact data;
-- do not publish raw Overture/prospect exports to this public repository;
-- do not intentionally harvest private/personal e-mail addresses;
-- retain only data required for acquisition/learning.
-
-## Repository rules
-
-Because this repository is public:
-
-- `.env` is ignored;
-- only `.env.example` is committed;
-- no real prospect/customer datasets;
-- no private keys;
-- no proprietary prompt bundle unless intentionally public.
-
-## Dependency discipline
-
-Every imported donor/dependency must record:
-
-- source/project;
-- frozen commit/tag/version where practical;
-- license;
-- copied files or dependency declaration;
-- local modifications;
-- security review status.
-
-Every dependency must earn its place.
+After schema/auth/RLS/function changes, run Supabase security advisors and distinguish new regressions from known legacy lint. Do not silence warnings by broadening permissions or adding `SECURITY DEFINER`; authorization must remain explicit.
