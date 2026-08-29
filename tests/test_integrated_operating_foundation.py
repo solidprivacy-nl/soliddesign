@@ -73,15 +73,24 @@ class IntegratedOperatingFoundationTests(unittest.TestCase):
 
     def test_team_invites_use_a_validated_internal_redirect_not_site_url_fallback(self):
         invite = self.read("supabase/functions/team-invite/index.ts")
+        team_work = self.read("operator/team-work.js")
         auth_redirects = self.read("docs/AUTH_REDIRECTS.md")
         architecture = self.read("docs/ARCHITECTURE.md")
         self.assertIn("redirectTo,", invite)
         self.assertIn("inviteRedirectFor", invite)
+        self.assertIn("allowedInternalOrigin", invite)
         self.assertIn("PR_PREVIEW_ORIGIN_RE", invite)
         self.assertIn("SOLIDDESIGN_INTERNAL_ORIGIN", invite)
+        self.assertIn("body.invite_origin", invite)
+        self.assertIn("activation_origin", invite)
+        self.assertIn("invite_origin: inviteOrigin", team_work)
+        self.assertIn("const inviteOrigin = window.location.origin", team_work)
+        self.assertIn("payload.activation_origin !== inviteOrigin", team_work)
+        self.assertIn("Activatieomgeving", team_work)
         self.assertIn("Authentication → URL Configuration", auth_redirects)
         self.assertIn("soliddesign-cms.pages.dev", auth_redirects)
         self.assertIn("pr-*", auth_redirects)
+        self.assertIn("server-confirmed activation origin", auth_redirects)
         self.assertIn("docs/AUTH_REDIRECTS.md", architecture)
 
     def test_team_identity_prefers_display_name_and_safe_delete(self):
