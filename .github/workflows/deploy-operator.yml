@@ -79,6 +79,14 @@ jobs:
           status=$(curl -sS -o /tmp/missing.html -w '%{http_code}' "$BASE_URL/prospect/does-not-exist/")
           test "$status" = "404"
 
+          # Historical one-segment links are compatibility aliases only. They may never
+          # resolve directly to UUID or legacy preview infrastructure.
+          curl -sS -D /tmp/root-alias.headers -o /dev/null "$BASE_URL/$SMOKE_SLUG?src=qr"
+          grep -Eq '^HTTP/[^ ]+ 302' /tmp/root-alias.headers
+          grep -Eqi "^location: .*\/prospect\/$SMOKE_SLUG/\?src=qr" /tmp/root-alias.headers
+          ! grep -Eqi '^location: .*\/p\/' /tmp/root-alias.headers
+          ! grep -Eqi '^location: https://(gate3-v1\.soliddesign-cms|soliddesign-previews-solidprivacy|gate3-v1\.soliddesign-previews-solidprivacy)\.pages\.dev' /tmp/root-alias.headers
+
           curl -sS -D /tmp/canonical.headers -o /dev/null "$BASE_URL/prospect/$SMOKE_SLUG?src=qr"
           grep -Eq '^HTTP/[^ ]+ 302' /tmp/canonical.headers
           grep -Eqi "^location: .*\/prospect\/$SMOKE_SLUG/\?src=qr" /tmp/canonical.headers
