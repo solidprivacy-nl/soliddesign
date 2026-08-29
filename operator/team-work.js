@@ -37,8 +37,9 @@ async function loadTeamState() {
   const { data: { session } } = await db.auth.getSession();
   if (!session) return false;
 
-  await db.rpc('operator_mark_joined').catch(() => {});
-
+  // Joining the team is a lifecycle transition performed only after the invitee
+  // finishes the mandatory password setup. Reading the workspace must never
+  // mutate that lifecycle state.
   const [memberResult, teamResult, assignmentResult, prospectResult] = await Promise.all([
     db.from('team_members').select('user_id,email,display_name,role,active,joined_at,deactivated_at').eq('user_id', session.user.id).maybeSingle(),
     db.from('team_members').select('user_id,email,display_name,role,active,joined_at,deactivated_at').order('display_name'),
