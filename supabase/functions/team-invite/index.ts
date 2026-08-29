@@ -56,7 +56,10 @@ function inviteRedirectFor(req: Request, requestedOrigin: unknown) {
   if (rawHeaderOrigin && !headerOrigin) return null;
   if (headerOrigin && headerOrigin !== explicitOrigin) return null;
 
-  return `${explicitOrigin}/`;
+  // Supabase Auth requires redirectTo to match the configured Redirect URLs.
+  // Use URL.origin verbatim (no synthetic trailing slash) so it exactly matches
+  // our configured production/preview entries and cannot silently fall back to Site URL.
+  return explicitOrigin;
 }
 
 export default {
