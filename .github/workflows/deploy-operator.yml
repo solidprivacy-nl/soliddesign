@@ -76,6 +76,10 @@ jobs:
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/" -o /tmp/operator.html
           grep -q 'SolidDesign' /tmp/operator.html
 
+          # The centrally injected engagement client must itself be deployed and executable.
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prospect-engagement.js" -o /tmp/prospect-engagement.js
+          grep -q '__SOLIDDESIGN_PROSPECT_ENGAGEMENT__' /tmp/prospect-engagement.js
+
           status=$(curl -sS -o /tmp/missing.html -w '%{http_code}' "$BASE_URL/prospect/does-not-exist/")
           test "$status" = "404"
 
