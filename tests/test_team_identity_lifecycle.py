@@ -39,7 +39,7 @@ class TeamIdentityLifecycleTests(unittest.TestCase):
         migration = self.read("supabase/migrations/20260829_team_identity_and_safe_delete_v01.sql")
         edge = self.read("supabase/functions/team-member-admin/index.ts")
         team_work = self.read("operator/team-work.js")
-        security = self.read("docs/SECURITY.md")
+        security = self.read("docs/SECURITY.md").lower()
 
         self.assertIn("on delete cascade", migration.lower())
         self.assertIn("caller.role !== 'ADMIN'", edge)
@@ -49,7 +49,9 @@ class TeamIdentityLifecycleTests(unittest.TestCase):
         self.assertIn("user_deleted", edge)
         self.assertIn("team-member-admin", team_work)
         self.assertIn("Deze gebruiker heeft dossierhistorie", edge)
-        self.assertIn("A member with dossier/business history must be deactivated", security)
+        self.assertIn("business history", security)
+        self.assertIn("deactivated", security)
+        self.assertIn("hard-deleted", security)
 
     def test_delete_cannot_remove_self_or_last_active_admin(self):
         edge = self.read("supabase/functions/team-member-admin/index.ts")
