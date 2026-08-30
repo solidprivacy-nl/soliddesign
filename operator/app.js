@@ -143,8 +143,13 @@
     return `${PREVIEW_GATEWAY}/p/${prospectId}/`;
   }
 
-  async function isAuthorized() {
-    const { data, error } = await db.from('operator_allowlist').select('email').limit(1);
+  async function isAuthorized(userId) {
+    const { data, error } = await db
+      .from('team_members')
+      .select('user_id')
+      .eq('user_id', userId)
+      .eq('active', true)
+      .limit(1);
     if (error) throw error;
     return Array.isArray(data) && data.length === 1;
   }
@@ -158,7 +163,7 @@
     el('userEmail').textContent = session.user.email || '';
     let allowed = false;
     try {
-      allowed = await isAuthorized();
+      allowed = await isAuthorized(session.user.id);
     } catch (error) {
       console.error(error);
     }
