@@ -28,7 +28,7 @@ KEY_USER
 USER
 ```
 
-Authorization truth is now:
+Authorization truth is:
 
 ```text
 auth.uid()
@@ -38,7 +38,7 @@ auth.uid()
 
 `operator_is_active_team_member()` is the common Operator membership predicate. `operator_assert_allowed()` and the Operator/storage RLS policies use active UUID membership. Verified RLS references to the historical `operator_allowlist`: **0** after migration `20260830_team_members_access_cutover_v01.sql`.
 
-`operator_allowlist` remains temporarily only as a compatibility bridge for the pre-merge production frontend bootstrap and lifecycle synchronization. It is **not an authorization source** and may not gain new consumers. Remove the browser bootstrap dependency, two lifecycle sync references and compatibility table only after the new frontend is deployed to production and passes production smoke.
+The integration frontend bootstrap also checks `team_members.active` directly. The old `operator_allowlist` table is therefore no longer part of the target authorization model. Its final retirement migration is sequenced only after the new frontend has reached production, preventing a merge-window outage of the still-live pre-merge frontend.
 
 Rules:
 
