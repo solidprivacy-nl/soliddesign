@@ -38,11 +38,16 @@ jobs:
       - name: Operator static safety
         run: |
           node --check operator/app.js
+          node --check operator/prospect-link.js
+          node --check operator/team-work.js
           node --check operator/prospect-preparation.js
           node --check operator/design-process.js
           node --check operator/discovery-sectors.js
           node --check operator/discovery-triage.js
           node --check operator/discovery.js
+          node --check 'operator/functions/[slug].js'
+          node --check 'operator/functions/p/[[path]].js'
+          node --check 'operator/functions/prospect/[[path]].js'
           node --check operator/functions/api/geocode.js
           node --check operator/functions/api/site-check.js
           node --check operator/functions/api/resolve-sector.js
@@ -52,9 +57,12 @@ jobs:
           test -s operator/index.html
           test -s operator/start-design.html
           test -s operator/config.js
+          test -s operator/team-work.css
           test -s operator/discovery.css
           test -s operator/wrangler.jsonc
           test -s docs/DECISIONS.md
+          test -s docs/INTEGRATED_OPERATING_ARCHITECTURE.md
+          test -s docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md
           test -s docs/DISCOVERY_SECTOR_RESOLUTION.md
           test -s docs/DISCOVERY_TRIAGE.md
           test -s docs/FIRST_CONCEPT_PREPARATION.md
@@ -63,11 +71,24 @@ jobs:
           test -s supabase/migrations/20260826_discovery_archive_v01.sql
           test -s supabase/migrations/20260827_discovery_triage_v01.sql
           test -s supabase/migrations/20260828_first_concept_preparation_v01.sql
+          test -s supabase/migrations/20260829_integrated_multiuser_foundation_v01.sql
+          test -s supabase/migrations/20260829_operator_rpc_execute_hardening_v01.sql
+          test -s supabase/migrations/20260829_assignment_workflow_v01.sql
           test -s .github/workflows/prepare-prospect.yml
           test -s prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'noindex,nofollow,noarchive' operator/index.html
           grep -q 'noindex,nofollow,noarchive' operator/start-design.html
           grep -q 'supabasePublishableKey' operator/config.js
+          grep -q 'publicProspectOrigin' operator/config.js
+          grep -q 'publicProspectPathPrefix' operator/config.js
+          grep -q '/prospect' operator/config.js
+          grep -q 'prospect_assignments' operator/team-work.js
+          grep -q 'operator_set_assignment' operator/team-work.js
+          grep -q 'team_members' supabase/migrations/20260829_integrated_multiuser_foundation_v01.sql
+          grep -q 'actor_user_id' supabase/migrations/20260829_integrated_multiuser_foundation_v01.sql
+          grep -q 'operator_set_assignment' supabase/migrations/20260829_assignment_workflow_v01.sql
+          grep -q 'cms.<brand>.nl' docs/INTEGRATED_OPERATING_ARCHITECTURE.md
+          grep -q '<brand>.nl/<public_slug>' docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md
           grep -q 'prompts/SOLIDDESIGN_BOOTSTRAP.md' operator/start-design.html
           grep -q 'Prompt architecture version: 0.2' operator/start-design.html
           grep -q 'operator_ingest_discovery_candidates' supabase/migrations/20260826_discovery_archive_v01.sql

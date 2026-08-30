@@ -1,10 +1,34 @@
 const CONFIG = window.SOLIDDESIGN_OPERATOR_CONFIG;
 const db = window.supabase?.createClient(CONFIG?.supabaseUrl, CONFIG?.supabasePublishableKey);
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const RESERVED = new Set(['api', 'brief', 'p', 'start-design']);
+const PR_PREVIEW_HOST_RE = /^pr-\d+\.soliddesign-cms\.pages\.dev$/;
+const RESERVED = new Set(['api', 'brief', 'p', 'prospect', 'start-design', 'team']);
+
+function cleanOrigin(value) {
+  return String(value || window.location.origin).replace(/\/+$/, '');
+}
+
+function cleanPrefix(value) {
+  const raw = String(value || '').trim();
+  if (!raw || raw === '/') return '';
+  return `/${raw.replace(/^\/+|\/+$/g, '')}`;
+}
+
+function publicOrigin() {
+  // A PR preview must test its own public delivery code, not silently jump to
+  // the production Pages host. Outside PR previews, the configured public
+  // origin remains authoritative and can later become https://<brand>.nl.
+  if (window.location.protocol === 'https:' && PR_PREVIEW_HOST_RE.test(window.location.hostname)) {
+    return window.location.origin;
+  }
+  return cleanOrigin(CONFIG?.publicProspectOrigin);
+}
 
 function shortUrl(slug) {
-  return slug ? `${window.location.origin}/${encodeURIComponent(slug)}` : '';
+  if (!slug) return '';
+  const origin = publicOrigin();
+  const prefix = cleanPrefix(CONFIG?.publicProspectPathPrefix);
+  return `${origin}${prefix}/${encodeURIComponent(slug)}`;
 }
 
 function normalizeSlug(value) {
@@ -90,7 +114,7 @@ function buildBox(prospect, root) {
   box.dataset.publicProspectLink = 'true';
   box.innerHTML = `
     <strong>Korte prospectlink</strong>
-    <p class="subtle">Publieke, makkelijk over te typen link naar de live mock-up. Deze link blijft gelijk wanneer een nieuwe mock-up live wordt gezet.</p>
+    <p class="subtle">Publieke, makkelijk over te typen link naar de live mock-up. De domeinnaam is infrastructuur; deze korte naam blijft gekoppeld aan de prospect wanneer later een merkdomein wordt gekozen.</p>
     <div class="form-grid">
       <label>Korte naam in prospectlink
         <input data-public-link-slug type="text" maxlength="63" inputmode="url" autocomplete="off" />
@@ -100,7 +124,7 @@ function buildBox(prospect, root) {
       </label>
     </div>
     <div class="save-row">
-      <div class="subtle">Gebruik alleen kleine letters, cijfers en koppeltekens. Wijzig deze naam alleen bewust: een eerder gedeelde korte link werkt daarna niet meer.</div>
+      <div class="subtle">Gebruik alleen kleine letters, cijfers en koppeltekens. Wijzig deze naam alleen bewust: een eerder gedeelde korte link kan daarna niet meer naar dezelfde prospect verwijzen.</div>
       <div>
         <button type="button" class="secondary" data-public-link-save>Naam opslaan</button>
         <button type="button" class="secondary" data-public-link-copy>Kopieer link</button>

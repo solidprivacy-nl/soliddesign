@@ -1,0 +1,35 @@
+#activeProspectPane .filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin: 18px 0;
+}
+
+#activeProspectPane .filters > * {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+#activeProspectPane #searchInput {
+  grid-column: 1 / -1;
+}
+
+#activeProspectPane .filters select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  #activeProspectPane .filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #activeProspectPane #searchInput {
+    grid-column: auto;
+  }
+}

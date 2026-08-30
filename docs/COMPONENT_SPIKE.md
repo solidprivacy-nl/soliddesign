@@ -1,4 +1,11 @@
-# Component Spike Contract
+# Component Spike Contract — completed Gate-1 record
+
+**Status:** COMPLETED / HISTORICAL TEST CONTRACT  
+**Current architecture:** `docs/ARCHITECTURE.md`
+
+This document records the deterministic component-spike contract that proved the original composed approach. Its stable interfaces remain useful, but its Phase-1 scope is not a complete description of the current multi-user/public-delivery system.
+
+If this file conflicts with current architecture/security/operations documents or a later accepted decision, the current documents take precedence.
 
 ## Objective
 
@@ -23,7 +30,7 @@ fixture Prospect
 
 `Prospect` is the owned source-neutral boundary.
 
-Canonical live source is now Overture Maps; Google is optional.
+Canonical live source is Overture Maps; Google is optional enrichment/fallback only when evidence justifies it.
 
 Source provenance fields:
 
@@ -47,7 +54,7 @@ This is the AI trust boundary. Raw HTML and unvalidated source data are excluded
 
 ### VerifiedFacts/Brief → SiteConfig
 
-Site config follows the reviewed OpenPage shape:
+Site config follows the reviewed OpenPage-compatible shape:
 
 ```json
 {
@@ -59,7 +66,7 @@ Site config follows the reviewed OpenPage shape:
 }
 ```
 
-Phase 1 deliberately avoids testimonial and contact-form blocks.
+The original spike deliberately avoided testimonial and contact-form blocks. That remains a useful trust default for unsolicited pre-sale proofs, not a universal production-site limitation.
 
 ## Overture adapter contract
 
@@ -84,9 +91,8 @@ The adapter must not:
 - failed hard gate blocks demo;
 - loopback/private metadata URLs rejected;
 - no raw HTML crosses VerifiedFacts;
-- no testimonials generated;
-- no form block generated;
-- preview has noindex + concept banner;
+- no invented testimonials generated;
+- preview has noindex + concept indication;
 - print pack renders comparison + QR/URL;
 - Overture bbox/release validation is deterministic;
 - Overture mapping stores source provenance;

@@ -6,6 +6,10 @@ on:
     paths:
       - "operator/**"
       - ".github/workflows/deploy-operator.yml"
+  pull_request:
+    paths:
+      - "operator/**"
+      - ".github/workflows/deploy-operator.yml"
   workflow_dispatch:
 
 permissions:
@@ -13,6 +17,7 @@ permissions:
 
 jobs:
   deploy:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,13 +44,87 @@ jobs:
             cat /tmp/project.json
             exit 1
           fi
+      - name: Select deployment branch
+        id: deployment
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            echo "branch=main" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            echo "branch=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=manual-preview" >> "$GITHUB_OUTPUT"
+          fi
       - name: Deploy Operator
         working-directory: operator
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx --yes wrangler@4 pages deploy . --project-name soliddesign-cms --branch main
+          DEPLOY_BRANCH: ${{ steps.deployment.outputs.branch }}
+        run: npx --yes wrangler@4 pages deploy . --project-name soliddesign-cms --branch "$DEPLOY_BRANCH"
+      - name: Smoke-test preview delivery
+        if: github.event_name == 'pull_request'
+        env:
+          DEPLOY_BRANCH: ${{ steps.deployment.outputs.branch }}
+          SUPABASE_URL: https://grderdhnjkeucaaehgqy.supabase.co
+          SMOKE_SLUG: siberg
+          LEGACY_SMOKE_SLUG: koppen-electro-techniek
+        run: |
+          set -euo pipefail
+          BASE_URL="https://${DEPLOY_BRANCH}.soliddesign-cms.pages.dev"
+
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/" -o /tmp/operator.html
+          grep -q 'SolidDesign' /tmp/operator.html
+
+          # The centrally injected engagement client must itself be deployed and executable.
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prospect-engagement.js" -o /tmp/prospect-engagement.js
+          grep -q '__SOLIDDESIGN_PROSPECT_ENGAGEMENT__' /tmp/prospect-engagement.js
+
+          status=$(curl -sS -o /tmp/missing.html -w '%{http_code}' "$BASE_URL/prospect/does-not-exist/")
+          test "$status" = "404"
+
+          # Historical one-segment links are compatibility aliases only. They may never
+          # resolve directly to UUID or legacy preview infrastructure.
+          curl -sS -D /tmp/root-alias.headers -o /dev/null "$BASE_URL/$SMOKE_SLUG?src=qr"
+          grep -Eq '^HTTP/[^ ]+ 302' /tmp/root-alias.headers
+          grep -Eqi "^location: .*\/prospect\/$SMOKE_SLUG/\?src=qr" /tmp/root-alias.headers
+          ! grep -Eqi '^location: .*\/p\/' /tmp/root-alias.headers
+          ! grep -Eqi '^location: https://(gate3-v1\.soliddesign-cms|soliddesign-previews-solidprivacy|gate3-v1\.soliddesign-previews-solidprivacy)\.pages\.dev' /tmp/root-alias.headers
+
+          curl -sS -D /tmp/canonical.headers -o /dev/null "$BASE_URL/prospect/$SMOKE_SLUG?src=qr"
+          grep -Eq '^HTTP/[^ ]+ 302' /tmp/canonical.headers
+          grep -Eqi "^location: .*\/prospect\/$SMOKE_SLUG/\?src=qr" /tmp/canonical.headers
+          grep -Eqi '^x-robots-tag: noindex, nofollow, noarchive' /tmp/canonical.headers
+
+          curl -fsSL --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prospect/$SMOKE_SLUG/?src=qr" -o /tmp/prospect.html
+          grep -q 'soliddesignProspectEngagement' /tmp/prospect.html
+          grep -q 'prospect-engagement.js' /tmp/prospect.html
+
+          # Grandfathered compatibility is intentionally finite. While these rows exist,
+          # prove one representative legacy LIVE page remains under the public prospect URL.
+          curl -sS --retry 5 --retry-delay 1 --retry-all-errors \
+            -D /tmp/legacy.headers \
+            "$BASE_URL/prospect/$LEGACY_SMOKE_SLUG/?src=qr" \
+            -o /tmp/legacy.html
+          grep -Eq '^HTTP/[^ ]+ 200' /tmp/legacy.headers
+          grep -Eqi '^x-robots-tag: noindex, nofollow, noarchive' /tmp/legacy.headers
+          if grep -Eqi '^location: https://(gate3-v1\.soliddesign-cms|soliddesign-previews-solidprivacy|gate3-v1\.soliddesign-previews-solidprivacy)\.pages\.dev' /tmp/legacy.headers; then
+            echo 'legacy preview leaked its technical host'
+            exit 1
+          fi
+          grep -q 'soliddesignProspectEngagement' /tmp/legacy.html
+
+          for function_name in team-invite team-member-admin prospect-engagement; do
+            curl -sS -D "/tmp/${function_name}.headers" -o "/tmp/${function_name}.body" \
+              -X OPTIONS "$SUPABASE_URL/functions/v1/$function_name" \
+              -H "Origin: $BASE_URL" \
+              -H 'Access-Control-Request-Method: POST' \
+              -H 'Access-Control-Request-Headers: authorization,apikey,content-type'
+            grep -Eq '^HTTP/[^ ]+ 2[0-9][0-9]' "/tmp/${function_name}.headers"
+            grep -Eqi '^access-control-allow-origin:' "/tmp/${function_name}.headers"
+          done
       - name: Deploy legacy preview alias
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: operator
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
