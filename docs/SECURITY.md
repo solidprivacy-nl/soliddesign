@@ -4,7 +4,7 @@ Security is part of the operating design, not a later subsystem. The canonical s
 
 ## Primary trust boundaries
 
-SolidDesign processes third-party place data, public websites, AI output, authenticated team actions and public prospect-page engagement.
+SolidDesign processes third-party place data, public websites, AI output, authenticated team actions, private printmailing artifacts and public prospect-page engagement.
 
 ```text
 EXTERNAL DATA / WEBSITE
@@ -123,7 +123,7 @@ Temporary public delivery is `/prospect/<slug>` on the existing Pages project.
 
 A public slug is an address, not an authorization secret. Public delivery receives only the capability needed to resolve/serve the current LIVE mock-up. Drafts and internal dossier capability remain inaccessible.
 
-Every prospect page remains `noindex, nofollow, noarchive` during the pre-sale workflow.
+Every prospect page remains `noindex, nofollow,noarchive` during the pre-sale workflow.
 
 PR previews are isolated verification environments. Their prospect links deliberately stay on the same `pr-<number>` origin so browser acceptance executes the code under test rather than production code.
 
@@ -142,6 +142,33 @@ Six grandfathered LIVE records predate this invariant. Their compatibility path 
 - the path may shrink only and must never become a general reverse proxy.
 
 When the historical count reaches zero, remove the compatibility path and reconsider the remaining public `demos.preview_url` access.
+
+## Printmailing artifact boundary
+
+Printmailing files are authenticated internal design artifacts, not public prospect assets.
+
+Storage contract:
+
+```text
+private bucket: mailing-artifacts
+allowed: PDF / PNG / JPG
+max: 25 MB
+path: prospects/<prospect_id>/<artifact_id>/artifact.<ext>
+```
+
+Security rules:
+
+- active team membership is required for Storage read/upload;
+- registered artifacts are immutable: updates are not granted and registered objects cannot be deleted through normal browser RLS;
+- browser preview/open uses a short-lived signed URL rather than a public bucket URL;
+- metadata registration verifies that the object exists in the expected prospect/artifact path;
+- physical-send registration resolves the current LIVE demo server-side and verifies the selected artifact belongs to the same prospect;
+- `mailings.artifact_id` is required, so a physical send cannot exist without exact stored-artifact evidence;
+- artifact upload and physical send are actor-attributed material events.
+
+A narrowly allowed delete applies only to an uploaded Storage object that has **not** yet been registered in `mailing_artifacts`; this exists solely to clean up a failed upload/metadata transaction. Once registered, a new design means a new immutable version.
+
+Do not make this bucket public, reuse public mock-up delivery for these files or add a general-purpose attachments API merely for convenience.
 
 ## Prospect engagement privacy boundary
 
