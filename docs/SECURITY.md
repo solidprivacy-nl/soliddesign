@@ -16,9 +16,9 @@ EXTERNAL DATA / WEBSITE
 
 Raw external content cannot choose tools, request secrets, authorize publication or trigger outbound communication.
 
-## Authentication and internal authorization
+## Authentication and authorization
 
-Supabase Auth is the identity provider. Durable application membership is `team_members` using the Auth user UUID.
+Supabase Auth is the identity provider. Durable application membership is `team_members` keyed by the Auth UUID.
 
 Roles:
 
@@ -28,80 +28,79 @@ KEY_USER
 USER
 ```
 
+Authorization truth is now:
+
+```text
+auth.uid()
+→ active team_members row
+→ role-aware RLS / RPC / server capability
+```
+
+`operator_is_active_team_member()` is the common Operator membership predicate. `operator_assert_allowed()` and the Operator/storage RLS policies use active UUID membership. Verified RLS references to the historical `operator_allowlist`: **0** after migration `20260830_team_members_access_cutover_v01.sql`.
+
+`operator_allowlist` remains temporarily only as a compatibility bridge for the pre-merge production frontend bootstrap and lifecycle synchronization. It is **not an authorization source** and may not gain new consumers. Remove the browser bootstrap dependency, two lifecycle sync references and compatibility table only after the new frontend is deployed to production and passes production smoke.
+
 Rules:
 
 - routine onboarding is invite-only;
 - Admin may invite/manage Users and Key users;
 - Key user may invite/manage normal Users only;
 - at least one active Admin must remain;
-- deactivation is blocked while active prospect responsibilities remain;
-- browser code receives only a Supabase publishable key;
-- privileged/service credentials never enter browser code;
-- sensitive mutations use RLS or narrow server/RPC capabilities that re-check the authenticated user and role.
+- deactivation is blocked while active responsibilities remain;
+- browser code receives only the Supabase publishable key;
+- service/secret credentials never enter browser code;
+- privileged mutations re-check authenticated UUID membership and role server-side.
 
-`operator_allowlist` is transitional compatibility during rollout, not the target user-management model. It still gates a finite set of older Operator RLS/functions, so it must not be deleted piecemeal or extended with new semantics. After the invite/role browser gate is proven, cut the remaining access checks over to active `team_members` in one explicit migration/change set and then remove the compatibility path.
+## Human team identity
 
-### Human team identity
+`team_members.display_name` is the canonical visible person identity. E-mail is login/account metadata, not the normal assignment/activity label.
 
-`team_members.display_name` is the canonical visible person identity in SolidDesign work surfaces. E-mail is login/account metadata and must not become the normal assignment or activity label.
+The UI derives an initials avatar from `display_name`; no avatar upload or Storage subsystem exists.
 
-The UI derives an initials avatar from `display_name`. No avatar image, upload or Storage object is required for identity.
+Display-name correction is Admin-only and actor-aware. Stable Auth UUIDs remain the relational identity behind assignments/events.
 
-Display-name correction is Admin-only and actor-aware. It changes presentation identity without changing the stable Auth UUID used by assignments/events.
+## Deactivation and permanent deletion
 
-### Deactivation and permanent deletion
+Deactivation is normal offboarding and preserves historical attribution.
 
-Deactivation is the normal offboarding path and preserves historical attribution.
+Permanent deletion exists only for mistaken/test/history-free accounts and is server-side. It must reject deletion when:
 
-Permanent deletion is deliberately narrower and is only for mistaken/test/non-business accounts. It is executed server-side because deleting a Supabase Auth user requires privileged Auth administration.
+- caller is not an active Admin;
+- target is the caller;
+- target has active `prospect_assignments`;
+- target has prospect-linked business history;
+- deleting the target would remove the last active Admin.
 
-The deletion capability must re-check all of the following on the server:
+Users with business history are deactivated, not hard-deleted merely to tidy the Team list.
 
-- caller is an active Admin;
-- target is not the caller;
-- target has no active `prospect_assignments`;
-- target has no prospect-linked event/business history;
-- an active Admin deletion cannot remove the last active Admin.
+## Invite lifecycle and redirect boundary
 
-The Auth foreign key on `team_members.user_id` cascades only after those checks pass. `events.actor_user_id` may be cleared for lifecycle-only account events, while a metadata snapshot of the deleted account is recorded in the Admin deletion event.
+Invitation metadata such as `solidDesignMustSetPassword` is onboarding UI state, not authorization authority.
 
-A member with dossier/business history must be deactivated, never hard-deleted merely to tidy the Team list.
+`team-invite` always passes an explicit server-validated `redirectTo`. Allowed destinations are limited to:
 
-### Invite lifecycle state
+- current internal production origin;
+- isolated `pr-<number>` Pages previews;
+- explicitly configured future `SOLIDDESIGN_INTERNAL_ORIGIN`.
 
-Invitation metadata such as `solidDesignMustSetPassword` supports onboarding UI/lifecycle behavior only. User-editable metadata is not authorization authority. Roles and access remain derived from authenticated identity plus server/RLS-controlled membership state.
+Arbitrary origins are rejected. Hosted Supabase **Authentication → URL Configuration** must allow the same origins. `http://localhost:3000` is not a hosted production fallback.
 
-### Auth redirect boundary
+Exact configuration is maintained in `docs/AUTH_REDIRECTS.md`.
 
-Supabase Auth redirect configuration is a security boundary, not cosmetic deployment metadata.
+Do not introduce a custom token broker/account service for ordinary Supabase Auth redirects.
 
-Rules:
+## Password and Auth mail security
 
-- `team-invite` always passes an explicit `redirectTo` to `inviteUserByEmail`; it does not rely on the Supabase Site URL fallback;
-- the Edge Function accepts only the known internal production origin, isolated `pr-<number>` Pages preview origins, or the explicitly configured future `SOLIDDESIGN_INTERNAL_ORIGIN`;
-- arbitrary browser Origins are rejected as invitation destinations;
-- the hosted Supabase project's **Authentication → URL Configuration** must allow the same destinations;
-- `http://localhost:3000` may be used for local development but must not remain the hosted production Site URL;
-- after the future `cms.<brand>.nl` cutover, both Supabase Site URL and `SOLIDDESIGN_INTERNAL_ORIGIN` must be changed and browser-verified before removing the previous internal hostname.
+Use Supabase's built-in password controls rather than a custom password-strength/breach service.
 
-Current/future exact configuration is maintained in `docs/AUTH_REDIRECTS.md`.
+Before the operational pilot:
 
-Do not solve ordinary Auth redirects with a custom token broker, custom account service or unrestricted open redirect.
+- minimum password length at least 8, with stronger practical policy for the small internal team;
+- configure a proven custom SMTP provider through Supabase Auth for invitations/password recovery;
+- verify sender/domain, invite delivery and password-recovery delivery;
+- enable Supabase Leaked Password Protection if the selected plan supports it.
 
-## Password security
-
-Use Supabase Auth's built-in password controls rather than creating a custom password-strength or breached-password service.
-
-Current verification checklist before the multi-user operational pilot:
-
-- minimum password length must be at least 8 characters; prefer a stronger practical setting for this small internal team;
-- use Supabase's built-in required-character policy where operationally appropriate;
-- if the project plan supports it, enable Supabase **Leaked Password Protection** so known-compromised passwords are rejected through the platform's HaveIBeenPwned integration;
-- do not implement a second password database, custom breach API or home-grown password checker merely to replace a platform capability.
-
-The Supabase security advisor currently reports leaked-password protection as disabled. Supabase documents this protection as available on Pro Plan and above. This is a configuration hardening item, not an application-architecture requirement.
-
-Reference: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+The built-in default SMTP service is bounded test infrastructure and is strongly rate-limited.
 
 ## Public/internal surface separation
 
@@ -112,29 +111,31 @@ cms.<brand>.nl       = authenticated CMS
 <brand>.nl/<slug>    = public prospect surface
 ```
 
-Temporary public delivery is `/prospect/<slug>` on the existing Pages host.
+Temporary public delivery is `/prospect/<slug>` on the existing Pages project.
 
-The public hostname is never an alias for the CMS. A public slug is an address, not an authorization secret.
-
-Public delivery resolves only the information required to serve the current LIVE mock-up. Drafts and internal dossier capability remain inaccessible.
+A public slug is an address, not an authorization secret. Public delivery receives only the capability needed to resolve/serve the current LIVE mock-up. Drafts and internal dossier capability remain inaccessible.
 
 Every prospect page remains `noindex, nofollow, noarchive` during the pre-sale workflow.
+
+PR previews are isolated verification environments. Their prospect links deliberately stay on the same `pr-<number>` origin so browser acceptance executes the code under test rather than production code.
 
 ## LIVE artifact and legacy-delivery boundary
 
 New LIVE publication requires a canonical stored artifact. External HTTPS previews are review/DRAFT inputs only.
 
-Six grandfathered LIVE records predate that rule. Their compatibility route is deliberately finite:
+Six grandfathered LIVE records predate this invariant. Their compatibility path is finite:
 
-- only explicitly allowlisted historical SolidDesign Cloudflare preview hosts may be fetched;
-- the shortened historical `gate3-v1.soliddesign-cms.pages.dev` alias is normalized server-side to its original legacy preview host so the current Pages project cannot recursively call itself;
-- redirects are allowed only inside the expected legacy origin/path;
-- the prospect-facing URL remains visible;
-- this path must shrink as those records are migrated/retired and must never become a general external reverse proxy.
+- only explicitly known historical SolidDesign preview hosts may be fetched;
+- the old shortened CMS alias is normalized to the original legacy preview host to avoid self-recursion;
+- redirects must stay inside the expected legacy origin/path;
+- the prospect-facing slug URL remains visible;
+- the path may shrink only and must never become a general reverse proxy.
+
+When the historical count reaches zero, remove the compatibility path and reconsider the remaining public `demos.preview_url` access.
 
 ## Prospect engagement privacy boundary
 
-Engagement exists to answer operational questions such as whether a prospect opened and seriously viewed the concept. It is not intended to identify an individual visitor.
+`prospect_visits` measures response to the prospect-specific link, not personal identity.
 
 Stored MVP signals:
 
@@ -148,42 +149,48 @@ Stored MVP signals:
 
 Explicitly not stored:
 
-- raw IP address;
+- raw IP;
 - IP hash;
 - fingerprint;
-- persistent visitor/browser identifier;
+- persistent visitor/browser ID;
 - session replay;
-- heatmap.
+- heatmap/clickstream.
 
-One `prospect_visits` row represents one measured opening, not one human identity.
+One row represents one measured opening, not one human. Browser telemetry is fail-open: measurement failure never blocks the prospect page.
 
-Browser telemetry is fail-open: if measurement fails, the public mock-up still loads.
+A plain HTTP GET is not commercial engagement; a short visible browser dwell is required before registration.
 
 ## Internal QA traffic
 
-Employee/public-page testing must not be confused with prospect response.
+**Test als medewerker** mints a short-lived server-signed token bound to the prospect slug. The public telemetry endpoint validates it before classifying an opening as `INTERNAL`.
 
-The CMS therefore requests a short-lived, server-signed internal-preview token bound to the prospect slug. The public telemetry endpoint validates that token before classifying an opening as `INTERNAL`.
-
-Do not use:
-
-- IP allowlists as the primary employee distinction;
-- a guessable `?internal=1` flag;
-- cross-domain cookie assumptions between CMS and public hosts.
+Do not use IP allowlists, a guessable internal query flag or cross-domain cookie assumptions as the primary employee distinction.
 
 ## Public telemetry endpoint
 
-The prospect-engagement Edge Function intentionally accepts public start/update telemetry. It uses short random per-opening capability tokens for updates and exposes no general database write surface.
+`prospect-engagement` intentionally accepts public start/update telemetry using a random per-opening capability token. It exposes no general database write surface.
 
-Browser invocation requires explicit CORS/preflight handling. The internal-preview token minting action separately authenticates the requesting team member using the supplied Supabase Auth access token and verifies active membership server-side.
+The separate internal-token mint action authenticates the requesting team member and verifies active membership server-side.
+
+CORS/preflight support is required because the public browser calls the Edge Function directly.
+
+`prospect_visits` has no direct `anon` or `authenticated` table grants. Operational reads use authorization-checking RPCs.
+
+For stateful browser features, UI appearance alone is not acceptance evidence: verify authoritative rows and Edge Function requests.
 
 ## Database access boundary
 
-The public resolver uses the publishable key with narrow column grants plus RLS. Do not solve resolver failures by broadening anonymous table access when the requested column is not actually necessary.
+The public resolver uses the publishable key with narrow grants plus RLS. Resolver failures must not be solved by broadening anonymous table access when the requested data is unnecessary.
 
-`prospect_visits` has no direct `anon` or `authenticated` table grants. Operational reads go through authenticated, authorization-checking RPCs; public writes go through the bounded Edge Function.
+Database evolution is:
 
-Database evolution follows `supabase/schema.sql` as bootstrap baseline plus ordered `supabase/migrations/` as canonical post-bootstrap evolution. See `supabase/README.md`.
+```text
+supabase/schema.sql       # bootstrap baseline
+→ supabase/migrations/*   # ordered canonical evolution
+→ current production schema
+```
+
+Do not maintain a second manually synchronized current schema.
 
 ## URL / SSRF rules
 
@@ -197,11 +204,11 @@ Network fetchers must reject or guard:
 - cloud metadata endpoints;
 - redirects into blocked ranges.
 
-A compatibility proxy is not exempt from these principles merely because its targets are historical; its allowed origin/path set must remain explicit and finite.
+Historical compatibility does not exempt a fetcher from finite origin/path restrictions.
 
-## Verified facts
+## Verified-fact boundary
 
-Prospect-facing designs may only use business facts that are directly evidenced, validated from the official site, or explicitly supplied/approved by a human.
+Prospect-facing designs may use only facts directly evidenced, validated from the official site or explicitly supplied/approved by a human.
 
 No invented testimonials, services, awards, opening hours or commercial claims.
 
@@ -212,17 +219,15 @@ Because the repository can be public:
 - no `.env` or secrets;
 - no raw private prospect/customer datasets;
 - no privileged API keys;
-- dependencies are pinned/recorded where practical;
-- every imported dependency must earn its operational complexity.
+- dependencies pinned/recorded where practical;
+- every dependency must earn its operational complexity.
 
 ## Security review rule
 
-After schema/auth/RLS/function changes:
+After schema/Auth/RLS/function changes:
 
 1. run CI and relevant deployed runtime smokes;
 2. run Supabase security advisors;
-3. distinguish new regressions from intentional capabilities or explicitly tracked configuration debt;
-4. fix cheap, correct hardening at the source rather than silencing the advisor;
-5. do not broaden permissions or add `SECURITY DEFINER` merely to make a warning disappear.
-
-The `website_key_from_url` helper now pins its `search_path` through migration, removing the previous mutable-search-path warning without changing its capability.
+3. distinguish new regressions from intentional capabilities/configuration debt;
+4. fix cheap correct hardening at the source;
+5. never broaden permissions or add `SECURITY DEFINER` merely to silence a warning.
