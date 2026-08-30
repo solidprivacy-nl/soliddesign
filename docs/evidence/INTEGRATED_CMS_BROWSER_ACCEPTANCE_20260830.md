@@ -1,6 +1,6 @@
 # Integrated CMS browser acceptance — 2026-08-30
 
-Status: **partial acceptance complete; engagement persistence re-test pending**.
+Status: **complete**.
 
 This evidence records observed browser behavior for the integrated multi-user CMS on the isolated Cloudflare Pages preview:
 
@@ -10,7 +10,7 @@ https://pr-28.soliddesign-cms.pages.dev
 
 It is evidence, not a competing architecture specification. Current architecture and roadmap remain authoritative.
 
-## Verified in browser
+## Browser acceptance
 
 The operator confirmed the following flows work in the PR-28 environment:
 
@@ -37,58 +37,57 @@ The operator confirmed the following flows work in the PR-28 environment:
    - normal signed-in workspace;
    - `team_members.active = true` and `joined_at` set only after activation.
 
-Backend state after acceptance corroborated three joined active users: one Admin, one Key user and one User, with real assignments and actor-attributed events.
+Backend state corroborated three joined active users: one Admin, one Key user and one User, with real assignments and actor-attributed events.
 
-## Engagement discrepancy found during evidence review
+## Engagement persistence — verified after corrective pass
 
-The operator initially reported the engagement workflow as working in the browser. Authoritative persistence checks showed:
+Initial engagement acceptance exposed a real defect: PR-28 generated public links on the production Pages origin, so the browser left PR code before the telemetry client could execute. Authoritative checks correctly showed no persisted visits.
+
+The correction keeps PR prospect links on the same `pr-<number>` origin while production/future branded environments continue to use their configured public origin. Deployed smoke also verifies that `prospect-engagement.js` itself is present on the PR host.
+
+After that correction, the operator repeated both the external opening and **Test als medewerker** flows. Authoritative Supabase state then showed:
 
 ```text
-prospect_visits EXTERNAL = 0
-prospect_visits INTERNAL = 0
+EXTERNAL openings = 3
+EXTERNAL active time total = 32 s
+EXTERNAL max scroll = 78%
+
+INTERNAL openings = 1
+INTERNAL active time total = 9 s
+INTERNAL max scroll = 95%
 ```
 
-and Supabase Edge Function logs showed only deployment-smoke `OPTIONS` requests, with no browser `POST` to `prospect-engagement`.
+Supabase Edge Function logs contain successful browser `POST` requests to `prospect-engagement` (`201` for start and `200` for updates). This proves the browser-visible flow persisted state rather than merely rendering the response UI.
 
-Root cause: PR-28 CMS generated public prospect links using the configured production `publicProspectOrigin`. Therefore the browser left PR-28 and opened the production Pages host, which does not yet contain the integration branch's telemetry runtime.
-
-Correction:
-
-- PR preview CMS instances now generate prospect links on their own `pr-<number>.soliddesign-cms.pages.dev` origin;
-- non-PR environments continue to use the configured public origin, preserving the future `<brand>.nl` model;
-- deployed smoke now verifies that `prospect-engagement.js` itself is present on the PR host, not only that the injected HTML references it.
-
-Corrective commit path passed CI and deployed Pages smoke.
-
-**Engagement remains unverified until a post-fix browser opening creates persisted EXTERNAL and INTERNAL rows and Outreach reads those rows back correctly.**
+The internal opening remained classified separately and therefore does not inflate prospect response.
 
 ## Authorization cutover evidence
 
-After the browser team/lifecycle gates passed, authorization stage 1 was applied:
+After the team/lifecycle gates passed, authorization stage 1 was applied:
 
-- active `team_members` UUID membership is now the authorization source for Operator RLS;
+- active `team_members` UUID membership is the authorization source for Operator RLS;
 - `operator_assert_allowed()` uses active `team_members`;
-- all affected public/storage RLS policies use `operator_is_active_team_member()`;
+- all affected Operator/storage RLS policies use the team-membership predicate;
 - verified `operator_allowlist` RLS-policy references: **0**.
 
-`operator_allowlist` remains temporarily only as a compatibility bridge for the still-live pre-merge production frontend bootstrap and two lifecycle sync functions. It is no longer an authorization source. Remove that bridge only after the new frontend is deployed to production and passes its production smoke.
+Before merge, the remaining browser bootstrap consumer was also migrated from `operator_allowlist` to `team_members.active`. The final retirement migration removes the two lifecycle synchronization writes and drops `operator_allowlist` after the new frontend is deployed to production.
 
-## Remaining acceptance item
+## Acceptance conclusion
 
-One targeted engagement persistence re-test on PR-28:
+The integrated CMS browser gate is closed for:
 
 ```text
-external prospect opening on pr-28
-→ prospect-engagement start/update POST
-→ EXTERNAL prospect_visits row
-
-Test als medewerker on pr-28
-→ signed internal token
-→ prospect-engagement start/update POST
-→ INTERNAL prospect_visits row
-
-Outreach refresh
-→ persisted metrics shown correctly
+invite / activation
+roles / Team
+membership lifecycle
+assignments / Mijn werk
+actor-aware Activity
+responsive dossier IA
+public prospect delivery on PR origin
+external engagement persistence
+internal staff-test classification
+active-time / scroll persistence
+Outreach readback path
 ```
 
-Only after this evidence exists should M5/M6 be marked browser-verified.
+Remaining work is release/cutover work rather than feature acceptance: merge PR #28, verify the production Pages deployment, apply the final allowlist-retirement migration, and run the final production smoke.
