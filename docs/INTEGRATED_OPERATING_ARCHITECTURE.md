@@ -1,7 +1,7 @@
 # SolidDesign Integrated Operating Architecture
 
 **Status:** current operating architecture / rollout basis  
-**Date:** 2026-08-29
+**Updated:** 2026-08-30
 
 ## Objective
 
@@ -10,7 +10,7 @@ Operate SolidDesign as a small multi-user commercial work system without changin
 The system remains:
 
 - one application;
-- one Cloudflare Pages project/deployment topology;
+- one Cloudflare Pages project;
 - one Supabase operational state plane;
 - one canonical mock-up storage/LIVE lifecycle;
 - explicit human control;
@@ -42,32 +42,25 @@ LEARNING
 
 ```text
 INTERNAL
-soliddesign-cms.pages.dev
-later optionally cms.<brand>.nl
+current: soliddesign-cms.pages.dev
+final:   cms.<brand>.nl
 
 PUBLIC
-temporary: soliddesign-cms.pages.dev/prospect/<slug>
-later:     <brand>.nl/<slug>
+current: soliddesign-cms.pages.dev/prospect/<slug>
+final:   <brand>.nl/<slug>
 ```
 
-The brand/domain is delivery configuration. The business identity is `prospects.public_slug`.
+Domain names are delivery configuration. Prospect identity is `prospects.public_slug`.
 
-Preferred final hostname shape:
+Auth invitations/login belong to the internal origin. Exact hosted Auth URL configuration lives in `docs/AUTH_REDIRECTS.md`.
 
-```text
-https://cms.<brand>.nl
-https://<brand>.nl/<public_slug>
-```
+PR previews are isolated verification deployments inside the same Pages project. During acceptance their prospect links stay on their own `pr-<number>` origin so PR browser behavior tests PR code rather than production code.
 
-See `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md`.
+## Identity, authorization and governance
 
-Authentication invitations/login flows belong to the **internal** origin, not the public prospect origin. Their hosted Supabase Site URL / Redirect URL contract is maintained in `docs/AUTH_REDIRECTS.md`. Application invite code uses an explicit validated `redirectTo`; a stale localhost Site URL is never intended runtime behavior.
+Supabase Auth provides identity. Durable membership is `team_members`, keyed by Auth UUID.
 
-## Identity and governance
-
-Durable application membership is `team_members` and uses the stable Supabase Auth user UUID.
-
-System roles:
+Roles:
 
 ```text
 ADMIN
@@ -75,21 +68,35 @@ KEY_USER
 USER
 ```
 
-- Admin: governance and Key-user/Admin management.
+- Admin: governance and all normal team lifecycle/role management.
 - Key user: operational coordination, normal User invitations and work distribution.
-- User: normal prospect work.
+- User: normal prospect/design/outreach work.
 
 There is no Owner/Eigenaar application role.
 
 System role answers what a person may administer. It does not determine prospect responsibility.
 
+### Authorization truth
+
+Current authorization chain:
+
+```text
+auth.uid()
+→ active team_members
+→ RLS / guarded RPC / server capability
+```
+
+`operator_is_active_team_member()` is the common membership predicate. Operator/storage RLS and `operator_assert_allowed()` no longer use `operator_allowlist` as authorization input.
+
+The old allowlist remains temporarily only because the pre-merge production frontend still performs a legacy bootstrap read and two lifecycle functions keep that compatibility row synchronized. This bridge must be removed after the new frontend is deployed to production and production smoke passes. It may not acquire new semantics or consumers.
+
 ### Human identity
 
-`team_members.display_name` is the primary human-readable identity in SolidDesign. E-mail is secondary login/account metadata and is not used as the normal prospect-assignment or activity label.
+`team_members.display_name` is the primary human-readable identity. E-mail is secondary login/account metadata, not the normal prospect-assignment or activity label.
 
-The UI derives a lightweight initials avatar from `display_name`; there is no avatar-upload/profile-storage subsystem in the current architecture.
+The UI derives initials from `display_name`; there is no avatar-upload/profile-storage subsystem.
 
-Admin may correct a display name without changing the stable Auth UUID that assignments and event attribution use.
+Admin may correct a display name without changing the stable UUID used by assignments/events.
 
 ### Membership lifecycle
 
@@ -99,21 +106,15 @@ INVITED
 → INACTIVE
 ```
 
-The visible status is derived from `active`, `joined_at` and `deactivated_at`; there is no second lifecycle state machine.
+Visible lifecycle is derived from `active`, `joined_at` and `deactivated_at`; there is no second state machine.
 
 Deactivation is normal offboarding and preserves history.
 
-Permanent deletion is a narrow Admin cleanup capability for mistaken/test accounts only. Server-side guards reject deletion when the target is the caller, has active assignments, has prospect-linked business history, or would remove the last active Admin. Accounts with business history are deactivated instead.
-
-### Membership rollout compatibility
-
-`operator_allowlist` still gates older Operator RLS/access paths during the rollout. It is compatibility state only; `team_members` is the durable membership/role model.
-
-Do not add new role/workflow semantics to the allowlist. Remove it only after the remaining RLS/access paths are explicitly migrated and browser-verified.
+Permanent deletion is an Admin-only correction/test cleanup capability. Server-side guards reject deletion when the target is the caller, has active assignments, has prospect-linked business history, or would remove the last active Admin. Accounts with business history are deactivated instead.
 
 ## Prospect responsibility
 
-Current responsibility is explicit state in `prospect_assignments`:
+Current responsibility is explicit in `prospect_assignments`:
 
 ```text
 CASE_LEAD   → Dossierhouder
@@ -121,74 +122,23 @@ DESIGN      → Design
 OUTREACH    → Outreach & opvolging
 ```
 
-There is one primary accountable person per responsibility per prospect.
+One primary accountable person exists per responsibility per prospect.
 
-Assignments are not a read-security boundary in the first version. Active team members retain shared visibility for collaboration, handover and absence coverage.
+Assignments are not a read-security boundary in this version. Active team members retain shared visibility for collaboration, handover and absence coverage.
 
-Portfolio is derived from assignments; there is no portfolio table.
+Portfolio/My Work is derived from assignments; there is no portfolio or task table.
 
 ## Activity
 
-`events.actor_user_id` records who initiated/performed material business actions.
+`events.actor_user_id` records who performed material business actions.
 
-Events record meaningful changes such as assignment changes, demo publication, mailing/contact changes, archive/restore and user-management actions.
+Events capture meaningful changes such as assignments, publication, mailing/contact changes, archive/restore and team lifecycle actions. UI clicks/navigation are not activity events.
 
-Events do not record UI clicks/navigation.
-
-Current responsibility is read from assignments; history is read from events.
-
-## Public delivery
-
-The temporary public route is:
-
-```text
-/prospect/<public_slug>
-```
-
-The canonical public mapping is:
-
-```text
-slug
-→ prospect
-→ current LIVE demo
-→ stored immutable artifact
-```
-
-The public URL keeps the slug visible and does not expose internal UUID routes.
-
-New LIVE publication requires `artifact_path`. External HTTPS preview links are review/DRAFT escape hatches only and cannot become newly LIVE.
-
-A finite compatibility path exists for six grandfathered historical LIVE records that predate this invariant. It is restricted to explicitly allowlisted old SolidDesign Cloudflare preview hosts and is transition debt, not a general reverse-proxy capability.
-
-On the current internal Pages hostname, the old root `/<slug>` route is only a redirect alias to `/prospect/<slug>/`; it no longer performs its own prospect/LIVE resolution.
-
-When `<brand>.nl` is chosen, the same public resolver semantics move to `<brand>.nl/<slug>` through hostname/path routing rather than data migration. The branded public host must be a strict capability allowlist and never become an alias for internal CMS routes.
-
-## Engagement
-
-`prospect_visits` measures response to the prospect link, not human identity.
-
-MVP fields/signals:
-
-- prospect/demo;
-- external/internal;
-- QR/direct;
-- broad device class;
-- first/last telemetry timestamps;
-- active visible seconds;
-- max scroll.
-
-No raw IP, IP hash, fingerprint, persistent visitor identity, heatmap or session replay.
-
-A plain HTTP GET is not considered commercial engagement. Browser-visible first-party telemetry is required to reduce bot/scanner false positives.
-
-Telemetry failure must never block public delivery.
-
-Internal employee QA uses a short-lived server-signed token bound to the prospect slug. IP-based classification and guessable internal flags are deliberately avoided.
+Current responsibility comes from assignments; history comes from events.
 
 ## Internal information architecture
 
-Top-level navigation:
+Top navigation:
 
 ```text
 Mijn werk
@@ -205,33 +155,110 @@ Overzicht | Design | Outreach | Activiteit
 
 ### Mijn werk
 
-Default landing page. Derived from assignments and contextually opens the relevant dossier tab.
+Derived personal work surface. Assigned Design/Outreach opens the matching dossier phase when unambiguous.
 
 ### Prospects
 
-Shared active/archive register with status and simple work-distribution filters, including unassigned responsibilities.
+Shared active/archive register with status and simple work-distribution filters, including missing responsibilities.
 
 ### Team
 
-Combines membership lifecycle and current work-distribution visibility. It is not an HR system or capacity-planning platform.
+Membership lifecycle + work distribution. It is not HR/capacity planning.
 
 ### Outreach
 
-Owns the commercial feedback loop:
+Commercial feedback loop:
 
 ```text
 mailing
-→ prospect URL
-→ engagement
+→ public prospect URL
+→ measured response
 → next action
 → contact/outcome
 ```
 
-Engagement never automatically changes contact status or produces a lead score without later outcome evidence.
+Engagement never automatically changes contact status or creates a lead score.
+
+## Design and LIVE lifecycle
+
+Normal publishable inputs:
+
+- standalone HTML;
+- static ZIP with root `index.html` and relative assets.
+
+Canonical flow:
+
+```text
+verified prospect context
+→ design brief
+→ DRAFT mock-up
+→ review
+→ explicit LIVE promotion
+→ public prospect URL
+```
+
+New LIVE publication requires a stored `artifact_path`. External HTTPS previews are DRAFT/review escape hatches only.
+
+Internal technical preview routes may expose UUIDs; prospect-facing communication does not.
+
+## Public delivery
+
+Current public route:
+
+```text
+/prospect/<public_slug>
+```
+
+Canonical mapping:
+
+```text
+slug
+→ prospect
+→ current LIVE demo
+→ stored immutable artifact
+```
+
+The public URL keeps the slug visible and hides internal UUID routing.
+
+The old root `/<slug>` route on the current CMS host is compatibility redirect only; it performs no parallel prospect/LIVE resolution.
+
+A finite compatibility path supports six historical LIVE records that predate artifact-only publication. It accepts only known SolidDesign legacy preview hosts. It is transition debt, not a generalized proxy.
+
+When `<brand>.nl` is chosen, the same resolver semantics move to `<brand>.nl/<slug>` through hostname/path routing, not data migration. The public hostname must expose only public prospect capability and never internal CMS routes.
+
+## Engagement
+
+`prospect_visits` measures response to a prospect link, not human identity.
+
+Signals:
+
+- prospect/demo;
+- external/internal opening;
+- QR/direct;
+- broad device class;
+- first/last telemetry timestamps;
+- active visible seconds;
+- max scroll.
+
+No raw IP, IP hash, fingerprint, persistent visitor identity, heatmap, replay or clickstream.
+
+A plain HTTP GET is not commercial engagement. A short browser-visible dwell is required before creating a measured opening.
+
+Telemetry failure never blocks public delivery.
+
+Internal QA uses a short-lived server-signed token bound to the prospect slug. IP-based classification and guessable internal flags are deliberately avoided.
+
+### Acceptance evidence rule
+
+For stateful engagement, visible UI behavior is not sufficient evidence. Browser verification must be corroborated by persisted `prospect_visits` rows and actual Edge Function POST requests.
+
+The initial PR-28 engagement acceptance exposed an environment bug: PR prospect links opened production instead of the PR public route. PR previews now keep prospect links on their own origin. M5/M6 remain open until persisted EXTERNAL + INTERNAL rows are observed after this fix.
+
+See `docs/evidence/INTEGRATED_CMS_BROWSER_ACCEPTANCE_20260830.md`.
 
 ## Implemented data expansion
 
-The integrated operating model adds only:
+The integrated model adds only:
 
 ```text
 team_members
@@ -242,53 +269,45 @@ prospect_visits
 
 Existing prospects, demos, mailings, audits, discovery and Storage remain authoritative.
 
-No task table, portfolio table or analytics database was introduced.
+No task table, portfolio table, profile database or analytics datastore was introduced.
 
 ## Database evolution
 
-Current database state is defined by:
-
 ```text
-supabase/schema.sql       # original bootstrap baseline
-        ↓
-supabase/migrations/*     # ordered canonical evolution
-        ↓
-current production schema
+supabase/schema.sql       # bootstrap baseline
+→ supabase/migrations/*   # ordered canonical evolution
+→ current production schema
 ```
 
-Do not maintain a second manually synchronized current schema file. See `supabase/README.md`.
+Do not maintain a second manually synchronized current schema. See `supabase/README.md`.
 
 ## Deployment topology
 
-There is one Pages project:
+One Pages project:
 
 ```text
 main            → production
-pr-<number>     → isolated pre-merge QA preview
+pr-<number>     → isolated pre-merge QA
 ```
 
-PR preview branches are verification environments in the same application/project, not separate architecture.
+PR previews are verification environments, not separate architecture.
 
 ## Explicit non-goals
 
 Do not add without observed need:
 
 - task engine;
-- Kanban/Gantt;
-- capacity planner;
-- time tracking;
-- workflow builder;
-- separate portfolio data model;
+- Kanban/Gantt/capacity planner;
+- time tracking/workflow builder;
+- separate portfolio model;
 - custom permission builder;
 - per-dossier ACLs;
 - separate public application;
-- second analytics datastore;
+- second analytics datastore/BI platform;
 - visitor fingerprinting;
-- automated lead scoring;
-- marketing automation;
-- separate BI platform;
-- generalized external-preview/reverse-proxy platform;
-- user-profile/avatar image subsystem.
+- automated lead scoring/marketing automation;
+- generalized reverse proxy;
+- photo/avatar profile subsystem.
 
 ## Architecture invariants
 
@@ -299,18 +318,18 @@ Do not add without observed need:
 5. One primary assignee per responsibility.
 6. Assignment is current state; event log is history.
 7. Material user actions are attributable.
-8. Human work identity is stable Auth UUID + `display_name`; e-mail is account metadata.
-9. Deactivation preserves history; permanent deletion is only for history-free correction/test accounts.
-10. Portfolio is derived, not stored separately.
-11. Domain/brand names are delivery configuration.
-12. Preferred final hosts are `cms.<brand>.nl` and `<brand>.nl/<slug>`.
-13. Auth redirects follow the configured internal origin and never a stale localhost fallback or arbitrary browser origin.
+8. Human identity is stable Auth UUID + `display_name`; e-mail is account metadata.
+9. Active `team_members` is authorization truth.
+10. Deactivation preserves history; deletion is for history-free correction/test accounts.
+11. Portfolio/My Work is derived, not stored separately.
+12. Domain/brand names are delivery configuration.
+13. Auth redirects follow a validated internal origin, never stale localhost/arbitrary destinations.
 14. Public slug is an address, not an authorization secret.
 15. Public delivery never exposes internal CMS capability.
 16. Engagement measures campaign response, not personal identity.
 17. Telemetry failure never blocks the prospect page.
-18. Routine onboarding does not require manual SQL/admin-console work; hosted Auth URL configuration remains normal platform deployment configuration.
-19. `operator_allowlist` is rollout compatibility, not a second durable membership model.
-20. Historical external LIVE compatibility is finite and must not expand into a general proxy.
-21. Database changes after bootstrap are expressed as ordered migrations.
-22. No new subsystem is added without an observed problem that justifies it.
+18. Browser acceptance for stateful features must be corroborated by authoritative state.
+19. Historical allowlist compatibility may shrink only and disappears after production frontend cutover.
+20. Historical external LIVE compatibility is finite and may not become a general proxy.
+21. Post-bootstrap database changes are ordered migrations.
+22. No subsystem is added without an observed problem that justifies it.
