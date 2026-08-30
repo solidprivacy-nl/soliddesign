@@ -1,6 +1,21 @@
 # Roadmap
 
-The roadmap is evidence-gated. Completing code is not success; closing the relevant learning/verification gate is success.
+The roadmap is evidence-gated. Code completion is not success; a milestone closes only when the relevant runtime/browser evidence exists.
+
+## Documentation status rule
+
+Current development is governed by:
+
+- `ENGINEERING_CONSTITUTION.md`
+- `docs/ARCHITECTURE.md`
+- `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`
+- `docs/SECURITY.md`
+- `docs/AUTH_REDIRECTS.md`
+- `docs/OPERATIONS.md`
+- this roadmap
+- the latest accepted ADR for the subject
+
+Historical plans/evidence explain prior decisions but never override current architecture.
 
 ## Gate 0 — Documentation baseline ✅
 
@@ -14,165 +29,111 @@ Closed with CI safety invariants.
 
 Closed on 2026-08-25. Overture remains the canonical Phase-1 discovery source and one shared Cloudflare/Supabase operating path is proven. See `docs/evidence/GATE2_OVERTURE_UTRECHT.md`.
 
-# Integrated operating-model rollout — verification & pilot preparation ← CURRENT
+# Integrated operating-model rollout ← CURRENT
 
-SolidDesign now has the implemented foundation for a small multi-user commercial work system while preserving one application, one operational state plane, explicit human control and minimal moving parts.
-
-Canonical design:
-
-- `docs/ARCHITECTURE.md`
-- `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`
-- `docs/SECURITY.md`
-- `docs/AUTH_REDIRECTS.md`
-- `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md`
-
-Status rule used below:
-
-- **Implemented** means the required code/schema/UI exists on the integration branch and backwards-compatible database/server changes are applied where necessary.
-- **Deployment verified** means the relevant real Cloudflare/Supabase request path has passed the automated deployed smoke.
-- **Browser verified** requires the real authenticated/user interaction that cannot be proven by static code or anonymous HTTP alone.
-- Historical evidence or completed plans never override these current statuses.
-
-## M0 — Architecture contract & truth reconciliation ✅ VERIFIED
-
-Frozen contracts:
+Canonical model:
 
 ```text
 SYSTEM ROLES
 ADMIN | KEY_USER | USER
 
-RESPONSIBILITIES
+PROSPECT RESPONSIBILITIES
 CASE_LEAD | DESIGN | OUTREACH
 
 FINAL HOST SHAPE
 https://cms.<brand>.nl
 https://<brand>.nl/<public_slug>
 
-TEMPORARY PUBLIC ROUTE
+CURRENT TEMPORARY PUBLIC ROUTE
 https://soliddesign-cms.pages.dev/prospect/<public_slug>
 ```
 
-Architecture, security, public-link, database-evolution, Auth-redirect and Operator documentation now point to one operating model. Domain names are delivery configuration; `public_slug` remains prospect identity.
+Domain names are delivery configuration. `prospects.public_slug` remains prospect identity.
 
-Documentation precedence is explicit in `docs/ARCHITECTURE.md`. Completed Gate-1/2 plans and evidence are marked historical so they cannot silently become competing runtime architecture.
+## M0 — Architecture contract & truth reconciliation ✅ VERIFIED
 
-## M1 — Team identity & invite-only access 🟡 IMPLEMENTED / BROWSER VERIFY
+Closed.
 
-Implemented:
+- one application;
+- one Cloudflare Pages project;
+- one Supabase operational state plane;
+- one stored-artifact LIVE lifecycle;
+- membership/role, responsibility and historical activity are separate concepts;
+- database truth is bootstrap baseline + ordered migrations;
+- current architecture/docs outrank historical implementation plans;
+- no parallel CRM/task/analytics platform introduced.
 
-- `team_members` with stable Supabase Auth UUID;
-- `display_name` is the canonical human-visible identity; e-mail remains secondary account metadata;
-- Team derives initials avatars client-side with no avatar/profile storage subsystem;
-- Admin can correct display names through an actor-aware RPC;
-- current operators backfilled without access loss;
+## M1 — Team identity & invite-only access ✅ BROWSER VERIFIED
+
+Implemented and browser-verified on the isolated PR-28 environment:
+
+- stable Auth UUID in `team_members`;
+- `display_name` is primary human identity; e-mail is secondary account metadata;
+- derived initials avatars; no avatar/profile subsystem;
 - `ADMIN / KEY_USER / USER`;
-- server-side Auth invite flow;
-- invite flow always passes an explicit `redirectTo` rather than relying on Supabase Site URL fallback;
-- browser explicitly supplies `window.location.origin` and the server validates it against the narrow internal/PR-preview allowlist;
-- `redirectTo` uses the validated `URL.origin` verbatim, with no synthetic trailing slash/path;
-- Team displays the selected activation environment and the server returns the chosen `activation_origin`;
-- invite redirect is limited to the current internal origin, isolated `pr-<number>` Pages previews, or the explicitly configured future `SOLIDDESIGN_INTERNAL_ORIGIN`;
-- arbitrary browser origins are rejected as invitation destinations;
-- Auth mail quota failures (`429 / over_email_send_rate_limit`) are surfaced as mail-delivery failures rather than redirect/address errors;
-- Admin can invite User/Key user;
-- Key user can invite User only;
-- mandatory first password setup flow;
-- invited user is not considered joined before the activation flow finishes;
+- Admin/Key user invite rules;
+- explicit server-validated invite activation origin;
+- mandatory first password setup;
+- `joined_at` only after activation completion;
+- display-name correction;
 - deactivate/reactivate lifecycle;
-- Admin-only permanent deletion for mistaken/test/non-business accounts;
-- permanent deletion is server-guarded: no self-delete, no active assignments, no prospect-linked business history and no removal of the last active Admin;
-- Auth deletion cascades only after those guards pass; users with business history must be deactivated instead;
-- last-Admin and active-assignment safeguards;
-- self-signup hidden in the normal UI;
-- browser CORS/preflight support on team management Edge Functions.
+- Admin-only permanent deletion for history-free/test accounts;
+- last-Admin, active-assignment and business-history safeguards;
+- failed/rate-limited invite does not leave a usable half-account;
+- role-dependent Team visibility.
 
-### Required hosted Auth URL configuration
+Browser evidence: `docs/evidence/INTEGRATED_CMS_BROWSER_ACCEPTANCE_20260830.md`.
 
-Supabase **Authentication → URL Configuration** must match the runtime contract in `docs/AUTH_REDIRECTS.md`.
+### Authorization cutover
 
-Current rollout:
+Stage 1 completed on 2026-08-30:
 
 ```text
-Site URL
-https://soliddesign-cms.pages.dev/
-
-Redirect URLs
-https://soliddesign-cms.pages.dev
-https://pr-28.soliddesign-cms.pages.dev
-https://pr-*.soliddesign-cms.pages.dev
+Operator authorization / RLS
+operator_allowlist
+      ↓
+active team_members by auth.uid()
 ```
 
-SolidDesign redirects to origins, not Auth subpaths. Keep the application `redirectTo` and Supabase Redirect URL in the same canonical origin representation; do not add `/**` merely by convention.
+`operator_is_active_team_member()` is now the common membership predicate and `operator_assert_allowed()` uses it. Verified remaining RLS references to `operator_allowlist`: **0**.
 
-`http://localhost:3000` is local-development state and must not remain the hosted production Site URL. After a future CMS-domain cutover, set Site URL and the Edge Function `SOLIDDESIGN_INTERNAL_ORIGIN` to `https://cms.<brand>.nl` and re-run the invite gate before removing the old hostname.
+`operator_allowlist` remains temporarily only as a compatibility bridge for the pre-merge production frontend bootstrap and two lifecycle sync functions. It is **not** an authorization source anymore. Do not add new consumers.
 
-### Browser evidence completed — 2026-08-29
+**Removal condition:** after PR #28 is merged, the new frontend is deployed to production and production auth/data smoke succeeds, remove the legacy browser bootstrap check, lifecycle sync and the compatibility table in one cleanup change.
 
-A controlled normal-User onboarding was completed end-to-end on the visibly marked PR-28 preview:
+### Production Auth readiness before operational pilot
 
-```text
-Admin invite from TEST · PR-28
-→ Supabase invite mail
-→ activation returns to PR-28
-→ mandatory password setup
-→ signed-in SolidDesign workspace
-→ team_members active = true / joined_at set
-```
+The default Supabase SMTP service is bounded test infrastructure, not the production invitation/password-recovery channel.
 
-The test account is stored as role `USER` with human-visible `display_name`; the PR-preview environment marker remained visible after sign-in. This closes the basic invite/activation path only. Role-governance, lifecycle safeguards and assignment/activity behavior remain separate browser gates below.
-
-### Remaining M1 verification/debt
-
-`operator_allowlist` still gates a finite set of older Operator RLS/functions. It is transitional compatibility only; do not add new semantics to it.
-
-**Remaining browser verification gate:**
-
-1. verify display name/initials and that assignments/activity show names rather than e-mail;
-2. verify normal access and role-specific Team visibility;
-3. verify an Admin can correct a display name;
-4. verify a Key user can invite User but not elevate roles;
-5. verify permanent deletion succeeds for a clean test account and is rejected after dossier/business history exists;
-6. deactivate/reactivate without SQL/admin-console intervention;
-7. verify active assignments block unsafe deactivation/deletion;
-8. verify a rate-limited/failed invitation leaves no duplicate or usable half-account.
-
-**After this browser gate passes:** perform one explicit access cutover from the remaining `operator_allowlist`-based RLS/function/browser checks to active `team_members`, then remove the compatibility model. Do not dual-maintain both indefinitely.
-
-### Production Auth readiness before pilot
-
-The Supabase built-in default SMTP service is development/test infrastructure: best-effort and strongly rate-limited. It must not be treated as the operational invitation/password-recovery channel.
-
-Before M7 operational pilot:
+Before M7:
 
 ```text
 custom SMTP configured through Supabase Auth
 → sender/domain verified
 → invite delivery tested
-→ password recovery delivery tested
+→ password recovery tested
 → redirect behavior re-verified
 ```
 
-Use a proven SMTP provider through Supabase; do not build a second SolidDesign invitation/mailer subsystem.
+Use Supabase's built-in password policy. Enable Leaked Password Protection if the selected Supabase plan supports it; do not build a custom breach checker.
 
-**Password hardening before pilot:** use Supabase's built-in password policy. Minimum length must be at least 8; use stronger practical requirements for the small internal team. If the project plan supports it, enable Supabase Leaked Password Protection rather than building a custom breach checker. The current Supabase advisor reports this protection as disabled; Supabase documents it as a Pro-plan-or-above feature.
+## M2 — Responsibility & actor-aware history ✅ BROWSER VERIFIED
 
-## M2 — Responsibility & actor-aware history 🟡 IMPLEMENTED / BROWSER VERIFY
+Implemented and browser-verified:
 
-Implemented:
-
-- `prospect_assignments`;
 - one primary `CASE_LEAD`, `DESIGN`, `OUTREACH` per prospect;
-- guarded assignment changes;
+- guarded assignment/reassignment;
 - `events.actor_user_id`;
-- actor-aware material history;
-- assignment/lifecycle events;
-- deactivation blocked until active responsibilities are released/reassigned.
+- material lifecycle/activity events with human display names;
+- deactivation blocked while responsibilities remain;
+- `Mijn werk` reflects assigned work;
+- dossier Activity reflects real actor changes.
 
-**Verification gate:** browser assignment changes with two real roles/users and confirm current responsibility plus Activity attribution using display names.
+No task engine, co-assignee model or capacity planner is introduced.
 
-## M3 — Multi-user information architecture 🟡 IMPLEMENTED / BROWSER VERIFY
+## M3 — Multi-user information architecture ✅ BROWSER VERIFIED
 
-Top-level navigation:
+Top navigation:
 
 ```text
 Mijn werk
@@ -187,94 +148,111 @@ Prospect dossier:
 Overzicht | Design | Outreach | Activiteit
 ```
 
-Implemented:
+Browser-verified:
 
-- `Mijn werk` as default personal work surface derived from assignments;
-- context opening into Design/Outreach where responsibility is unambiguous;
-- Team membership/work-distribution view;
-- display-name + derived-initials identity in Team instead of e-mail as primary person label;
-- per-prospect responsibility card;
-- shared Prospect filters for `Mijn werk`, missing dossierholder, missing Design and missing Outreach;
-- prospect-list filters remain visually contained within the list column: full-width search plus compact status/work-distribution controls;
-- existing lightweight frontend retained; no framework migration.
+- role-specific navigation;
+- personal work surface derived from assignments;
+- contextual opening into Design/Outreach;
+- Team work-distribution view;
+- responsibility card;
+- simple unassigned-work filters;
+- prospect filters contained within the prospect-list column;
+- narrow/mobile usability.
 
-**Verification gate:** role-by-role browser walkthrough and mobile/narrow-layout check.
+JS owns filter behavior; CSS owns filter layout. Do not reintroduce inline JS layout constraints.
 
-## M4 — Brand-agnostic public delivery 🟢 CURRENT ROUTE DEPLOYMENT VERIFIED / CUSTOM DOMAIN PENDING
+## M4 — Brand-agnostic public delivery ✅ CURRENT ROUTE DEPLOYMENT VERIFIED
 
-Temporary configuration:
+Current rollout:
 
 ```text
 PUBLIC_PROSPECT_ORIGIN=https://soliddesign-cms.pages.dev
 PUBLIC_PROSPECT_PATH_PREFIX=/prospect
 ```
 
-Final configuration after brand selection:
+Final brand cutover:
 
 ```text
+INTERNAL_ORIGIN=https://cms.<brand>.nl
 PUBLIC_PROSPECT_ORIGIN=https://<brand>.nl
 PUBLIC_PROSPECT_PATH_PREFIX=
-INTERNAL_ORIGIN=https://cms.<brand>.nl
 ```
 
-Implemented:
+Implemented/deployment-verified:
 
-- same Pages project / same Supabase / same Storage;
-- public route resolves slug → prospect → current LIVE demo → canonical stored artifact;
-- new LIVE publication requires `artifact_path` in UI and database;
-- public URL keeps the slug and hides the UUID route;
-- nested asset requests are mapped through the same public namespace;
-- trailing-slash canonicalization preserves query attribution;
-- public/internal origins are configuration;
-- old one-segment `/<slug>` links on the current Pages host are alias redirects to the canonical `/prospect/<slug>/` resolver only;
-- pull requests deploy to an isolated `pr-<number>` Pages preview branch in the same project; production deploys only from `main`.
+- same Pages project / Supabase / Storage;
+- slug → prospect → current LIVE → stored artifact;
+- new LIVE publication requires `artifact_path`;
+- UUID route hidden from public communication;
+- canonical slash redirect preserves attribution query;
+- `noindex, nofollow, noarchive`;
+- old `/<slug>` on the current CMS host is compatibility redirect only;
+- isolated `pr-<number>` Pages deployments;
+- PR CMS prospect links deliberately remain on the same PR origin so acceptance tests execute PR code rather than production code;
+- deployed smoke verifies the centrally injected `prospect-engagement.js` asset exists on the PR host;
+- one representative grandfathered legacy LIVE preview remains under the public slug URL without leaking its historical host.
 
-Deployment smoke now proves on the real Pages/Supabase path:
+### Finite legacy LIVE compatibility
 
-- CMS root responds;
-- invalid public slug returns 404;
-- canonical slash redirect preserves `?src=qr`;
-- public responses carry `noindex, nofollow, noarchive`;
-- a canonical stored-artifact prospect page renders and receives central telemetry injection;
-- old root alias cannot redirect to `/p/<uuid>` or a technical preview host;
-- one representative grandfathered legacy LIVE page renders under the public prospect URL without leaking its historical host.
+Six historical LIVE records predate artifact-only publication. Only the known SolidDesign legacy preview hosts are accepted.
 
-### Finite legacy compatibility
+Do not add new legacy hosts. Migrate/retire these records as dossiers are refreshed. When the count reaches zero:
 
-Six current LIVE records predate artifact-only publication. The compatibility path accepts only the known historical SolidDesign preview hosts. The shortened old `gate3-v1.soliddesign-cms.pages.dev` alias is normalized to its original legacy host to avoid recursive calls into the current application.
+```text
+remove legacy proxy path
+→ revisit anonymous demos.preview_url access
+```
 
-Do not add new legacy hosts. Migrate/retire these six records naturally as the dossiers are refreshed or before the compatibility path becomes unnecessary; when the count reaches zero, remove the proxy code and revisit whether anonymous `demos.preview_url` column access can also be removed.
+### Remaining final-brand gate
 
-**Remaining M4 gate before final brand cutover:** prove the actual custom hostname root `/<slug>` plus nested local assets and strict hostname capability boundary (`/start-design`, `/brief`, `/p`, CMS/API unavailable on public brand host). Do not implement that final route by copying a second resolver.
+After the brand/domain is selected, prove on the actual public hostname:
 
-## M5 — Prospect engagement MVP 🟡 IMPLEMENTED / BROWSER VERIFY
+- root `/<slug>` delivery;
+- nested local assets;
+- strict hostname capability boundary;
+- CMS/internal routes unavailable on the public hostname.
+
+Do not copy a second resolver to implement this.
+
+## M5 — Prospect engagement MVP 🟡 IMPLEMENTED / PERSISTENCE RE-TEST
 
 Implemented:
 
 - one `prospect_visits` row per measured opening;
-- central telemetry injection at public delivery, not inside uploaded mock-ups;
-- visible opening after a short dwell threshold;
+- central telemetry injection at public delivery;
+- short visible-dwell threshold before registration;
 - active visible time;
 - maximum scroll;
 - broad device class;
 - QR/direct source;
 - internal/external classification;
 - demo snapshot;
-- no direct client grants on `prospect_visits`;
-- no raw IP, IP hash, fingerprint or persistent visitor identity;
-- public update capability uses a random per-opening token;
-- Edge Function has browser CORS/preflight handling;
-- telemetry failure never blocks the prospect artifact.
+- random per-opening update token;
+- five-minute signed internal QA token bound to prospect slug;
+- no raw IP, IP hash, fingerprint, persistent visitor identity, replay or clickstream;
+- no direct anon/authenticated table grants;
+- telemetry failure is fail-open for the prospect page.
 
-Internal QA uses a five-minute server-signed token bound to the prospect slug. A guessable `?internal=1` marker and IP allowlists are not used.
+### Evidence correction — 2026-08-30
 
-Deployment smoke proves browser preflight/CORS for `prospect-engagement`, `team-invite` and the Admin-only `team-member-admin` capability from the Pages preview origin.
+Initial browser acceptance appeared successful, but authoritative persistence showed:
 
-**Browser verification gate:** real public-page browser opening must create an external visit; staff test must create only an internal visit; active-time/scroll update must be observed; invalid/expired staff token must not become external response.
+```text
+EXTERNAL visits = 0
+INTERNAL visits = 0
+```
 
-## M6 — Commercial-loop integration 🟡 IMPLEMENTED / BROWSER VERIFY
+and Edge Function logs contained no browser `POST` calls. Root cause: PR-28 prospect links still opened the production public host, so the browser left PR code before telemetry could execute.
 
-Outreach now combines:
+This has been corrected: PR previews now keep their public prospect links on the same PR origin, and CI/deployment smoke proves the engagement client asset is deployed.
+
+**Remaining gate:** one post-fix browser test must create a persisted EXTERNAL row and a persisted INTERNAL row, with active-time/scroll updates. Verify database + Edge Function logs, not UI appearance alone.
+
+Evidence: `docs/evidence/INTEGRATED_CMS_BROWSER_ACCEPTANCE_20260830.md`.
+
+## M6 — Commercial-loop integration 🟡 IMPLEMENTED / ENGAGEMENT RE-TEST
+
+Outreach combines:
 
 ```text
 mailing
@@ -284,35 +262,39 @@ mailing
 → human contact/outcome
 ```
 
-Implemented summary/detail UI:
+Implemented UI:
 
 - first/last measured opening;
-- opening count;
+- external opening count;
 - time from the most recent mailing preceding first opening;
 - active time;
-- maximum scroll;
+- max scroll;
 - device/source;
 - internal/external detail table;
 - explicit **Test als medewerker** action.
 
 No automatic lead score or contact-status transition.
 
-**Verification gate:** operator can make a follow-up decision from one prospect dossier without consulting a separate analytics tool.
+**Remaining gate:** after M5 produces real persisted visits, refresh Outreach and confirm the operator can make the intended follow-up decision from the dossier without a separate analytics tool.
 
-## M7 — Integrated operational pilot — NEXT EVIDENCE GATE
+## M7 — Integrated operational pilot — NEXT BUSINESS EVIDENCE GATE
 
-Use multiple real operators and approximately 10–20 real prospect mailings after the browser verification gates above are closed **and production Auth mail delivery is configured**.
+Start only after:
 
-Validate:
+- M5/M6 persistence verification is green;
+- PR #28 is safely deployed to production;
+- compatibility allowlist cleanup is complete;
+- production Auth mail delivery uses configured custom SMTP.
+
+Pilot with multiple real operators and approximately 10–20 real prospect mailings. Validate:
 
 - onboarding and role clarity;
-- human-readable identity and handover clarity;
 - assignments/handover;
-- My Work and unassigned work;
+- My Work/unassigned work;
 - actor/event quality;
-- short public URL usability and QR behavior;
+- public short-link/QR usability;
 - engagement false positives/internal traffic;
-- outreach decision usefulness;
+- Outreach decision usefulness;
 - maintenance burden.
 
 **Exit:** added commercial clarity demonstrably exceeds added operational complexity.
@@ -323,24 +305,30 @@ Only after M7 evidence may we consider:
 
 - engagement sorting/filtering;
 - simple funnel reporting;
-- `tel:` / `mailto:` interaction telemetry;
+- `tel:` / `mailto:` telemetry;
 - first-view notifications;
-- optional photo/avatar support only if initials demonstrably fail for real team use;
-- separate public runtime for proven reliability/security needs;
-- per-dossier authorization for proven confidentiality requirements;
+- photo avatars only if initials fail in real use;
+- separate public runtime only for proven reliability/security needs;
+- per-dossier authorization only for proven confidentiality needs;
 - task management only if responsibility + `next_action_at` repeatedly proves insufficient.
+
+# Business evidence gates
+
+These remain separate from the CMS operating-model rollout.
 
 ## Gate 3 — Five-prospect operational feasibility
 
-The original business evidence gate remains conceptually separate from the operating-model rollout: prove that real prospect packs can be produced safely and consistently with measured effort/cost. Automate only repeated observed friction.
+Prove real prospect packs can be produced safely and consistently with measured effort/cost. Automate only repeated observed friction.
 
 ## Gate 4 — 30–50 physical-mail offer validation
 
-Measure mail delivered, measured demo visit rate, response rate, meeting rate, cost and human minutes. Track:
+Measure:
 
 ```text
 raw → valid → audited → qualified → mailed → viewed → responded
 ```
+
+Track delivered mail, measured demo visit rate, response rate, meeting rate, cost and human minutes.
 
 ## Gate 5 — Pricing / first customer
 
@@ -348,23 +336,25 @@ Validate accepted project price, sales effort, delivery hours, corrections, exte
 
 ## Gate 6 — 100+ prospect learning
 
-Only at sufficient outcome volume compare pre-sale qualification and engagement signals against responses, meetings, proposals, wins and gross margin. Only then tune weighting or consider predictive modeling.
+Only at sufficient outcome volume compare qualification/engagement signals with responses, meetings, proposals, wins and gross margin. Only then tune weighting or consider predictive modelling.
 
 ## Gate 7 — Automate proven bottlenecks
 
-Automation candidates remain evidence-gated. Do not introduce queues, agentic workflows, richer orchestration or a production-site factory until an observed bottleneck earns them.
+Do not introduce queues, richer orchestration, agentic workflows or a production-site factory until an observed bottleneck earns them.
 
-## Roadmap rules
+# Roadmap rules
 
 1. Customer value and commercial learning lead; technology follows.
 2. Prefer derived views over new state.
 3. Prefer existing platform capabilities over new services.
 4. Prefer explicit human actions over hidden automation until evidence justifies automation.
 5. Domain names are delivery configuration, not business identity.
-6. Auth redirects follow the configured internal origin and never a stale localhost fallback or arbitrary caller destination.
+6. Auth redirects use the configured/validated internal origin, never localhost fallback or arbitrary caller destinations.
 7. Auth mail transport remains a Supabase platform concern; production uses custom SMTP rather than a parallel SolidDesign mailer.
 8. Human identity is display-name/UUID based; e-mail is account metadata, not workflow identity.
 9. Deactivation preserves history; permanent deletion is only for history-free cleanup accounts.
-10. Transitional compatibility must have an explicit shrink/remove condition and may not silently become architecture.
-11. Historical evidence/plans do not override current architecture or roadmap status.
-12. No future milestone is implemented merely because it appears on this roadmap.
+10. `team_members.active` is the membership authorization truth; the old allowlist may not regain authorization semantics.
+11. Transitional compatibility must have an explicit shrink/remove condition.
+12. Historical plans/evidence do not override current architecture.
+13. Browser appearance is not evidence of persistence; verify authoritative state for stateful features.
+14. No future milestone is implemented merely because it appears on this roadmap.
