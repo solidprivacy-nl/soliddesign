@@ -103,18 +103,35 @@ Evidence: `docs/evidence/INTEGRATED_CMS_BROWSER_ACCEPTANCE_20260830.md`.
 
 ### M6 — Commercial-loop integration ✅ browser verified
 
-Outreach combines mailing → prospect link → measured response → human next action/contact. First/last opening, count, mailing latency, active time, scroll, device/source and internal/external details are available without an analytics subsystem. Engagement never automatically changes contact status or creates a lead score.
+Outreach combines physical mailing → prospect link → measured response → human next action/contact. First/last opening, count, mailing latency, active time, scroll, device/source and internal/external details are available without an analytics subsystem. Engagement never automatically changes contact status or creates a lead score.
+
+The physical mailing itself is now preserved as business evidence without adding a document-management system:
+
+```text
+Design
+→ immutable printmailing versions
+
+Outreach
+→ select exact version
+→ register physical send
+→ mailings.artifact_id + current LIVE demo_id
+```
+
+PDF/PNG/JPG artifacts live in one private Storage bucket. The same file is shown in Design and Outreach; it is never duplicated into phase-specific state. Canonical decision: `docs/decisions/20260830_PRINT_MAILING_ARTIFACTS.md`.
 
 ### Production cutover evidence — 2026-08-30 ✅
 
-- accepted release candidate passed PR CI/Pages smoke;
+- accepted integrated release candidate passed PR CI/Pages smoke;
 - release PR #29 merged to `main` as `4493ec443d9b3b928914dc3d45bc0c0d06038c97`;
 - production CI #417 passed;
 - production Pages deploy #133 passed on that exact SHA;
 - `operator_allowlist` retirement migration applied successfully;
 - table absent;
 - database allowlist references = `0`;
-- three active joined team members remained intact (Admin / Key user / User).
+- three active joined team members remained intact (Admin / Key user / User);
+- printmailing artifact extension PR #31 merged as `f1e50d1a57c0cde892c93fac44ae0ed632fe0637`;
+- production CI #427 and Pages deploy #137 passed for the printmailing extension;
+- private `mailing-artifacts` bucket and required `mailings.artifact_id` are live.
 
 ## M7 — Integrated operational pilot ← NEXT BUSINESS GATE
 
@@ -129,7 +146,7 @@ custom SMTP through Supabase Auth
 → Leaked Password Protection enabled if the selected plan supports it
 ```
 
-Then pilot with multiple real operators and approximately 10–20 real prospect mailings. Validate onboarding/role clarity, handover, My Work, actor history, public-link/QR usability, engagement false positives/internal traffic, Outreach usefulness and maintenance burden.
+Then pilot with multiple real operators and approximately 10–20 real prospect mailings. Validate onboarding/role clarity, handover, My Work, actor history, correct printmailing version selection, public-link/QR usability, engagement false positives/internal traffic, Outreach usefulness and maintenance burden.
 
 **Exit:** commercial/operational clarity must demonstrably exceed added complexity.
 
@@ -157,4 +174,5 @@ Only after M7 evidence may we consider simple funnel reporting, engagement sorti
 8. Active `team_members` is the sole durable membership-authorization truth.
 9. Transitional compatibility must shrink and have an explicit removal condition.
 10. Browser appearance is not persistence evidence; verify authoritative state for stateful features.
-11. No subsystem is added merely because it appears on this roadmap.
+11. Designed artifacts and operational events remain separate facts unless one exact reference connects them.
+12. No subsystem is added merely because it appears on this roadmap.

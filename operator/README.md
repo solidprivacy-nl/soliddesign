@@ -13,12 +13,13 @@ SolidDesign Operator remains deliberately narrow. It supports:
 - **Bedrijven zoeken** — manual discovery/intake;
 - **Team** — invite, role/status and work-distribution view for Key users/Admins;
 - per-prospect **Overzicht / Design / Outreach / Activiteit**;
-- immutable mock-up versions with explicit LIVE promotion;
+- immutable website mock-up versions with explicit LIVE promotion;
+- immutable printmailing versions with exact physical-send attribution;
 - stable public prospect links;
 - minimal prospect engagement in Outreach;
 - actor-aware dossier history.
 
-It is explicitly not a general CRM, website builder, task engine, workflow platform, HR system, capacity planner or analytics suite.
+It is explicitly not a general CRM, website builder, document-management system, task engine, workflow platform, HR system, capacity planner or analytics suite.
 
 ## One dossier, phase responsibilities
 
@@ -127,6 +128,31 @@ Internal technical routes such as `/p/<prospect-id>/` and `/p/<prospect-id>/v/<d
 
 A finite set of grandfathered historical LIVE records still uses a host/path-bounded compatibility path. Do not expand it; remove it when the historical count reaches zero.
 
+## Printmailing workflow
+
+The printmailing sits deliberately across two dossier phases without duplicating data:
+
+```text
+DESIGN
+→ upload v1 / v2 / v3 ...
+→ immutable private artifact
+
+OUTREACH
+→ select exact existing version
+→ check/open file
+→ Registreer als verstuurd
+```
+
+**Design** owns the versioned artifact because the mailing is designed output. Each new PDF/PNG/JPG upload creates a new immutable version; version numbers are derived from creation order and existing versions are never overwritten.
+
+**Outreach** owns only the physical-send fact. Registering a send stores the exact `artifact_id`, the current LIVE `demo_id` and send time in the existing `mailings` record. This means the dossier can later prove exactly which paper artifact and website concept formed the proposition.
+
+The same private Storage file is shown in both phases. There is no phase-specific copy, generic attachments table, approval workflow or separate document system.
+
+PDF is recommended for the final print artifact. PNG/JPG are supported for concept/review use. Maximum size is 25 MB.
+
+See `docs/decisions/20260830_PRINT_MAILING_ARTIFACTS.md`.
+
 ## Public prospect link
 
 Current rollout:
@@ -148,7 +174,9 @@ See `docs/PROSPECT_PUBLIC_LINKS.md`.
 
 ## Outreach and engagement
 
-Outreach surfaces external opening count, first/last opening, active visible time, max scroll, broad device, QR/direct source and opening detail. Engagement is observational and never automatically changes contact status or creates a lead score.
+Outreach combines the selected printmailing version and physical send with external opening count, first/last opening, active visible time, max scroll, broad device, QR/direct source and opening detail. Engagement is observational and never automatically creates a lead score.
+
+Registering the physical send may advance only early contact states to `mailed`; it never regresses a prospect already further in the commercial process.
 
 **Test als medewerker** uses a short-lived signed token bound to the prospect slug; internal QA traffic remains separate from prospect response. No IP allowlist or guessable internal marker is used.
 
@@ -156,7 +184,7 @@ Browser/persistence acceptance on 2026-08-30 verified EXTERNAL and INTERNAL open
 
 ## Activity
 
-Activity shows material business changes and the actor where known. Current state comes from canonical tables; `events` is history, not a second state model. Routine UI navigation is not logged.
+Activity shows material business changes and the actor where known. Current state comes from canonical tables; `events` is history, not a second state model. Printmailing version creation and physical send are material events; opening/previewing a file is not. Routine UI navigation is not logged.
 
 ## Deployment verification
 
@@ -174,5 +202,7 @@ Deployment upload success alone is not considered runtime acceptance.
 ## Access and security
 
 The frontend uses only the Supabase publishable key. Privileged operations use narrow authenticated RPC/server capabilities with server-side role checks. Public prospect delivery exposes only the minimum resolver data and engagement capability needed for the public surface.
+
+Printmailing artifacts live in a private Storage bucket. Active team membership is required to upload/read them; browser opening uses a short-lived signed URL. They are not prospect-facing public assets by default.
 
 Do not expose service-role/secret credentials to this frontend. See `docs/SECURITY.md`.
