@@ -36,9 +36,17 @@ auth.uid()
 → role-aware RLS / RPC / server capability
 ```
 
-`operator_is_active_team_member()` is the common Operator membership predicate. `operator_assert_allowed()` and the Operator/storage RLS policies use active UUID membership. Verified RLS references to the historical `operator_allowlist`: **0** after migration `20260830_team_members_access_cutover_v01.sql`.
+`operator_is_active_team_member()` is the common Operator membership predicate. `operator_assert_allowed()`, the browser bootstrap and Operator/storage RLS all use active UUID membership.
 
-The integration frontend bootstrap also checks `team_members.active` directly. The old `operator_allowlist` table is therefore no longer part of the target authorization model. Its final retirement migration is sequenced only after the new frontend has reached production, preventing a merge-window outage of the still-live pre-merge frontend.
+The historical `operator_allowlist` compatibility model was removed from production on 2026-08-30 by `20260830_operator_allowlist_retirement_v01.sql`. Verified post-cutover state:
+
+```text
+operator_allowlist table = absent
+RLS references = 0
+database function references = 0
+```
+
+Do not recreate a parallel e-mail allowlist or other second membership authority.
 
 Rules:
 
@@ -100,7 +108,7 @@ Before the operational pilot:
 - verify sender/domain, invite delivery and password-recovery delivery;
 - enable Supabase Leaked Password Protection if the selected plan supports it.
 
-The built-in default SMTP service is bounded test infrastructure and is strongly rate-limited.
+The built-in default SMTP service is bounded test infrastructure and is strongly rate-limited. The current security advisor still reports Leaked Password Protection as disabled; this remains platform-configuration debt, not application architecture.
 
 ## Public/internal surface separation
 
@@ -118,6 +126,8 @@ A public slug is an address, not an authorization secret. Public delivery receiv
 Every prospect page remains `noindex, nofollow, noarchive` during the pre-sale workflow.
 
 PR previews are isolated verification environments. Their prospect links deliberately stay on the same `pr-<number>` origin so browser acceptance executes the code under test rather than production code.
+
+The deployment workflow smoke-tests both preview and production delivery, including the active-team membership bootstrap, public resolver, telemetry asset and Edge Function CORS.
 
 ## LIVE artifact and legacy-delivery boundary
 
@@ -174,7 +184,7 @@ The separate internal-token mint action authenticates the requesting team member
 
 CORS/preflight support is required because the public browser calls the Edge Function directly.
 
-`prospect_visits` has no direct `anon` or `authenticated` table grants. Operational reads use authorization-checking RPCs.
+`prospect_visits` has no direct `anon` or `authenticated` table grants. Operational reads use authorization-checking RPCs. RLS-with-no-policy advisor INFO for this table is therefore intentional: direct Data API access is not its interface.
 
 For stateful browser features, UI appearance alone is not acceptance evidence: verify authoritative rows and Edge Function requests.
 
@@ -191,6 +201,8 @@ supabase/schema.sql       # bootstrap baseline
 ```
 
 Do not maintain a second manually synchronized current schema.
+
+Authenticated `SECURITY DEFINER` Operator RPCs are intentional UI capabilities only when the function itself re-checks active membership/role. Do not blindly revoke them merely to silence the generic advisor warning.
 
 ## URL / SSRF rules
 

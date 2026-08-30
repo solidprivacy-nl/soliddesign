@@ -1,6 +1,6 @@
 # SolidDesign Integrated Operating Architecture
 
-**Status:** current operating architecture / rollout basis  
+**Status:** current production operating architecture  
 **Date:** 2026-08-30
 
 ## Objective
@@ -115,7 +115,7 @@ auth.uid()
 → role-aware RLS / RPC / server capability
 ```
 
-The Operator RLS policies and browser bootstrap use this model directly. The historical `operator_allowlist` no longer carries authorization semantics. Its retirement is sequenced after the new frontend production deploy so the merge window cannot break the still-live pre-merge frontend; migration `20260830_operator_allowlist_retirement_v01.sql` then removes the final lifecycle synchronization and drops the table.
+The Operator RLS policies and browser bootstrap use this model directly. The historical `operator_allowlist` was removed from production on 2026-08-30 by `20260830_operator_allowlist_retirement_v01.sql`; verified remaining RLS/function references are zero. Active `team_members` is the only durable application-membership authorization model.
 
 ## Prospect responsibility
 
@@ -279,6 +279,8 @@ PR preview branches are verification environments in the same application/projec
 
 PR preview prospect links remain on their PR origin so browser acceptance runs the code being reviewed rather than silently leaving for production.
 
+The same post-deploy HTTP smoke applies to PR previews and production: CMS root, team-membership bootstrap, telemetry client, canonical public routing, bounded legacy compatibility and Edge Function CORS must all pass.
+
 ## Explicit non-goals
 
 Do not add without observed need:
@@ -323,4 +325,5 @@ Do not add without observed need:
 19. Active `team_members` is the sole durable application-membership authorization model.
 20. Historical external LIVE compatibility is finite and must not expand into a general proxy.
 21. Database changes after bootstrap are expressed as ordered migrations.
-22. No new subsystem is added without an observed problem that justifies it.
+22. Production deploy success includes runtime smoke, not upload success alone.
+23. No new subsystem is added without an observed problem that justifies it.

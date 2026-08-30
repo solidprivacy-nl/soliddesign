@@ -62,8 +62,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           DEPLOY_BRANCH: ${{ steps.deployment.outputs.branch }}
         run: npx --yes wrangler@4 pages deploy . --project-name soliddesign-cms --branch "$DEPLOY_BRANCH"
-      - name: Smoke-test preview delivery
-        if: github.event_name == 'pull_request'
+      - name: Smoke-test deployed delivery
         env:
           DEPLOY_BRANCH: ${{ steps.deployment.outputs.branch }}
           SUPABASE_URL: https://grderdhnjkeucaaehgqy.supabase.co
@@ -71,10 +70,20 @@ jobs:
           LEGACY_SMOKE_SLUG: koppen-electro-techniek
         run: |
           set -euo pipefail
-          BASE_URL="https://${DEPLOY_BRANCH}.soliddesign-cms.pages.dev"
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            BASE_URL="https://soliddesign-cms.pages.dev"
+          else
+            BASE_URL="https://${DEPLOY_BRANCH}.soliddesign-cms.pages.dev"
+          fi
 
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/" -o /tmp/operator.html
           grep -q 'SolidDesign' /tmp/operator.html
+
+          # Production and previews must bootstrap access from active team membership only.
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/app.js" -o /tmp/app.js
+          grep -q "from('team_members')" /tmp/app.js
+          grep -q "eq('active', true)" /tmp/app.js
+          ! grep -q 'operator_allowlist' /tmp/app.js
 
           # The centrally injected engagement client must itself be deployed and executable.
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prospect-engagement.js" -o /tmp/prospect-engagement.js

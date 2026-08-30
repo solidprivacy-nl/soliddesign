@@ -34,7 +34,7 @@ One primary assignee exists per responsibility. **Mijn werk** is derived from th
 
 Opening assigned work contextually lands on the relevant dossier phase where unambiguous.
 
-## Roles
+## Roles and human identity
 
 Application roles are:
 
@@ -50,17 +50,9 @@ USER
 
 There is deliberately no Owner/Eigenaar role.
 
-## Human team identity
+`team_members.display_name` is the primary visible identity. E-mail is secondary account/login metadata. Assignments and Activity use display names, with initials derived client-side; no profile-photo/avatar subsystem exists.
 
-`team_members.display_name` is the primary visible identity. The e-mail address remains secondary account/login metadata.
-
-Team renders an automatically derived initials avatar from the display name. No profile-photo upload or avatar Storage subsystem is required.
-
-Assignments and normal activity labels use display names, not e-mail addresses. Admin can correct a display name without changing the stable Auth UUID behind assignments and actor history.
-
-## Invite-only onboarding
-
-Routine onboarding does not require SQL or Supabase database changes.
+## Invite-only onboarding and access
 
 ```text
 Admin / Key user
@@ -77,24 +69,30 @@ Rules:
 
 - Admin can invite User or Key user;
 - Key user can invite User only;
-- invited users are not assignable until activation is completed;
+- invited users are not assignable until activation is complete;
 - at least one active Admin must remain;
-- a member with active responsibilities must be reassigned before deactivation;
+- active responsibilities must be reassigned before deactivation;
 - no service/admin secret is exposed to the browser.
 
-The invite Edge Function always supplies an explicit validated Auth `redirectTo`. Current hosted Site URL / Redirect URL configuration and the future `cms.<brand>.nl` cutover are defined in `docs/AUTH_REDIRECTS.md`. `http://localhost:3000` is local-development configuration and is not a valid hosted production fallback.
+The invite Edge Function supplies an explicit validated Auth `redirectTo`; hosted Site/Redirect URL configuration and the future `cms.<brand>.nl` cutover are defined in `docs/AUTH_REDIRECTS.md`.
 
-`team_members` is the durable membership/role and authorization model. The Operator browser bootstrap checks the signed-in Auth UUID against `team_members.active`; RLS/RPC/server capabilities enforce the same membership truth.
+Authorization is one model only:
 
-The historical `operator_allowlist` has no role in the new frontend authorization path. It remains only until the new frontend is on production, after which `20260830_operator_allowlist_retirement_v01.sql` removes the two old lifecycle synchronization writes and drops the table.
+```text
+Supabase Auth UUID
+→ team_members.active
+→ role-aware RLS / RPC / server capability
+```
 
-The invitation metadata that drives the password-setup overlay is onboarding UX state, not a role/authorization source.
+The historical `operator_allowlist` was removed from production on 2026-08-30. Do not recreate a parallel membership gate.
+
+Invitation metadata used by the password-setup overlay is onboarding UX state, not authorization authority.
 
 ## Deactivation versus deletion
 
 **Deactiveren** is normal offboarding and preserves historical attribution.
 
-**Verwijderen** is Admin-only cleanup for mistaken/test accounts that have no active responsibilities or prospect-linked business history. The server also prevents self-delete and removal of the last active Admin. If business history exists, the account must be deactivated instead.
+**Verwijderen** is Admin-only cleanup for mistaken/test accounts with no active responsibilities or prospect-linked business history. The server prevents self-delete and removal of the last active Admin. If business history exists, deactivate instead.
 
 ## Discovery workflow
 
@@ -110,11 +108,7 @@ AREA / URL intake
 
 Overture remains the canonical discovery source. Reachability/presence is discovery evidence, not proof of demand or qualification.
 
-The existing area-discovery, URL preflight, run-history and qualification safeguards remain unchanged by the multi-user architecture.
-
-## Design workflow
-
-A selected prospect retains the existing design context and mock-up lifecycle:
+## Design and LIVE workflow
 
 ```text
 verified prospect context
@@ -125,123 +119,60 @@ verified prospect context
 → stable public prospect link
 ```
 
-Current methodological entrypoint:
+Current design entrypoint: `https://soliddesign-cms.pages.dev/start-design`.
 
-```text
-https://soliddesign-cms.pages.dev/start-design
-```
+Publishable inputs are standalone `.html` or a static-site `.zip` with root `index.html`. External HTTPS previews are DRAFT/review escape hatches only; new LIVE publication requires a canonical stored artifact.
 
-Prospect-specific design brief:
+Internal technical routes such as `/p/<prospect-id>/` and `/p/<prospect-id>/v/<demo-id>/` are not prospect-facing communication URLs.
 
-```text
-https://soliddesign-cms.pages.dev/brief/<opaque-token>
-```
-
-These are internal/design-workflow infrastructure and may later move with `INTERNAL_ORIGIN` to `cms.<brand>.nl` without changing dossier identity.
-
-## Mock-up storage and LIVE state
-
-Normal publishable inputs are:
-
-- standalone `.html`;
-- static-site `.zip` with root `index.html` and relative static assets.
-
-An external HTTPS preview may be stored only as a **DRAFT/review escape hatch**. New LIVE publication requires a canonical stored artifact. The database enforces this rule independently of the UI.
-
-Immutable bundle versions live in the existing `mockup-sites` Storage lifecycle.
-
-Internal technical routes may include:
-
-```text
-/p/<prospect-id>/
-/p/<prospect-id>/v/<demo-id>/
-```
-
-They are not prospect-facing communication URLs.
-
-A finite set of grandfathered historical LIVE records still references old SolidDesign Cloudflare previews. The public resolver supports them through a host/path-bounded compatibility path until they are migrated or retired. This is not a reusable general external-preview capability.
+A finite set of grandfathered historical LIVE records still uses a host/path-bounded compatibility path. Do not expand it; remove it when the historical count reaches zero.
 
 ## Public prospect link
 
-Temporary rollout URL:
+Current rollout:
 
 ```text
 https://soliddesign-cms.pages.dev/prospect/<slug>
 ```
 
-Preferred final shape after brand selection:
+Preferred final shape:
 
 ```text
 https://<brand>.nl/<slug>
+https://cms.<brand>.nl   # internal CMS
 ```
 
-with the internal CMS optionally at:
-
-```text
-https://cms.<brand>.nl
-```
-
-The slug is stable prospect state; full URLs are derived from configuration. A domain cutover therefore requires no prospect/demo migration.
-
-PR previews deliberately derive their prospect links from the PR origin so acceptance tests keep executing the reviewed code.
+The slug is stable prospect state; full URLs are derived from configuration. PR previews derive their prospect links from the PR origin so acceptance remains on reviewed code.
 
 See `docs/PROSPECT_PUBLIC_LINKS.md`.
 
 ## Outreach and engagement
 
-Outreach combines contact follow-up with the commercially relevant digital-response summary.
+Outreach surfaces external opening count, first/last opening, active visible time, max scroll, broad device, QR/direct source and opening detail. Engagement is observational and never automatically changes contact status or creates a lead score.
 
-Minimal response signals:
+**Test als medewerker** uses a short-lived signed token bound to the prospect slug; internal QA traffic remains separate from prospect response. No IP allowlist or guessable internal marker is used.
 
-- external opening count;
-- first and last opening;
-- active visible time;
-- maximum scroll;
-- broad device type;
-- QR/direct source;
-- detail view of measured openings.
-
-Engagement is observational. It does not automatically change contact status or lead score.
-
-Browser acceptance on 2026-08-30 verified real persisted EXTERNAL and INTERNAL openings plus active-time/scroll updates. See `docs/evidence/INTEGRATED_CMS_BROWSER_ACCEPTANCE_20260830.md`.
-
-### Staff testing
-
-Normal design work uses internal previews.
-
-**Test als medewerker** requests a short-lived signed token from the backend and opens the public URL with that bounded context. The public telemetry endpoint validates the token and classifies the opening as internal, so staff QA does not inflate prospect response.
-
-No IP allowlist or guessable `?internal=1` flag is used.
+Browser/persistence acceptance on 2026-08-30 verified EXTERNAL and INTERNAL openings plus active-time/scroll updates. See `docs/evidence/INTEGRATED_CMS_BROWSER_ACCEPTANCE_20260830.md`.
 
 ## Activity
 
-The Activity dossier tab shows material business changes and the actor where known. Current state is read from canonical tables; `events` is history, not a second state model.
+Activity shows material business changes and the actor where known. Current state comes from canonical tables; `events` is history, not a second state model. Routine UI navigation is not logged.
 
-Examples:
+## Deployment verification
 
-- responsibility changed;
-- contact status/contact moment;
-- mock-up created or promoted LIVE;
-- mailing sent;
-- archive/restore;
-- team lifecycle actions.
+The same post-deploy HTTP smoke applies to PR previews and production. It verifies:
 
-Routine UI navigation is not logged.
+- CMS root;
+- `app.js` uses `team_members.active` and contains no retired allowlist dependency;
+- engagement client asset;
+- canonical public route and noindex behavior;
+- bounded legacy LIVE compatibility;
+- CORS for browser-invoked Edge Functions.
+
+Deployment upload success alone is not considered runtime acceptance.
 
 ## Access and security
 
-The frontend uses only the Supabase publishable key.
+The frontend uses only the Supabase publishable key. Privileged operations use narrow authenticated RPC/server capabilities with server-side role checks. Public prospect delivery exposes only the minimum resolver data and engagement capability needed for the public surface.
 
-Access is composed from:
-
-- Supabase Auth identity;
-- active `team_members` membership;
-- `ADMIN / KEY_USER / USER` role where a capability requires it;
-- RLS and narrow authenticated RPC/server capabilities;
-- server-side role checks for privileged operations.
-
-Public prospect delivery receives only the narrow resolver columns required for the requested slug/current LIVE record. Engagement has its own minimal write capability and never opens the internal dossier surface.
-
-Do not expose service-role/secret credentials to this frontend.
-
-See `docs/SECURITY.md`.
+Do not expose service-role/secret credentials to this frontend. See `docs/SECURITY.md`.
