@@ -123,7 +123,7 @@ Temporary public delivery is `/prospect/<slug>` on the existing Pages project.
 
 A public slug is an address, not an authorization secret. Public delivery receives only the capability needed to resolve/serve the current LIVE mock-up. Drafts and internal dossier capability remain inaccessible.
 
-Every prospect page remains `noindex, nofollow,noarchive` during the pre-sale workflow.
+Every prospect page remains `noindex, nofollow, noarchive` during the pre-sale workflow.
 
 PR previews are isolated verification environments. Their prospect links deliberately stay on the same `pr-<number>` origin so browser acceptance executes the code under test rather than production code.
 
