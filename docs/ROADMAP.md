@@ -29,7 +29,7 @@ Closed with CI safety invariants.
 
 Closed on 2026-08-25. Overture remains the canonical Phase-1 discovery source and one shared Cloudflare/Supabase operating path is proven. See `docs/evidence/GATE2_OVERTURE_UTRECHT.md`.
 
-# Integrated operating-model rollout ← CURRENT
+# Integrated operating-model rollout — RELEASE CUTOVER ← CURRENT
 
 Canonical model:
 
@@ -95,11 +95,15 @@ operator_allowlist
 active team_members by auth.uid()
 ```
 
-`operator_is_active_team_member()` is now the common membership predicate and `operator_assert_allowed()` uses it. Verified remaining RLS references to `operator_allowlist`: **0**.
+`operator_is_active_team_member()` is the common membership predicate and `operator_assert_allowed()` uses it. Verified remaining RLS references to `operator_allowlist`: **0**.
 
-`operator_allowlist` remains temporarily only as a compatibility bridge for the pre-merge production frontend bootstrap and two lifecycle sync functions. It is **not** an authorization source anymore. Do not add new consumers.
+The PR frontend bootstrap now also checks `team_members.active` directly. `operator_allowlist` is therefore no longer needed by the new frontend or RLS.
 
-**Removal condition:** after PR #28 is merged, the new frontend is deployed to production and production auth/data smoke succeeds, remove the legacy browser bootstrap check, lifecycle sync and the compatibility table in one cleanup change.
+A final migration is deliberately sequenced **after** the production frontend deployment. It removes the two remaining lifecycle synchronization writes and drops the historical table:
+
+`supabase/migrations/20260830_operator_allowlist_retirement_v01.sql`
+
+This ordering avoids breaking the still-live pre-merge production frontend during the merge window.
 
 ### Production Auth readiness before operational pilot
 
@@ -214,9 +218,9 @@ After the brand/domain is selected, prove on the actual public hostname:
 
 Do not copy a second resolver to implement this.
 
-## M5 — Prospect engagement MVP 🟡 IMPLEMENTED / PERSISTENCE RE-TEST
+## M5 — Prospect engagement MVP ✅ BROWSER + PERSISTENCE VERIFIED
 
-Implemented:
+Implemented and verified:
 
 - one `prospect_visits` row per measured opening;
 - central telemetry injection at public delivery;
@@ -233,24 +237,25 @@ Implemented:
 - no direct anon/authenticated table grants;
 - telemetry failure is fail-open for the prospect page.
 
-### Evidence correction — 2026-08-30
+### Persistence evidence — 2026-08-30
 
-Initial browser acceptance appeared successful, but authoritative persistence showed:
+After correcting PR-origin routing, a real browser test produced authoritative state:
 
 ```text
-EXTERNAL visits = 0
-INTERNAL visits = 0
+EXTERNAL openings = 3
+EXTERNAL active time total = 32 s
+EXTERNAL max scroll = 78%
+
+INTERNAL openings = 1
+INTERNAL active time total = 9 s
+INTERNAL max scroll = 95%
 ```
 
-and Edge Function logs contained no browser `POST` calls. Root cause: PR-28 prospect links still opened the production public host, so the browser left PR code before telemetry could execute.
-
-This has been corrected: PR previews now keep their public prospect links on the same PR origin, and CI/deployment smoke proves the engagement client asset is deployed.
-
-**Remaining gate:** one post-fix browser test must create a persisted EXTERNAL row and a persisted INTERNAL row, with active-time/scroll updates. Verify database + Edge Function logs, not UI appearance alone.
+Successful `prospect-engagement` browser `POST` requests (`201` start, `200` update) are present in Edge Function logs. Staff-test traffic remained separately classified and did not inflate external response.
 
 Evidence: `docs/evidence/INTEGRATED_CMS_BROWSER_ACCEPTANCE_20260830.md`.
 
-## M6 — Commercial-loop integration 🟡 IMPLEMENTED / ENGAGEMENT RE-TEST
+## M6 — Commercial-loop integration ✅ BROWSER VERIFIED
 
 Outreach combines:
 
@@ -262,7 +267,7 @@ mailing
 → human contact/outcome
 ```
 
-Implemented UI:
+Verified UI/readback path:
 
 - first/last measured opening;
 - external opening count;
@@ -275,15 +280,29 @@ Implemented UI:
 
 No automatic lead score or contact-status transition.
 
-**Remaining gate:** after M5 produces real persisted visits, refresh Outreach and confirm the operator can make the intended follow-up decision from the dossier without a separate analytics tool.
+The persistence test proves Outreach is backed by authoritative visit rows rather than UI-only state. The integrated CMS browser acceptance gate is closed.
+
+## Release cutover — CURRENT TECHNICAL GATE
+
+Sequence:
+
+```text
+latest PR head CI + Pages smoke green
+→ merge PR #28
+→ production Pages deploy green
+→ production CMS/public-route smoke
+→ apply operator_allowlist retirement migration
+→ verify table absent / lifecycle funcs clean
+→ final production smoke
+```
+
+This is deployment work, not a new feature milestone. Do not add architecture while performing the cutover.
 
 ## M7 — Integrated operational pilot — NEXT BUSINESS EVIDENCE GATE
 
 Start only after:
 
-- M5/M6 persistence verification is green;
-- PR #28 is safely deployed to production;
-- compatibility allowlist cleanup is complete;
+- production cutover above is green;
 - production Auth mail delivery uses configured custom SMTP.
 
 Pilot with multiple real operators and approximately 10–20 real prospect mailings. Validate:
