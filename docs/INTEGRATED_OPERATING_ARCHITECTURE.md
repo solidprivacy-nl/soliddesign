@@ -27,7 +27,7 @@ PROSPECT DOSSIER
   ↓
 DESIGN
   ↓
-PUBLIC DELIVERY
+PUBLIC DELIVERY + PRINTMAILING
   ↓
 ENGAGEMENT
   ↓
@@ -137,7 +137,7 @@ Portfolio is derived from assignments; there is no portfolio table.
 
 `events.actor_user_id` records who initiated/performed material business actions.
 
-Events record meaningful changes such as assignment changes, demo publication, mailing/contact changes, archive/restore and user-management actions.
+Events record meaningful changes such as assignment changes, demo publication, printmailing version creation, physical mailing, contact changes, archive/restore and user-management actions.
 
 Events do not record UI clicks/navigation.
 
@@ -169,6 +169,29 @@ A finite compatibility path exists for six grandfathered historical LIVE records
 On the current internal Pages hostname, the old root `/<slug>` route is only a redirect alias to `/prospect/<slug>/`; it no longer performs its own prospect/LIVE resolution.
 
 When `<brand>.nl` is chosen, the same public resolver semantics move to `<brand>.nl/<slug>` through hostname/path routing rather than data migration. The branded public host must be a strict capability allowlist and never become an alias for internal CMS routes.
+
+## Printmailing artifacts
+
+The physical prospect mailing is both designed output and an Outreach instrument, but those are different facts.
+
+```text
+DESIGN
+→ creates immutable printmailing versions
+
+OUTREACH
+→ selects one exact version
+→ records that it was physically sent
+```
+
+`mailing_artifacts` stores the versioned design output. `mailings` remains the physical-send record and references the exact `artifact_id` that left the building. The same stored file is surfaced in both dossier phases; it is never copied between Design and Outreach.
+
+Printmailing version numbers are derived from creation order rather than stored as mutable state. New designs create new versions; existing artifacts are never overwritten.
+
+The private `mailing-artifacts` Storage bucket accepts PDF, PNG and JPG up to 25 MB. PDF is the preferred final print format. No generic attachments table, document-management subsystem, approval state machine or print-vendor integration exists.
+
+Registering a physical send requires a current LIVE mock-up and snapshots that `demo_id` alongside the selected artifact. This preserves exactly which paper artifact and which website concept formed the prospect proposition at send time.
+
+Canonical decision: `docs/decisions/20260830_PRINT_MAILING_ARTIFACTS.md`.
 
 ## Engagement
 
@@ -223,19 +246,24 @@ Shared active/archive register with status and simple work-distribution filters,
 
 Combines membership lifecycle and current work-distribution visibility. It is not an HR system or capacity-planning platform.
 
+### Design
+
+Owns design outputs: the website concept plus versioned printmailing artifacts. Printmailing files are stored here because they are designed output; physical-send state is not.
+
 ### Outreach
 
 Owns the commercial feedback loop:
 
 ```text
-mailing
+selected printmailing version
+→ physical send
 → prospect URL
 → engagement
 → next action
 → contact/outcome
 ```
 
-Engagement never automatically changes contact status or produces a lead score without later outcome evidence.
+Outreach reads the same printmailing artifacts created in Design and records which exact version was sent. Engagement never automatically changes contact status or produces a lead score without later outcome evidence.
 
 ## Implemented data expansion
 
@@ -246,11 +274,12 @@ team_members
 prospect_assignments
 events.actor_user_id
 prospect_visits
+mailing_artifacts
 ```
 
-Existing prospects, demos, mailings, audits, discovery and Storage remain authoritative.
+Existing prospects, demos, mailings, audits, discovery and Storage remain authoritative. `mailings` is extended only with the required reference to the exact print artifact sent.
 
-No task table, portfolio table or analytics database was introduced.
+No task table, portfolio table, generic attachments table or analytics database was introduced.
 
 ## Database evolution
 
@@ -291,6 +320,7 @@ Do not add without observed need:
 - time tracking;
 - workflow builder;
 - separate portfolio data model;
+- generic attachments/document-management subsystem;
 - custom permission builder;
 - per-dossier ACLs;
 - separate public application;
@@ -300,7 +330,8 @@ Do not add without observed need:
 - marketing automation;
 - separate BI platform;
 - generalized external-preview/reverse-proxy platform;
-- user-profile/avatar image subsystem.
+- user-profile/avatar image subsystem;
+- print-vendor integration or print-order automation.
 
 ## Architecture invariants
 
@@ -326,4 +357,6 @@ Do not add without observed need:
 20. Historical external LIVE compatibility is finite and must not expand into a general proxy.
 21. Database changes after bootstrap are expressed as ordered migrations.
 22. Production deploy success includes runtime smoke, not upload success alone.
-23. No new subsystem is added without an observed problem that justifies it.
+23. A printmailing file is immutable Design output; a physical send references one exact stored version.
+24. Design and Outreach may surface the same print artifact but never duplicate it into separate state.
+25. No new subsystem is added without an observed problem that justifies it.
