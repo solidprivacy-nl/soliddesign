@@ -1,6 +1,7 @@
 const CONFIG = window.SOLIDDESIGN_OPERATOR_CONFIG;
 const db = window.supabase?.createClient(CONFIG?.supabaseUrl, CONFIG?.supabasePublishableKey);
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const PR_PREVIEW_HOST_RE = /^pr-\d+\.soliddesign-cms\.pages\.dev$/;
 const RESERVED = new Set(['api', 'brief', 'p', 'prospect', 'start-design', 'team']);
 
 function cleanOrigin(value) {
@@ -13,9 +14,19 @@ function cleanPrefix(value) {
   return `/${raw.replace(/^\/+|\/+$/g, '')}`;
 }
 
+function publicOrigin() {
+  // A PR preview must test its own public delivery code, not silently jump to
+  // the production Pages host. Outside PR previews, the configured public
+  // origin remains authoritative and can later become https://<brand>.nl.
+  if (window.location.protocol === 'https:' && PR_PREVIEW_HOST_RE.test(window.location.hostname)) {
+    return window.location.origin;
+  }
+  return cleanOrigin(CONFIG?.publicProspectOrigin);
+}
+
 function shortUrl(slug) {
   if (!slug) return '';
-  const origin = cleanOrigin(CONFIG?.publicProspectOrigin);
+  const origin = publicOrigin();
   const prefix = cleanPrefix(CONFIG?.publicProspectPathPrefix);
   return `${origin}${prefix}/${encodeURIComponent(slug)}`;
 }
