@@ -13,4 +13,5 @@ import('./team-work.js').catch((error) => console.error('Teamwerk module kon nie
 import('./prospect-work-filter.js').catch((error) => console.error('Werkverdelingsfilter kon niet laden.', error));
 import('./mockup-policy.js').catch((error) => console.error('Mock-up publicatiebeleid kon niet laden.', error));
 import('./dossier-tabs.js').catch((error) => console.error('Dossierweergave kon niet laden.', error));
+import('./mailing-artifacts.js').catch((error) => console.error('Printmailingversies konden niet laden.', error));
 import('./engagement-ui.js').catch((error) => console.error('Digitale respons kon niet laden.', error));
