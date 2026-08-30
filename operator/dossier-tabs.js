@@ -6,6 +6,7 @@ const EVENT_LABELS = {
   demo_created: 'Mock-upversie aangemaakt',
   demo_promoted_live: 'Mock-up LIVE gezet',
   preview_published: 'Mock-up gepubliceerd',
+  mailing_artifact_created: 'Printmailingversie opgeslagen',
   mailing_marked_sent: 'Brief als verstuurd geregistreerd',
   contact_recorded: 'Contactmoment geregistreerd',
   contact_status_changed: 'Contactstatus gewijzigd',
