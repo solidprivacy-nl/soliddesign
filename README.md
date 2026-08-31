@@ -1,6 +1,6 @@
 # SolidDesign — Website Growth Engine
 
-**Status:** Gate 2 proven; integrated multi-user, public-delivery and response-telemetry rollout under verification.
+**Status:** integrated operating model in production; M7 operational pilot is the next business gate.
 
 SolidDesign identifies established local businesses with existing demand but measurable website/conversion leakage, creates an evidence-backed redesign proof, and tests acquisition through personalized physical mail and human follow-up.
 
@@ -91,7 +91,7 @@ CASE_LEAD | DESIGN | OUTREACH
 
 Current responsibility is stored in assignments; history and actor attribution are stored as business events. `Mijn werk` and work-distribution views are derived from those assignments. There is no task engine, capacity planner or portfolio database.
 
-The invite/membership rollout uses `team_members` as the durable model. `operator_allowlist` remains only a transitional compatibility gate for older Operator RLS and must not evolve into a second user-management model.
+Authorization is derived only from the authenticated Auth UUID and an active `team_members` row. The historical `operator_allowlist` compatibility model was retired from production on 2026-08-30 and must not be recreated as a second membership authority.
 
 ## Public delivery contract
 
@@ -108,7 +108,7 @@ New LIVE publication requires an uploaded HTML/ZIP artifact. External HTTPS prev
 
 A narrow compatibility path exists for a small number of grandfathered historical LIVE previews on explicitly allowlisted SolidDesign Cloudflare hosts. It is transition debt, not a general reverse-proxy feature.
 
-The public page remains `noindex, nofollow, noarchive` during pre-sale use.
+The public page remains `noindex, nofollow,noarchive` during pre-sale use.
 
 ## Response telemetry
 
@@ -146,6 +146,8 @@ static mock-up artifact
         ↓
 LIVE publication + print pack
 ```
+
+Sector Intelligence is reusable advisory design evidence keyed by the prospect's primary sector. It is managed through the CMS and does not expose engineering storage/review mechanics to normal operators. See `sector-intelligence/README.md` and `docs/SECTOR_INTELLIGENCE_LINKAGE.md`.
 
 ## Gate-2 evidence — historical proof
 
@@ -214,6 +216,8 @@ See `docs/OPERATIONS.md`.
 - `docs/SECURITY.md` — current trust, auth and public/private boundaries
 - `docs/OPERATIONS.md` — current operating guide
 - `docs/ROADMAP.md` — current evidence-gated status and next gates
+- `sector-intelligence/README.md` — current Sector Intelligence contract
+- `docs/SECTOR_INTELLIGENCE_LINKAGE.md` — prospect-sector linkage and CMS boundary
 - `docs/MISSION_CONTRACT.md` — mission and non-goals
 - `docs/BUSINESS_MODEL.md` — offer, acquisition model and economics
 - `docs/DISCOVERY_OVERTURE.md` — discovery contract
