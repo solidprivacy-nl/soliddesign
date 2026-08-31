@@ -43,6 +43,7 @@ jobs:
           node --check operator/prospect-preparation.js
           node --check operator/design-process.js
           node --check operator/discovery-sectors.js
+          node --check operator/sector-intelligence-ui.js
           node --check operator/discovery-triage.js
           node --check operator/discovery.js
           node --check 'operator/functions/[slug].js'
@@ -52,6 +53,7 @@ jobs:
           node --check operator/functions/api/site-check.js
           node --check operator/functions/api/resolve-sector.js
           node --check operator/functions/api/publish-sector-intelligence.js
+          node --check operator/functions/api/sector-intelligence.js
           node --check operator/functions/api/prepare-prospect.js
           python -m py_compile scripts/prepare_prospect.py src/soliddesign/preparation.py
           test -s operator/index.html
@@ -66,6 +68,7 @@ jobs:
           test -s docs/DISCOVERY_SECTOR_RESOLUTION.md
           test -s docs/DISCOVERY_TRIAGE.md
           test -s docs/FIRST_CONCEPT_PREPARATION.md
+          test -s docs/SECTOR_INTELLIGENCE_LINKAGE.md
           test -s sector-intelligence/README.md
           test -s supabase/functions/prospect-preparation/index.ts
           test -s supabase/migrations/20260826_discovery_archive_v01.sql
@@ -74,6 +77,10 @@ jobs:
           test -s supabase/migrations/20260829_integrated_multiuser_foundation_v01.sql
           test -s supabase/migrations/20260829_operator_rpc_execute_hardening_v01.sql
           test -s supabase/migrations/20260829_assignment_workflow_v01.sql
+          test -s supabase/migrations/20260831_prospect_sector_identity_v01.sql
+          test -s supabase/migrations/20260831_sector_linking_rpc_v01.sql
+          test -s supabase/migrations/20260831_sector_identity_ingest_v02.sql
+          test -s supabase/migrations/20260831_sector_linking_security_v03.sql
           test -s .github/workflows/prepare-prospect.yml
           test -s prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'noindex,nofollow,noarchive' operator/index.html
@@ -111,6 +118,10 @@ jobs:
           grep -q 'operator_allowlist' operator/functions/api/publish-sector-intelligence.js
           grep -q 'refs/heads/' operator/functions/api/publish-sector-intelligence.js
           grep -q 'REQUIRED_HEADINGS' operator/functions/api/publish-sector-intelligence.js
+          grep -q 'Sector Intelligence:' operator/functions/api/sector-intelligence.js
+          grep -q 'sectorIntelligenceNav' operator/sector-intelligence-ui.js
+          grep -q 'operator_set_prospect_sector' operator/sector-intelligence-ui.js
+          grep -q 'sector-intelligence-ui.js' operator/index.html
           grep -q 'LINKHUB_HOSTS' operator/functions/api/site-check.js
           grep -q "site_kind: 'LINKHUB'" operator/functions/api/site-check.js
           grep -q 'Alleen een linkhub aangetroffen' operator/functions/api/site-check.js
