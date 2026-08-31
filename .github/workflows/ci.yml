@@ -148,7 +148,7 @@ jobs:
           grep -q 'sector-intelligence/<canonical_sector_key>.md' prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'Ontology identifies; market language guides research' sector-intelligence/README.md
           grep -q '## CMS launcher and operator flow' sector-intelligence/README.md
-          grep -q 'canonical v0.3' sector-intelligence/README.md
+          grep -q 'canonical v0.4' sector-intelligence/README.md
           grep -q 'ADR-016' docs/DECISIONS.md
           ! grep -q 'Copy SI-verbeterstart' operator/index.html
           ! grep -R -E 'SUPABASE_(SERVICE_ROLE|SECRET)_KEY|service_role' operator/ --exclude=README.md
