@@ -9,7 +9,8 @@ The current operating architecture is defined in:
 - `docs/SECURITY.md` — current trust and authorization boundaries;
 - `docs/AUTH_REDIRECTS.md` — current Supabase Auth Site URL / redirect contract for invite and login flows;
 - `docs/ROADMAP.md` — current evidence-gated implementation status;
-- `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md` — current hostname/public-delivery decision.
+- `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md` — current hostname/public-delivery decision;
+- `sector-intelligence/README.md` and `docs/SECTOR_INTELLIGENCE_LINKAGE.md` — current Sector Intelligence contract.
 
 This document keeps the stable end-to-end business architecture concise.
 
@@ -105,7 +106,17 @@ CASE_LEAD | DESIGN | OUTREACH
 
 Assignments represent current responsibility. The event log represents history and actor attribution. Personal work queues/portfolios are derived from assignments; there is no task or portfolio subsystem.
 
-During the membership rollout, `operator_allowlist` remains a compatibility access gate for existing Operator RLS. `team_members` is the durable role/membership model. This compatibility layer is transitional and must not be extended into a second user model.
+Authorization truth is the authenticated Auth UUID plus an active `team_members` row. `operator_is_active_team_member()` is the common membership predicate used by RLS/RPC/server capabilities. The historical `operator_allowlist` model was retired from production on 2026-08-30 and must not be recreated as a second authority.
+
+## Sector Intelligence boundary
+
+Sector Intelligence is reusable advisory design knowledge keyed by a prospect's one primary `canonical_sector_key`.
+
+Discovery provenance and sector identity remain separate facts. A prospect may inherit a known single-sector discovery identity automatically, but an operator can explicitly assign or correct the sector for any relevant company/prospect, including one added through a direct URL.
+
+The CMS exposes only domain concepts such as sector label, availability, review state and research content. Engineering storage/versioning/review transport stays behind one narrow server-side façade and is not exposed to normal CMS users.
+
+Sector research uses the human market term and location. Optional natural-language operator direction may guide research but is challengeable evidence, not truth. No separate reference library, research database or many-to-many sector model exists.
 
 ## Public delivery and engagement
 
@@ -162,7 +173,8 @@ Do not add without measured need:
 - visitor fingerprinting/session replay;
 - autonomous sales workflow;
 - generalized plugin/orchestration framework;
-- general-purpose external preview proxy.
+- general-purpose external preview proxy;
+- Sector Intelligence reference-management or taxonomy-management subsystem.
 
 ## Change rule
 
