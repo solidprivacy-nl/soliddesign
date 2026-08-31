@@ -1,13 +1,13 @@
 # Sector Intelligence linkage
 
-**Status:** architecture v0.4  
+**Status:** architecture v0.5  
 **Governing rule:** `ENGINEERING_CONSTITUTION.md`
 
 ## Business goal
 
 Research a market once, keep the result reusable, and make it available to any relevant prospect regardless of how that prospect entered SolidDesign.
 
-A prospect found through an Overture area search, a prospect entered through a direct URL, and a prospect added by another future discovery source must all use the same Sector Intelligence mechanism.
+A prospect found through area discovery, a prospect entered through a direct URL and a prospect added by a future discovery source all use the same Sector Intelligence mechanism.
 
 ## First-principles model
 
@@ -20,83 +20,121 @@ Canonical sector = what market does this prospect belong to for reusable design 
 
 They must not be coupled.
 
-The minimal model is therefore:
+Minimal model:
 
 ```text
 Prospect
   → canonical_sector_key
-  → sector-intelligence/<canonical_sector_key>.md
+  → current published Sector Intelligence
 ```
 
-The Markdown file in GitHub remains the canonical Sector Intelligence artifact. No second research-content table is introduced in Supabase.
-
-## Prospect sector identity
-
-`prospects.canonical_sector_key` is the primary machine identity for the prospect's sector.
-
-Rules:
-
-- one primary sector per prospect;
-- canonical value is a validated Overture Places category key;
-- the human sector term remains the research/search language and need not equal the canonical key;
-- design briefs prefer the prospect's explicit `canonical_sector_key`;
-- the old single-sector discovery-run value is only a backwards-compatible fallback;
-- changing a prospect's sector does not rewrite its discovery provenance.
-
-A many-to-many sector model is deliberately not introduced. It is not needed for the current business goal and would add ambiguity to design research selection.
+`prospects.canonical_sector_key` is the primary machine identity for the prospect's sector. There is one primary sector per prospect.
 
 ## Automatic versus explicit linkage
 
 Automate only when the sector is genuinely known.
 
-### Single-sector area discovery
+- **Single-sector area discovery:** a candidate may inherit the one validated sector automatically.
+- **Multi-sector area discovery:** no primary sector is guessed.
+- **Direct URL discovery:** a URL alone is insufficient evidence, so no automatic classification is performed.
+- **Operator correction:** an operator can explicitly assign or change the sector for any non-archived company/prospect.
 
-When an AREA discovery run contains exactly one validated canonical sector, new candidates inherit that sector automatically.
+Changing the prospect sector never rewrites discovery provenance.
 
-### Multi-sector area discovery
+A many-to-many sector model is deliberately not introduced. It is unnecessary for the current design-selection problem and would add ambiguity.
 
-No automatic primary-sector choice is made. An operator can explicitly link the correct sector later.
+## Human market term versus canonical identity
 
-### Direct URL discovery
+The operator researches with normal market language such as `kapper`, `juwelier` or `elektricien`.
 
-A URL alone is not sufficient evidence for a reliable sector classification. SolidDesign therefore does not guess. The resulting company/candidate can be linked to a sector explicitly from the Sectoronderzoek workspace.
+The existing sector resolver maps that term to the stable Overture identity used internally. A machine key such as `barber` must never silently replace the human research term `kapper` in the research instruction.
 
-This avoids an unnecessary AI classification step and prevents silent category errors.
+The canonical key is storage/linkage identity, not operator-facing market language.
 
 ## CMS workspace
 
-`Sectoronderzoek` is a first-class Operator workspace alongside `Prospects` and `Bedrijven zoeken`.
+`Sectoronderzoek` is a first-class CMS workspace.
 
-It provides three small capabilities:
+It owns the complete research/operator flow and does not borrow or move Discovery UI state.
 
-1. **Research** — enter a human sector term and starting location and reuse the existing validated prompt + publication workflow.
-2. **Overview** — see which canonical sectors are published and which have a Sector Intelligence PR in review.
-3. **Link** — choose any non-archived company/prospect and link a validated canonical sector to it.
+Discovery and Sectoronderzoek share only the validated sector-resolution capability.
 
-The prospect Design tab also exposes its current sector link and a direct route to Sectoronderzoek.
+The workspace provides four bounded capabilities:
 
-The existing clipboard handoff to ChatGPT remains for now. It is a human-in-the-loop research boundary, not a data-model dependency. The new architecture removes the more important coupling: research is no longer tied to the discovery form or discovery run that happened to create a prospect.
+1. **Research** — human sector term + start location + optional research direction.
+2. **Overview** — business-readable status of existing research.
+3. **Review** — inspect, publish or reject pending research entirely inside the CMS.
+4. **Link** — explicitly associate any non-archived company/prospect with one validated sector.
+
+The prospect Design context also exposes the current sector association and a route into Sectoronderzoek.
+
+## Optional operator research direction
+
+The optional field `Aanvullende onderzoeksrichting` accepts natural-language judgement, including URLs and reasons why the operator considers something worth inspecting.
+
+Example:
+
+```text
+Bekijk ook https://voorbeeld.nl. Ik vind vooral de mobiele navigatie en rustige compositie sterk.
+```
+
+This input is explicitly challengeable evidence. The research model must inspect it independently, compare it with broader evidence and say when the operator assumption is weak or only partially supported.
+
+No separate reference entity, rating system, tagging model, library or lifecycle is introduced.
 
 ## Research lifecycle
 
-The existing publication boundary remains unchanged:
+Operator-visible lifecycle:
 
 ```text
 CMS
 → research prompt
 → ChatGPT research
-→ validated Markdown result
-→ constrained CMS publication endpoint
-→ GitHub branch + PR
-→ review
-→ main
+→ validated result
+→ Ter beoordeling
+→ CMS human review
+→ Beschikbaar
 ```
 
-Only research merged into `main` is consumed as published Sector Intelligence by design briefs. An open research PR is visible in the CMS as `In review`, but is not treated as published evidence.
+The CMS exposes business concepts only. Normal operators never see or need repository URLs, repository names, branches, review transport identifiers or storage paths.
+
+The backend may continue to use existing engineering/version-control infrastructure internally. That implementation detail is behind one narrow server-side Sector Intelligence façade.
+
+## Authorization
+
+Sector Intelligence uses the same authorization truth as the rest of the Operator:
+
+```text
+auth.uid()
+→ active team_members
+→ operator_is_active_team_member()
+```
+
+The retired `operator_allowlist` model is not a fallback and must not be recreated.
+
+The sector-linking RPCs continue to call `operator_assert_allowed()`, which resolves through active `team_members` membership.
+
+## Browser/server boundary
+
+The browser-facing Sector Intelligence API may return only domain data such as:
+
+```text
+canonical_sector_key
+research_label
+researched_at
+status
+has_published
+has_pending_review
+content
+```
+
+It must not return technical source/review URLs, branch names, pull-request identifiers or repository paths.
+
+Errors shown to operators are domain errors such as `Sectoronderzoek kon niet worden geladen`; infrastructure-provider details stay server-side.
 
 ## Design brief lookup
 
-The lookup order is:
+Lookup order remains:
 
 ```text
 1. prospect.canonical_sector_key
@@ -104,17 +142,23 @@ The lookup order is:
 3. no Sector Intelligence
 ```
 
-This means a direct-URL prospect becomes Sector Intelligence-aware immediately after an operator links its sector; no new discovery run is required.
+The legacy fallback is read-only compatibility debt. New linkage is always written to `prospects.canonical_sector_key`.
+
+A direct-URL prospect becomes Sector Intelligence-aware immediately after an operator links its sector; no synthetic discovery run is required.
 
 ## Non-goals
 
-This change deliberately does not add:
+Do not add without measured need:
 
 - a Sector Intelligence content table in Supabase;
+- a reference-management subsystem;
 - background research jobs;
 - automatic LLM classification of arbitrary websites;
 - multiple sectors per prospect;
-- automatic promotion of research PRs;
-- automatic mutation of an existing LIVE mock-up.
+- automatic publication without human review;
+- automatic mutation of an existing LIVE mock-up;
+- a general-purpose repository gateway.
 
-Those additions would increase complexity without being necessary to meet the current business objective.
+## Final rule
+
+The correct abstraction is the reusable market knowledge, not the transport used to store or review it.
