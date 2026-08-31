@@ -261,7 +261,11 @@ async function submitResearch(key, markdown, token) {
 
 async function removeBranch(ref, token) {
   if (!ref) return;
-  await github(`/git/refs/heads/${encodeURIComponent(ref)}`, token, { method: 'DELETE' }, [404, 422]);
+  try {
+    await github(`/git/refs/heads/${encodeURIComponent(ref)}`, token, { method: 'DELETE' }, [404, 422]);
+  } catch (error) {
+    console.warn('Sector Intelligence branch cleanup failed', error?.status || error);
+  }
 }
 
 async function reviewResearch(key, action, token) {
