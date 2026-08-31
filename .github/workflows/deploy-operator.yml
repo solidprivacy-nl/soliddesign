@@ -5,10 +5,14 @@ on:
     branches: [main]
     paths:
       - "operator/**"
+      - "prompts/**"
+      - "sector-intelligence/**"
       - ".github/workflows/deploy-operator.yml"
   pull_request:
     paths:
       - "operator/**"
+      - "prompts/**"
+      - "sector-intelligence/**"
       - ".github/workflows/deploy-operator.yml"
   workflow_dispatch:
 
@@ -55,6 +59,12 @@ jobs:
           else
             echo "branch=manual-preview" >> "$GITHUB_OUTPUT"
           fi
+      - name: Stage canonical design resources
+        run: |
+          set -euo pipefail
+          rm -rf operator/prompts operator/sector-intelligence
+          cp -R prompts operator/prompts
+          cp -R sector-intelligence operator/sector-intelligence
       - name: Deploy Operator
         working-directory: operator
         env:
@@ -84,6 +94,21 @@ jobs:
           grep -q "from('team_members')" /tmp/app.js
           grep -q "eq('active', true)" /tmp/app.js
           ! grep -q 'operator_allowlist' /tmp/app.js
+
+          # Design methodology and Sector Intelligence are served through the CMS origin.
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/start-design" -o /tmp/start-design.html
+          grep -q '/prompts/SOLIDDESIGN_BOOTSTRAP.md' /tmp/start-design.html
+          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com' /tmp/start-design.html
+
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prompts/SOLIDDESIGN_BOOTSTRAP.md" -o /tmp/bootstrap.md
+          grep -q 'Prompt architecture version.*0.3' /tmp/bootstrap.md
+          grep -q 'soliddesign-cms.pages.dev/sector-intelligence/' /tmp/bootstrap.md
+          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com' /tmp/bootstrap.md
+
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prompts/core/DESIGN_CONSTITUTION.md" -o /tmp/design-constitution.md
+          test -s /tmp/design-constitution.md
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/sector-intelligence/README.md" -o /tmp/sector-intelligence-readme.md
+          grep -q 'canonical v0.5' /tmp/sector-intelligence-readme.md
 
           # The centrally injected engagement client must itself be deployed and executable.
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prospect-engagement.js" -o /tmp/prospect-engagement.js

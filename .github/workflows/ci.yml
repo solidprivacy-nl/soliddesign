@@ -43,6 +43,7 @@ jobs:
           node --check operator/prospect-preparation.js
           node --check operator/design-process.js
           node --check operator/discovery-sectors.js
+          node --check operator/sector-intelligence-ui.js
           node --check operator/discovery-triage.js
           node --check operator/discovery.js
           node --check 'operator/functions/[slug].js'
@@ -51,7 +52,7 @@ jobs:
           node --check operator/functions/api/geocode.js
           node --check operator/functions/api/site-check.js
           node --check operator/functions/api/resolve-sector.js
-          node --check operator/functions/api/publish-sector-intelligence.js
+          node --check operator/functions/api/sector-intelligence.js
           node --check operator/functions/api/prepare-prospect.js
           python -m py_compile scripts/prepare_prospect.py src/soliddesign/preparation.py
           test -s operator/index.html
@@ -62,6 +63,7 @@ jobs:
           test -s operator/wrangler.jsonc
           test -s docs/DECISIONS.md
           test -s docs/INTEGRATED_OPERATING_ARCHITECTURE.md
+          test -s docs/SECTOR_INTELLIGENCE_LINKAGE.md
           test -s docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md
           test -s docs/DISCOVERY_SECTOR_RESOLUTION.md
           test -s docs/DISCOVERY_TRIAGE.md
@@ -74,6 +76,10 @@ jobs:
           test -s supabase/migrations/20260829_integrated_multiuser_foundation_v01.sql
           test -s supabase/migrations/20260829_operator_rpc_execute_hardening_v01.sql
           test -s supabase/migrations/20260829_assignment_workflow_v01.sql
+          test -s supabase/migrations/20260831_prospect_sector_identity_v01.sql
+          test -s supabase/migrations/20260831_sector_linking_rpc_v01.sql
+          test -s supabase/migrations/20260831_sector_identity_ingest_v02.sql
+          test -s supabase/migrations/20260831_sector_linking_security_v03.sql
           test -s .github/workflows/prepare-prospect.yml
           test -s prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'noindex,nofollow,noarchive' operator/index.html
@@ -90,7 +96,12 @@ jobs:
           grep -q 'cms.<brand>.nl' docs/INTEGRATED_OPERATING_ARCHITECTURE.md
           grep -q '<brand>.nl/<public_slug>' docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md
           grep -q 'prompts/SOLIDDESIGN_BOOTSTRAP.md' operator/start-design.html
-          grep -q 'Prompt architecture version: 0.2' operator/start-design.html
+          grep -q 'Prompt architecture version: 0.3' operator/start-design.html
+          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' operator/start-design.html
+          grep -q 'Prompt architecture version.*0.3' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          grep -q 'soliddesign-cms.pages.dev/prompts/' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          grep -q 'soliddesign-cms.pages.dev/sector-intelligence/' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'operator_ingest_discovery_candidates' supabase/migrations/20260826_discovery_archive_v01.sql
           grep -q 'operator_promote_discovery_candidate' supabase/migrations/20260827_discovery_triage_v01.sql
           grep -q 'operator_set_discovery_triage' supabase/migrations/20260827_discovery_triage_v01.sql
@@ -99,18 +110,31 @@ jobs:
           grep -q "bakker: \['bakery'\]" operator/discovery-sectors.js
           grep -q "kapper: \['barber'\]" operator/discovery-sectors.js
           grep -q '/api/resolve-sector' operator/discovery-sectors.js
-          grep -q '/api/publish-sector-intelligence' operator/discovery-sectors.js
+          grep -q 'SOLIDDESIGN_RESOLVE_SINGLE_SECTOR' operator/discovery-sectors.js
           grep -q 'discovery-triage.js' operator/discovery-sectors.js
-          grep -q 'startSectorIntelligence' operator/discovery-sectors.js
-          grep -q 'Start sectoronderzoek in ChatGPT' operator/discovery-sectors.js
-          grep -q 'Verwerk onderzoeksresultaat' operator/discovery-sectors.js
-          grep -q 'human_sector_term' operator/discovery-sectors.js
-          grep -q 'sectorIntelligencePrompt' operator/discovery-sectors.js
-          ! grep -q 'github.com/solidprivacy-nl/soliddesign' operator/discovery-sectors.js
-          grep -q 'GITHUB_SECTOR_INTELLIGENCE_TOKEN' operator/functions/api/publish-sector-intelligence.js
-          grep -q 'operator_allowlist' operator/functions/api/publish-sector-intelligence.js
-          grep -q 'refs/heads/' operator/functions/api/publish-sector-intelligence.js
-          grep -q 'REQUIRED_HEADINGS' operator/functions/api/publish-sector-intelligence.js
+          ! grep -q 'sectorIntelligencePrompt' operator/discovery-sectors.js
+          ! grep -q 'startSectorIntelligence' operator/discovery-sectors.js
+          grep -q 'sector-intelligence-ui.js' operator/index.html
+          grep -q 'sectorResearchGuidance' operator/sector-intelligence-ui.js
+          grep -q 'Start sectoronderzoek in ChatGPT' operator/sector-intelligence-ui.js
+          grep -q 'Verwerk onderzoeksresultaat' operator/sector-intelligence-ui.js
+          grep -q 'human_sector_term' operator/sector-intelligence-ui.js
+          grep -q 'sectorIntelligencePrompt' operator/sector-intelligence-ui.js
+          grep -q '/api/sector-intelligence' operator/sector-intelligence-ui.js
+          grep -q 'operator_set_prospect_sector' operator/sector-intelligence-ui.js
+          grep -q 'Beoordelen' operator/sector-intelligence-ui.js
+          grep -q 'Publiceer' operator/sector-intelligence-ui.js
+          grep -q 'Afwijzen' operator/sector-intelligence-ui.js
+          ! grep -Eqi 'source_url|review_url|github\.com|api\.github\.com' operator/sector-intelligence-ui.js
+          test ! -e operator/functions/api/publish-sector-intelligence.js
+          grep -q 'GITHUB_SECTOR_INTELLIGENCE_TOKEN' operator/functions/api/sector-intelligence.js
+          grep -q 'operator_is_active_team_member' operator/functions/api/sector-intelligence.js
+          ! grep -q 'operator_allowlist' operator/functions/api/sector-intelligence.js
+          grep -q 'REQUIRED_HEADINGS' operator/functions/api/sector-intelligence.js
+          grep -q "action === 'approve'" operator/functions/api/sector-intelligence.js
+          grep -q "action === 'reject'" operator/functions/api/sector-intelligence.js
+          ! grep -q 'source_url' operator/functions/api/sector-intelligence.js
+          ! grep -q 'review_url' operator/functions/api/sector-intelligence.js
           grep -q 'LINKHUB_HOSTS' operator/functions/api/site-check.js
           grep -q "site_kind: 'LINKHUB'" operator/functions/api/site-check.js
           grep -q 'Alleen een linkhub aangetroffen' operator/functions/api/site-check.js
@@ -139,16 +163,23 @@ jobs:
           grep -q 'overture_categories.csv' operator/functions/api/resolve-sector.js
           grep -q 'workers_ai_validated' operator/functions/api/resolve-sector.js
           grep -q '"binding": "AI"' operator/wrangler.jsonc
-          grep -q 'discovery-sectors.js' operator/index.html
           grep -q 'Kopieer verbeteropdracht met sectorinzichten' operator/index.html
           grep -q 'Kopieer startinstructie voor ChatGPT' operator/index.html
           grep -q 'copySectorUpgrade' operator/index.html
           grep -q 'sectorUpgradeStart' operator/design-process.js
           grep -q 'Canonical sector key' operator/design-process.js
+          grep -q 'window.location.origin}/sector-intelligence' operator/design-process.js
+          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' operator/design-process.js
           grep -q 'sector-intelligence/<canonical_sector_key>.md' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          grep -q 'Stage canonical design resources' .github/workflows/deploy-operator.yml
+          grep -q 'cp -R prompts operator/prompts' .github/workflows/deploy-operator.yml
+          grep -q 'cp -R sector-intelligence operator/sector-intelligence' .github/workflows/deploy-operator.yml
           grep -q 'Ontology identifies; market language guides research' sector-intelligence/README.md
-          grep -q '## CMS launcher and operator flow' sector-intelligence/README.md
-          grep -q 'canonical v0.3' sector-intelligence/README.md
+          grep -q 'canonical v0.5' sector-intelligence/README.md
+          grep -q 'architecture v0.5' docs/SECTOR_INTELLIGENCE_LINKAGE.md
+          grep -q 'Sectoronderzoek' docs/INTEGRATED_OPERATING_ARCHITECTURE.md
+          ! grep -q 'operator_allowlist remains' README.md
+          ! grep -q 'operator_allowlist remains' docs/ARCHITECTURE.md
           grep -q 'ADR-016' docs/DECISIONS.md
           ! grep -q 'Copy SI-verbeterstart' operator/index.html
           ! grep -R -E 'SUPABASE_(SERVICE_ROLE|SECRET)_KEY|service_role' operator/ --exclude=README.md

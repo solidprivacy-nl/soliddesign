@@ -1,185 +1,137 @@
 # SolidDesign Sector Intelligence
 
-**Status:** canonical v0.3  
+**Status:** canonical v0.5  
 **Governing rule:** `ENGINEERING_CONSTITUTION.md`
 
-Sector Intelligence is reusable external design research for one canonical business sector. It exists to raise the quality bar of future SolidDesign designs without turning sectors into templates.
+Sector Intelligence is reusable external design research for one canonical business sector. It raises the quality bar of future SolidDesign concepts without turning sectors into templates.
 
 ## Core principles
 
 1. **Research once per sector; reuse many times per prospect.**
-2. **Ontology identifies; market language guides research.** The Overture key is the stable machine identity, not the sole research query.
-3. **External references produce principles, never templates.** Do not copy branding, copy, layouts or distinctive creative elements.
-4. **Sector Intelligence is advisory evidence.** Verified prospect facts, prospect-specific requirements and the SolidDesign design method remain authoritative.
-5. **No extra state plane.** Sector Intelligence lives as Markdown in GitHub. Git history provides versioning; a PR provides review/publish governance.
-6. **Normal operators need no GitHub access.** GitHub is an engineering/publication boundary behind the CMS, not an operator dependency.
+2. **Ontology identifies; market language guides research.** The Overture key is stable machine identity; the human sector term defines market meaning.
+3. **Operator judgement may guide research, but never becomes truth automatically.** Optional operator direction is challengeable research input.
+4. **External references produce principles, never templates.** Do not copy branding, copy, layouts or distinctive creative elements.
+5. **Sector Intelligence is advisory evidence.** Verified prospect facts, prospect-specific direction and the SolidDesign design method outrank it.
+6. **One primary sector per prospect.** The operator may explicitly correct or assign that sector.
+7. **No extra state plane.** Published research remains one canonical Markdown artifact per sector; no Sector Intelligence content table is introduced in Supabase.
+8. **No engineering-infrastructure exposure in the CMS.** Storage, review transport and versioning mechanics stay behind the server boundary.
 
-## Inputs for a research run
+## Prospect linkage
 
-Every run starts with three explicit inputs:
-
-```text
-canonical_sector_key
-human_sector_term
-location
-```
-
-Example:
+Discovery provenance and sector identity are different facts:
 
 ```text
-canonical_sector_key = barber
-human_sector_term = kapper
-location = Amsterdam
+Discovery run = how did we find this company?
+Prospect sector = what market does this company belong to for reusable design intelligence?
 ```
 
-`barber` is used for identity and the canonical filename. It must not narrow research to businesses that explicitly call themselves barbers.
-
-ChatGPT must interpret the actual market represented by the human term and location. For the example above, relevant vocabulary can include Dutch and English variants such as kappers, kapsalons, hair salons, barbershops and other contextually valid terms.
-
-Do not maintain a second hand-built research taxonomy unless repeated failures prove it necessary.
-
-## CMS launcher and operator flow
-
-The operator entry point lives in **Bedrijven zoeken**, directly below the normal area-search action.
-
-The operator uses the same inputs that already drive Discovery:
-
-- `Locatie` remains the market starting point;
-- `Sector(en)` supplies the original human market term;
-- the existing validated Overture sector resolver supplies the canonical machine key.
-
-Sector Intelligence is one canonical file per sector, so the research flow accepts **one sector per run**. Discovery itself may still search multiple sectors in one run.
-
-The normal operator flow is:
+The minimal model remains:
 
 ```text
-1. Start sectoronderzoek in ChatGPT
-2. ChatGPT researches and returns one final Markdown document
-3. Operator copies the final ChatGPT answer
-4. Verwerk onderzoeksresultaat
-5. CMS validates and submits it for review
+Prospect
+  → canonical_sector_key
+  → current published Sector Intelligence
 ```
 
-The primary handoff is clipboard-first. If the browser cannot read the clipboard, the CMS reveals a plain paste field as fallback. No research job, draft object or extra lifecycle is stored in Supabase.
+Rules:
 
-### What the launch prompt contains
+- single-sector area discovery may assign a known sector automatically;
+- multi-sector discovery does not guess a primary sector;
+- a direct URL alone is not sufficient evidence for sector classification;
+- an operator can explicitly assign or change the prospect sector at any time;
+- changing sector identity never rewrites discovery provenance;
+- no many-to-many sector model is introduced without measured need.
 
-The copied research instruction contains only the task contract and the three research inputs. It does **not** expose repository URLs, repository paths, branches or PR mechanics.
+## CMS workflow
 
-ChatGPT is responsible only for:
+`Sectoronderzoek` is a first-class CMS workspace.
 
-- web research;
-- reference selection;
-- analysis and synthesis;
-- mandatory self-review;
-- the final Markdown document.
+A research run has two required operator inputs and one optional input:
 
-ChatGPT must not publish, create branches or perform repository actions in this operator flow.
+```text
+Sector
+Startlocatie
+Aanvullende onderzoeksrichting (optional)
+```
 
-## Deterministic result validation
+`Sector` is the human market term, for example `kapper` or `juwelier`. SolidDesign resolves and stores the canonical Overture key internally.
 
-Before publication, the CMS backend validates the returned document without another AI call.
+`Aanvullende onderzoeksrichting` is a simple free-text escape hatch. It may contain URLs, observations or other context such as:
 
-At minimum it requires:
+```text
+Bekijk ook https://voorbeeld.nl. Ik vind vooral de mobiele navigatie en rustige compositie sterk.
+```
 
-- a valid canonical sector key;
+The research model must inspect such input independently, compare it with the broader market evidence and explicitly reject or qualify weak operator assumptions. Operator input may broaden or focus attention; it may not replace autonomous research.
+
+No reference library, rating model, tag system or separate research-input lifecycle is introduced.
+
+## Research flow
+
+```text
+CMS Sectoronderzoek
+→ human market term + location + optional direction
+→ research prompt
+→ ChatGPT research
+→ final Markdown
+→ CMS deterministic validation
+→ CMS review state
+→ human CMS review
+→ published Sector Intelligence
+```
+
+Clipboard handoff remains the current human-in-the-loop boundary. If clipboard read fails, the CMS exposes one paste-field fallback.
+
+The research prompt contains no repository URL, branch, pull-request or storage mechanics. ChatGPT is asked only to research, challenge the evidence and return the final document.
+
+## CMS review boundary
+
+Normal CMS users never need infrastructure knowledge or access.
+
+The browser sees only business concepts:
+
+```text
+Beschikbaar
+Ter beoordeling
+Bijwerking ter beoordeling
+Bekijken
+Beoordelen
+Publiceer
+Afwijzen
+```
+
+The browser API must not expose repository URLs, review URLs, branch names, pull-request identifiers or storage paths.
+
+The backend may use existing engineering/versioning infrastructure internally, but that is an implementation detail behind one narrow Sector Intelligence capability.
+
+## Authorization
+
+All Sector Intelligence CMS capabilities use the canonical Operator authorization model:
+
+```text
+auth.uid()
+→ active team_members
+→ operator_is_active_team_member()
+```
+
+The retired `operator_allowlist` model must never be reintroduced as a second authorization authority.
+
+## Deterministic validation
+
+Before research can enter review, the backend validates without another AI call:
+
+- valid canonical sector key;
 - matching `sector_key` front matter;
-- a Sector Design Intelligence title;
+- Sector Design Intelligence title;
 - required core headings;
 - source references;
-- a bounded file size.
+- bounded document size.
 
-A complete outer Markdown code fence is tolerated and removed automatically. Invalid or mismatched content is rejected before any repository write.
+A complete outer Markdown code fence may be stripped automatically. Invalid or mismatched content is rejected before review state is created.
 
-## Narrow publication capability
+## Required research output
 
-The browser may submit only:
-
-```text
-canonical_sector_key
-markdown
-```
-
-The browser cannot choose a repository, path, branch, base branch or PR metadata.
-
-The server-side publication function owns those constants and may write only the canonical Sector Intelligence path for the validated key. It never writes directly to `main`.
-
-Publication flow:
-
-```text
-CMS operator
-→ validated Markdown
-→ constrained CMS backend capability
-→ new branch
-→ sector-intelligence/<key>.md
-→ PR to main
-→ human review
-→ merge
-```
-
-If the submitted Markdown is byte-equivalent to the current canonical file after trimming, no new branch or PR is created.
-
-## Runtime credential
-
-The CMS backend uses one technical GitHub identity stored only as a Cloudflare Pages secret:
-
-```text
-GITHUB_SECTOR_INTELLIGENCE_TOKEN
-```
-
-For v0.3 the simplest viable credential is a fine-grained token scoped to the SolidDesign repository with only the permissions required to read/write contents and create pull requests. It is not stored in Git, browser code, Supabase or operator accounts.
-
-A normal SolidDesign operator therefore needs:
-
-```text
-CMS account
-+
-access to the shared SolidDesign ChatGPT project
-```
-
-and does **not** need a GitHub account or ChatGPT↔GitHub connection.
-
-## Research scope
-
-Use the ordinary ChatGPT client as the research and synthesis workbench.
-
-Research broadly enough to establish a credible current quality bar:
-
-1. start with the supplied local market;
-2. broaden to the Netherlands when local coverage is too narrow;
-3. use a small number of international or adjacent premium references only when they add useful creative perspective.
-
-Do not claim an objective global `top 10`. The goal is a set of **high-quality, relevant and sufficiently diverse references**.
-
-A useful default is:
-
-```text
-approximately 7 sector benchmarks
-+
-approximately 3 adjacent creative references
-```
-
-This is a guideline, not a scoring formula.
-
-## Evaluation
-
-Inspect actual sites rather than relying only on search-result snippets. Evaluate at least:
-
-- first impression / craft;
-- typography;
-- composition and visual hierarchy;
-- imagery and art direction;
-- trust and credibility;
-- conversion hierarchy;
-- mobile quality where observable;
-- originality / sector specificity;
-- obvious template or AI-slop patterns.
-
-Prefer evidence-backed observations over generic design advice.
-
-## Required output
-
-The final research result must use minimal front matter:
+Minimal front matter:
 
 ```yaml
 ---
@@ -214,32 +166,36 @@ Required content structure:
 ## Weak / uncertain conclusions
 ```
 
-Every named reference must include a source URL and a short reason for selection.
+Every named reference includes a direct source URL and a short reason for selection.
+
+## Research standard
+
+Research should normally:
+
+1. start with the supplied local market;
+2. broaden to the Netherlands when local evidence is too narrow;
+3. use a small number of international or adjacent premium references only where they add genuine perspective;
+4. inspect actual sites rather than relying on search-result snippets;
+5. evaluate craft, typography, composition, imagery, trust, conversion hierarchy, mobile quality, originality and obvious template/AI-slop patterns;
+6. derive principles from multiple observations rather than one attractive example.
+
+A useful default remains approximately seven strong sector references plus approximately three adjacent creative references. This is guidance, not a score formula.
 
 ## Mandatory self-review
 
-Before returning the final result, challenge the research:
+Before returning the final document, challenge at least:
 
-- Are these genuinely strong designs, or merely prominent brands?
-- Is the reference set sufficiently diverse?
-- Did the technical taxonomy code distort the real market scope?
-- Are conclusions sector-specific rather than generic web-design advice?
-- Is any supposed rule inferred from only one example?
-- Am I mistaking a visual cliché for a best practice?
+- Are these genuinely strong designs or merely prominent brands?
+- Is the evidence set sufficiently diverse?
+- Did the taxonomy distort the real market scope?
+- Are conclusions sector-specific rather than generic design advice?
+- Is any supposed rule inferred from one example?
+- Is a cliché being mistaken for a best practice?
 - Did any recommendation drift into imitation?
-- Which three conclusions are weakest or least certain?
-
-Keep uncertainty explicit rather than manufacturing confidence.
+- Which conclusions are weakest or least certain?
+- Did operator-provided direction survive independent inspection?
 
 ## Use in design
-
-The design bootstrap derives the canonical sector key from the Prospect Design Brief and tries to load:
-
-```text
-sector-intelligence/<canonical_sector_key>.md
-```
-
-If the file exists, ChatGPT reads it completely and uses it as advisory design evidence. If it does not exist, design work continues normally.
 
 Source priority remains:
 
@@ -255,43 +211,13 @@ Sector Intelligence
 other external evidence
 ```
 
-Sector Intelligence may influence art direction, typography, hierarchy, imagery, trust presentation, service presentation, CTA emphasis and anti-pattern awareness. It may not invent or override prospect facts.
+If published Sector Intelligence exists for the prospect's explicit sector, the design workflow may use it as advisory evidence for quality bar, art direction, hierarchy, imagery, trust presentation, service presentation, conversion and anti-pattern awareness.
 
-## Relationship to the deterministic baseline mock-up
+Missing Sector Intelligence never blocks design work.
 
-The current automatic baseline mock-up is produced by the deterministic SolidDesign renderer:
+The deterministic automatic baseline renderer remains unchanged. Do not add an AI call, parser, sector-template family or rule engine merely to force unstructured Sector Intelligence into the baseline.
 
-```text
-VerifiedFacts + ConversionBrief
-→ DesignProfile
-→ SiteConfig
-→ static preview
-```
-
-It does not execute an LLM and therefore does not consume unstructured Sector Intelligence directly.
-
-Do **not** add a new AI call, parser, sector template family or rule engine merely to force Sector Intelligence into this baseline renderer. The baseline remains a cheap deterministic control until measured evidence justifies changing that boundary.
-
-The ChatGPT design/refinement workflow is the intelligence-aware layer.
-
-## Late-arriving Sector Intelligence
-
-If Sector Intelligence becomes available after a LIVE mock-up already exists:
-
-```text
-current LIVE mock-up
-+
-latest Prospect Design Brief
-+
-new Sector Intelligence
-→ ChatGPT critique + one improvement pass
-→ new HTML/ZIP
-→ existing CMS upload as DRAFT
-→ human review
-→ existing Maak live action
-```
-
-Never mutate or replace the current LIVE version automatically. Existing demo versioning and LIVE promotion are sufficient; no new lifecycle or state is required.
+If new Sector Intelligence arrives after a LIVE concept exists, it may inform a new improvement DRAFT. It never mutates or replaces the current LIVE version automatically.
 
 ## Final rule
 

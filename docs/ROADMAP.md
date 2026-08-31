@@ -60,14 +60,14 @@ The historical `operator_allowlist` was retired on 2026-08-30 by `20260830_opera
 
 One primary `CASE_LEAD`, `DESIGN` and `OUTREACH` per prospect; guarded reassignment; `events.actor_user_id`; human-readable Activity; `Mijn werk` derived from assignments. No task engine/co-assignee/capacity planner.
 
-### M3 — Multi-user information architecture ✅ browser verified
+### M3 — Multi-user information architecture ✅ core browser verified
 
 ```text
-Mijn werk | Prospects | Bedrijven zoeken | Team
+Mijn werk | Prospects | Bedrijven zoeken | Sectoronderzoek | Team
 Overzicht | Design | Outreach | Activiteit
 ```
 
-Role-specific navigation, contextual work opening, work-distribution filters and narrow/mobile behavior are browser-verified.
+Role-specific navigation, contextual work opening, work-distribution filters and narrow/mobile behavior are browser-verified for the integrated operating model. `Sectoronderzoek` is a supporting design-knowledge workspace added without a second application or state plane; its v0.5 release is governed by `docs/decisions/20260831_SECTOR_INTELLIGENCE_V05_CMS_BOUNDARY.md`.
 
 ### M4 — Brand-agnostic public delivery ✅ production deployed
 
@@ -118,6 +118,26 @@ Outreach
 ```
 
 PDF/PNG/JPG artifacts live in one private Storage bucket. The same file is shown in Design and Outreach; it is never duplicated into phase-specific state. Canonical decision: `docs/decisions/20260830_PRINT_MAILING_ARTIFACTS.md`.
+
+### Sector Intelligence v0.5 — release reconciliation
+
+Sector Intelligence is supporting design evidence, not a separate product or operational state plane. The v0.5 release reconciles the earlier reusable-sector implementation around these invariants:
+
+```text
+prospect → one primary sector → current published Sector Intelligence
+```
+
+- operator can explicitly assign/correct the sector, including for direct-URL prospects;
+- human market term and canonical machine identity stay separate;
+- optional `Aanvullende onderzoeksrichting` is challengeable research input;
+- research/review/linkage are CMS-native;
+- browser/CMS contracts expose no repository host, branch, PR or technical review URL;
+- one server façade owns Sector Intelligence transport;
+- authorization uses active `team_members`, never the retired allowlist;
+- no research table, reference library, many-to-many taxonomy or background job system is introduced;
+- canonical prompts/research are served to design workflows through the existing CMS deployment origin.
+
+Runtime/preview verification remains part of the release gate; code completion alone is not acceptance.
 
 ### Production cutover evidence — 2026-08-30 ✅
 
