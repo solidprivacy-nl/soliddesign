@@ -60,11 +60,15 @@ jobs:
             echo "branch=manual-preview" >> "$GITHUB_OUTPUT"
           fi
       - name: Stage canonical design resources
+        id: stage
         run: |
           set -euo pipefail
           rm -rf operator/prompts operator/sector-intelligence
           cp -R prompts operator/prompts
           cp -R sector-intelligence operator/sector-intelligence
+          proof=$(openssl rand -hex 16)
+          printf '%s\n' "$proof" > operator/deployment-proof.txt
+          echo "proof=$proof" >> "$GITHUB_OUTPUT"
       - name: Deploy Operator
         working-directory: operator
         env:
@@ -75,6 +79,7 @@ jobs:
       - name: Smoke-test deployed delivery
         env:
           DEPLOY_BRANCH: ${{ steps.deployment.outputs.branch }}
+          EXPECTED_DEPLOY_PROOF: ${{ steps.stage.outputs.proof }}
           SUPABASE_URL: https://grderdhnjkeucaaehgqy.supabase.co
           SMOKE_SLUG: siberg
           LEGACY_SMOKE_SLUG: koppen-electro-techniek
@@ -84,6 +89,26 @@ jobs:
             BASE_URL="https://soliddesign-cms.pages.dev"
           else
             BASE_URL="https://${DEPLOY_BRANCH}.soliddesign-cms.pages.dev"
+          fi
+
+          # Pages can report a deployment complete slightly before the stable hostname
+          # serves that exact deployment. Wait on an opaque per-deployment proof before
+          # running content assertions so a stale alias cannot produce a false result.
+          ready=0
+          for attempt in $(seq 1 30); do
+            actual=$(curl -fsS --max-time 5 \
+              "$BASE_URL/deployment-proof.txt?proof=$EXPECTED_DEPLOY_PROOF" 2>/dev/null \
+              | tr -d '\r\n' || true)
+            if [ "$actual" = "$EXPECTED_DEPLOY_PROOF" ]; then
+              ready=1
+              break
+            fi
+            echo "Waiting for deployed hostname to converge (attempt $attempt/30)."
+            sleep 2
+          done
+          if [ "$ready" != "1" ]; then
+            echo "::error::Deployed hostname did not converge to this deployment within the bounded wait."
+            exit 1
           fi
 
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/" -o /tmp/operator.html
