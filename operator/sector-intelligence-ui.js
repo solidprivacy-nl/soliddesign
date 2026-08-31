@@ -2,7 +2,8 @@
   'use strict';
 
   const CONFIG = window.SOLIDDESIGN_OPERATOR_CONFIG;
-  if (!CONFIG?.supabaseUrl || !CONFIG?.supabasePublishableKey || !window.supabase) return;
+  const resolveSingleSector = window.SOLIDDESIGN_RESOLVE_SINGLE_SECTOR;
+  if (!CONFIG?.supabaseUrl || !CONFIG?.supabasePublishableKey || !window.supabase || !resolveSingleSector) return;
 
   const db = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
   const appView = document.getElementById('appView');
@@ -13,14 +14,19 @@
   const detailPanel = document.getElementById('detailPanel');
   if (!appView || !prospectsView || !discoveryView || !prospectsNav || !discoveryNav || !detailPanel) return;
 
-  let discoverySnapshot = null;
   let sectorRows = [];
   let linkTargets = [];
+  let detailRow = null;
 
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, (c) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
+  }
+
+  function humanizeKey(value) {
+    const text = String(value || '').replaceAll('_', ' ').trim();
+    return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
   }
 
   async function sessionOrThrow() {
@@ -29,26 +35,19 @@
     return session;
   }
 
-  async function resolveSector(term) {
-    const clean = String(term || '').trim();
-    if (!clean) throw new Error('Vul één sector in.');
+  async function sectorApi({ method = 'GET', query = '', body = null } = {}) {
     const session = await sessionOrThrow();
-    const response = await fetch('/api/resolve-sector', {
-      method: 'POST',
+    const response = await fetch(`/api/sector-intelligence${query}`, {
+      method,
       headers: {
         Authorization: `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json'
+        ...(body ? { 'Content-Type': 'application/json' } : {})
       },
-      body: JSON.stringify({ terms: [clean] })
+      ...(body ? { body: JSON.stringify(body) } : {})
     });
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(payload.error || `Sectorresolutie mislukt (${response.status}).`);
-    if (Array.isArray(payload.unresolved) && payload.unresolved.length) {
-      throw new Error(`“${clean}” kon niet betrouwbaar aan een geldige Overture-sector worden gekoppeld.`);
-    }
-    const codes = [...new Set((payload.resolutions || []).map((item) => String(item?.code || '').trim().toLowerCase()).filter(Boolean))];
-    if (codes.length !== 1) throw new Error('Deze sector kon niet eenduidig worden gekoppeld. Gebruik een specifiekere sectornaam.');
-    return codes[0];
+    if (!response.ok) throw new Error(payload.error || `Sectoronderzoek kon niet worden verwerkt (${response.status}).`);
+    return payload;
   }
 
   const sectorNav = document.createElement('button');
@@ -66,7 +65,7 @@
       <div class="card discovery-card">
         <div class="eyebrow">Herbruikbare designkennis</div>
         <h2>Sectoronderzoek</h2>
-        <p class="subtle">Onderzoek één markt één keer en hergebruik de inzichten voor ieder relevant prospect. De sector is losgekoppeld van de manier waarop een bedrijf is gevonden.</p>
+        <p class="subtle">Onderzoek één markt één keer en hergebruik de inzichten voor ieder relevant prospect. Gebruik de menselijke marktterm; SolidDesign handelt de technische sectoridentiteit af.</p>
         <div class="form-grid">
           <label>Sector
             <input id="sectorResearchTerm" type="text" maxlength="120" placeholder="Bijv. juwelier" />
@@ -75,20 +74,39 @@
             <input id="sectorResearchLocation" type="text" maxlength="120" placeholder="Bijv. Amsterdam" />
           </label>
         </div>
-        <p class="subtle">De Nederlandse sectornaam wordt bij starten gevalideerd tegen de bestaande Overture-sectorresolver. De canonical key blijft alleen machine-identiteit.</p>
-        <div id="sectorResearchControls"></div>
+        <label>Aanvullende onderzoeksrichting <span class="subtle">(optioneel)</span>
+          <textarea id="sectorResearchGuidance" rows="4" maxlength="4000" placeholder="Bijv. bekijk ook https://voorbeeld.nl; ik vind daar vooral de mobiele navigatie sterk. Beoordeel dit wel onafhankelijk."></textarea>
+        </label>
+        <p class="subtle">Deze aanwijzingen sturen het onderzoek, maar gelden niet als waarheid. Het onderzoek moet ze onafhankelijk toetsen en mag ze tegenspreken.</p>
+        <div class="discovery-action">
+          <span class="subtle">De onderzoeksopdracht wordt gekopieerd en ChatGPT wordt geopend.</span>
+          <button id="startSectorIntelligence" type="button" class="primary">Start sectoronderzoek in ChatGPT</button>
+        </div>
+        <div class="discovery-action">
+          <span class="subtle">Onderzoek klaar? Kopieer het definitieve antwoord in ChatGPT en verwerk het hier.</span>
+          <button id="processSectorIntelligence" type="button" class="secondary">Verwerk onderzoeksresultaat</button>
+        </div>
+        <div id="sectorIntelligencePasteFallback" hidden>
+          <label>Onderzoeksresultaat
+            <textarea id="sectorIntelligenceResult" rows="10" placeholder="Plak hier alleen het definitieve Markdown-resultaat uit ChatGPT."></textarea>
+          </label>
+          <div class="discovery-action">
+            <span class="subtle">Gebruik dit veld alleen als de browser het klembord niet kan lezen.</span>
+            <button id="submitSectorIntelligenceResult" type="button" class="secondary">Verwerk geplakte tekst</button>
+          </div>
+        </div>
         <p id="sectorResearchMessage" class="message" aria-live="polite"></p>
       </div>
 
       <div class="card discovery-card">
-        <div class="eyebrow">Prospect koppelen</div>
+        <div class="eyebrow">Operator-keuze</div>
         <h2>Koppel een sector</h2>
-        <p class="subtle">Koppel dezelfde sectorinformatie aan elk bedrijf of prospect, ook als het alleen via een losse URL is toegevoegd.</p>
+        <p class="subtle">Bepaal expliciet bij welke sector een bedrijf of prospect hoort. Dit werkt ook voor websites die via een losse URL zijn toegevoegd.</p>
         <label>Bedrijf / prospect
           <select id="sectorLinkTarget"></select>
         </label>
         <label>Sector
-          <input id="sectorLinkTerm" type="text" maxlength="120" placeholder="Bijv. juwelier of jewelry_store" />
+          <input id="sectorLinkTerm" type="text" maxlength="120" placeholder="Bijv. juwelier" />
         </label>
         <div class="save-row">
           <span id="sectorLinkStatus" class="subtle"></span>
@@ -105,65 +123,98 @@
       <div class="section-heading">
         <div>
           <h3>Sectorinzichten</h3>
-          <p class="subtle">Gepubliceerd onderzoek is direct beschikbaar voor designbriefs. Onderzoek in review wordt pas gebruikt nadat het is gepubliceerd.</p>
+          <p class="subtle">Beschikbaar onderzoek wordt automatisch gebruikt voor relevante designbriefs. Nieuw of bijgewerkt onderzoek wordt eerst in het CMS beoordeeld.</p>
         </div>
         <button id="refreshSectorIntelligence" type="button" class="ghost">Vernieuwen</button>
       </div>
       <div id="sectorIntelligenceList" class="run-list"></div>
+    </section>
+
+    <section id="sectorIntelligenceDetail" class="card" hidden>
+      <div class="section-heading">
+        <div>
+          <h3 id="sectorIntelligenceDetailTitle">Sectoronderzoek</h3>
+          <p id="sectorIntelligenceDetailMeta" class="subtle"></p>
+        </div>
+        <button id="closeSectorIntelligenceDetail" type="button" class="ghost">Sluiten</button>
+      </div>
+      <textarea id="sectorIntelligenceDetailContent" rows="24" readonly></textarea>
+      <div class="save-row">
+        <button id="viewPublishedSectorIntelligence" type="button" class="secondary" hidden>Bekijk huidige versie</button>
+        <div>
+          <button id="rejectSectorIntelligence" type="button" class="secondary" hidden>Afwijzen</button>
+          <button id="approveSectorIntelligence" type="button" class="primary" hidden>Publiceer</button>
+        </div>
+      </div>
+      <p id="sectorIntelligenceDetailMessage" class="message" aria-live="polite"></p>
     </section>`;
   discoveryView.insertAdjacentElement('afterend', sectorView);
 
   const researchTerm = document.getElementById('sectorResearchTerm');
   const researchLocation = document.getElementById('sectorResearchLocation');
-  const researchControls = document.getElementById('sectorResearchControls');
+  const researchGuidance = document.getElementById('sectorResearchGuidance');
   const researchMessage = document.getElementById('sectorResearchMessage');
+  const fallback = document.getElementById('sectorIntelligencePasteFallback');
+  const fallbackResult = document.getElementById('sectorIntelligenceResult');
   const linkTarget = document.getElementById('sectorLinkTarget');
   const linkTerm = document.getElementById('sectorLinkTerm');
   const linkStatus = document.getElementById('sectorLinkStatus');
   const linkMessage = document.getElementById('sectorLinkMessage');
   const sectorList = document.getElementById('sectorIntelligenceList');
+  const detail = document.getElementById('sectorIntelligenceDetail');
+  const detailTitle = document.getElementById('sectorIntelligenceDetailTitle');
+  const detailMeta = document.getElementById('sectorIntelligenceDetailMeta');
+  const detailContent = document.getElementById('sectorIntelligenceDetailContent');
+  const detailMessage = document.getElementById('sectorIntelligenceDetailMessage');
+  const viewPublishedButton = document.getElementById('viewPublishedSectorIntelligence');
+  const rejectButton = document.getElementById('rejectSectorIntelligence');
+  const approveButton = document.getElementById('approveSectorIntelligence');
 
-  function discoveryInputs() {
-    return {
-      location: document.getElementById('discoveryLocation'),
-      sector: document.getElementById('discoveryKeywords')
-    };
+  function setResearchMessage(text, isError = false) {
+    researchMessage.textContent = text || '';
+    researchMessage.classList.toggle('error', Boolean(isError));
   }
 
-  function syncResearchToLegacyInputs() {
-    const inputs = discoveryInputs();
-    if (inputs.location) inputs.location.value = researchLocation.value;
-    if (inputs.sector) inputs.sector.value = researchTerm.value;
+  function setDetailMessage(text, isError = false) {
+    detailMessage.textContent = text || '';
+    detailMessage.classList.toggle('error', Boolean(isError));
   }
 
-  function restoreDiscoveryInputs() {
-    if (!discoverySnapshot) return;
-    const inputs = discoveryInputs();
-    if (inputs.location) inputs.location.value = discoverySnapshot.location;
-    if (inputs.sector) inputs.sector.value = discoverySnapshot.sector;
-    discoverySnapshot = null;
+  function statusLabel(value) {
+    return ({
+      AVAILABLE: 'Beschikbaar',
+      PENDING_REVIEW: 'Ter beoordeling',
+      UPDATE_PENDING_REVIEW: 'Bijwerking ter beoordeling'
+    })[value] || value || 'Onbekend';
+  }
+
+  function rowForKey(key) {
+    return sectorRows.find((row) => row.canonical_sector_key === key) || null;
+  }
+
+  function labelForKey(key) {
+    return rowForKey(key)?.research_label || humanizeKey(key);
+  }
+
+  function sectorAvailability(key, fallbackLabel = '') {
+    if (!key) return 'Geen sector gekoppeld';
+    const row = rowForKey(key);
+    const label = row?.research_label || fallbackLabel || humanizeKey(key);
+    if (!row) return `${label} · sector gekoppeld, nog geen onderzoek beschikbaar`;
+    return `${label} · ${statusLabel(row.status).toLowerCase()}`;
   }
 
   function leaveSectorView() {
-    restoreDiscoveryInputs();
     sectorView.classList.add('hidden');
     sectorNav.classList.remove('active');
   }
 
   async function showSectorView(options = {}) {
-    const inputs = discoveryInputs();
-    if (sectorView.classList.contains('hidden')) {
-      discoverySnapshot = {
-        location: inputs.location?.value || '',
-        sector: inputs.sector?.value || ''
-      };
-    }
-
     const requestedTerm = String(options.sectorTerm || '').trim();
     const requestedLocation = String(options.location || '').trim();
-    researchTerm.value = requestedTerm || researchTerm.value || discoverySnapshot?.sector || '';
-    researchLocation.value = requestedLocation || researchLocation.value || discoverySnapshot?.location || '';
-    syncResearchToLegacyInputs();
+    if (options.resetResearchTerm) researchTerm.value = '';
+    else if (requestedTerm) researchTerm.value = requestedTerm;
+    if (requestedLocation) researchLocation.value = requestedLocation;
 
     prospectsView.classList.add('hidden');
     discoveryView.classList.add('hidden');
@@ -173,103 +224,238 @@
     sectorNav.classList.add('active');
 
     await refreshWorkspace();
-    if (options.targetId) {
+    if (options.targetId && linkTargets.some((target) => target.id === options.targetId)) {
       linkTarget.value = options.targetId;
       updateLinkFormFromTarget();
     }
+    if (options.focusResearch) researchTerm.focus();
   }
 
   window.SOLIDDESIGN_OPEN_SECTOR_INTELLIGENCE = showSectorView;
-  sectorNav.addEventListener('click', () => showSectorView().catch((error) => { researchMessage.textContent = error.message || String(error); researchMessage.classList.add('error'); }));
+  sectorNav.addEventListener('click', () => showSectorView().catch((error) => setResearchMessage(error.message || String(error), true)));
   prospectsNav.addEventListener('click', leaveSectorView, true);
   discoveryNav.addEventListener('click', leaveSectorView, true);
 
-  researchTerm.addEventListener('input', syncResearchToLegacyInputs);
-  researchLocation.addEventListener('input', syncResearchToLegacyInputs);
-
-  function installExistingResearchControls() {
-    const startButton = document.getElementById('startSectorIntelligence');
-    const processButton = document.getElementById('processSectorIntelligence');
-    const fallback = document.getElementById('sectorIntelligencePasteFallback');
-    if (!startButton || !processButton || !fallback) return;
-
-    const startAction = startButton.closest('.discovery-action');
-    const processAction = processButton.closest('.discovery-action');
-    if (!startAction || !processAction) return;
-
+  function installDiscoveryShortcut() {
+    if (document.querySelector('[data-open-sector-intelligence]')) return;
+    const discoveryButton = document.getElementById('runAreaDiscovery');
+    const action = discoveryButton?.closest('.discovery-action');
+    if (!action) return;
     const shortcut = document.createElement('div');
     shortcut.className = 'discovery-action';
-    shortcut.innerHTML = '<span class="subtle"><strong>Sectorinzichten:</strong> beheer herbruikbaar sectoronderzoek los van deze zoekopdracht.</span>';
-    const shortcutButton = document.createElement('button');
-    shortcutButton.type = 'button';
-    shortcutButton.className = 'secondary';
-    shortcutButton.textContent = 'Open sectoronderzoek';
-    shortcut.appendChild(shortcutButton);
-    startAction.parentElement.insertBefore(shortcut, startAction);
-
-    researchControls.append(startAction, processAction, fallback);
-    fallback.classList.remove('card');
-
-    startButton.addEventListener('click', syncResearchToLegacyInputs, true);
-    processButton.addEventListener('click', syncResearchToLegacyInputs, true);
-    fallback.querySelector('#submitSectorIntelligenceResult')?.addEventListener('click', syncResearchToLegacyInputs, true);
-    shortcutButton.addEventListener('click', () => {
-      const current = discoveryInputs();
+    shortcut.innerHTML = '<span class="subtle"><strong>Sectorinzichten:</strong> onderzoek of beheer herbruikbare designkennis los van deze zoekopdracht.</span>';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'secondary';
+    button.dataset.openSectorIntelligence = 'true';
+    button.textContent = 'Open sectoronderzoek';
+    shortcut.appendChild(button);
+    action.insertAdjacentElement('afterend', shortcut);
+    button.addEventListener('click', () => {
       showSectorView({
-        sectorTerm: current.sector?.value || '',
-        location: current.location?.value || ''
+        sectorTerm: document.getElementById('discoveryKeywords')?.value || '',
+        location: document.getElementById('discoveryLocation')?.value || ''
       }).catch((error) => window.alert(error.message || String(error)));
     });
   }
 
-  function statusLabel(value) {
-    return ({
-      PUBLISHED: 'Gepubliceerd',
-      IN_REVIEW: 'In review',
-      UPDATE_IN_REVIEW: 'Update in review'
-    })[value] || value || 'Onbekend';
+  async function resolveResearchContext() {
+    const location = researchLocation.value.trim();
+    const sectorValue = researchTerm.value.trim();
+    if (!location) throw new Error('Vul eerst een startlocatie in voor het sectoronderzoek.');
+    if (!sectorValue) throw new Error('Vul eerst één sector in voor het sectoronderzoek.');
+    return { location, ...(await resolveSingleSector(sectorValue)) };
   }
 
+  function sectorIntelligencePrompt({ humanTerm, location, canonicalKey, guidance }) {
+    const operatorGuidance = guidance
+      ? `\nAANVULLENDE ONDERZOEKSRICHTING VAN DE OPERATOR\n${guidance}\n\nBehandel deze input als een hypothese, niet als vastgestelde waarheid. Inspecteer aangedragen websites zelf, toets observaties onafhankelijk en benoem het wanneer een observatie niet of slechts gedeeltelijk standhoudt. De operatorinput mag het brede autonome onderzoek niet vervangen of vernauwen.\n`
+      : '';
+    return `Werk autonoom als Sector Intelligence researcher voor SolidDesign.\n\nDOEL\nOnderzoek de actuele design- en conversiekwaliteitsstandaard voor deze markt en distilleer herbruikbare, evidence-backed designinzichten. Het resultaat is adviserend en mag nooit prospectfeiten verzinnen of externe designs kopiëren.\n\nRESEARCH INPUTS\n- human_sector_term: ${humanTerm}\n- location: ${location}\n- canonical_sector_key: ${canonicalKey}\n${operatorGuidance}\nWERKWIJZE\n1. Gebruik de menselijke sectornaam en locatie als marktbetekenis. De canonical sector key is alleen machine identity en mag de researchscope niet vernauwen.\n2. Start lokaal, verbreed naar Nederland wanneer lokale voorbeelden onvoldoende zijn en voeg alleen selectief sterke internationale of aangrenzende creatieve referenties toe.\n3. Inspecteer daadwerkelijke websites, niet alleen zoekresultaatsnippets.\n4. Beoordeel ten minste: first impression/craft, typografie, compositie en hiërarchie, imagery/art direction, trust, conversiehiërarchie, mobile, originaliteit/sector-specificiteit en evidente template/AI-slop patronen.\n5. Een bruikbare richtlijn is ongeveer 7 sterke sectorreferenties plus ongeveer 3 aangrenzende creatieve referenties. Dit is geen scoreformule.\n6. Trek principes uit meerdere observaties. Kopieer geen branding, copy, layouts of onderscheidende creatieve elementen.\n7. Wees kritisch op eigen conclusies: prominent merk is niet automatisch sterk design; één voorbeeld is geen regel; clichés zijn geen best practice; benoem de drie zwakste/onzekerste conclusies expliciet.\n8. Werk vanuit first principles, solid but simple en zonder overengineering.\n\nEINDOUTPUT\nJe allerlaatste bericht moet uitsluitend het definitieve Markdown-document bevatten, zonder inleiding, toelichting of code fence. Gebruik exact deze structuur en headings:\n\n---\nsector_key: ${canonicalKey}\nresearch_label: <menselijk leesbare sectornaam>\nmarket: Nederland\nresearched_at: <YYYY-MM-DD>\nmethod_version: 1\n---\n# Sector Design Intelligence — <label>\n\n## Quality bar\n## Customer / market context relevant to design\n## Strong recurring patterns\n### Hero\n### Typography\n### Imagery\n### Trust\n### Services / offering\n### Conversion\n### Mobile\n## Creative opportunities\n## Patterns to avoid\n## Sector references\n## Adjacent creative references\n## Principles distilled from the evidence\n## Weak / uncertain conclusions\n\nElke genoemde referentie bevat een directe bron-URL en een korte reden voor selectie. Lever uitsluitend het definitieve onderzoeksdocument; SolidDesign handelt verwerking en publicatie af.`;
+  }
+
+  document.getElementById('startSectorIntelligence').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    setResearchMessage('Onderzoeksopdracht voorbereiden…');
+    try {
+      const context = await resolveResearchContext();
+      const prompt = sectorIntelligencePrompt({ ...context, guidance: researchGuidance.value.trim() });
+      await navigator.clipboard.writeText(prompt);
+      const popup = window.open('https://chatgpt.com/', '_blank', 'noopener');
+      setResearchMessage(popup
+        ? `Onderzoeksopdracht voor “${context.humanTerm}” in ${context.location} gekopieerd. Plak hem in de nieuwe ChatGPT-chat.`
+        : `Onderzoeksopdracht voor “${context.humanTerm}” in ${context.location} gekopieerd. Open ChatGPT en plak de opdracht.`);
+    } catch (error) {
+      setResearchMessage(error.message || String(error), true);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  async function submitResearchResult(markdown, button) {
+    if (!String(markdown || '').trim()) throw new Error('Het onderzoeksresultaat is leeg.');
+    const context = await resolveResearchContext();
+    button.disabled = true;
+    setResearchMessage('Onderzoeksresultaat controleren en klaarzetten voor beoordeling…');
+    try {
+      const result = await sectorApi({
+        method: 'POST',
+        body: {
+          action: 'submit',
+          canonical_sector_key: context.canonicalKey,
+          markdown
+        }
+      });
+      fallback.hidden = true;
+      fallbackResult.value = '';
+      setResearchMessage(result.status === 'unchanged'
+        ? `De sectorinzichten voor “${context.humanTerm}” zijn al actueel.`
+        : `Sectorinzichten voor “${context.humanTerm}” staan klaar voor beoordeling in het CMS.`);
+      await loadSectorRows();
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  document.getElementById('processSectorIntelligence').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    try {
+      let markdown = '';
+      try {
+        markdown = await navigator.clipboard.readText();
+      } catch {
+        fallback.hidden = false;
+        fallbackResult.focus();
+        setResearchMessage('De browser kon het klembord niet lezen. Plak het definitieve onderzoeksresultaat hieronder.', true);
+        return;
+      }
+      await submitResearchResult(markdown, button);
+    } catch (error) {
+      setResearchMessage(error.message || String(error), true);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  document.getElementById('submitSectorIntelligenceResult').addEventListener('click', async (event) => {
+    try {
+      await submitResearchResult(fallbackResult.value, event.currentTarget);
+    } catch (error) {
+      setResearchMessage(error.message || String(error), true);
+    }
+  });
+
   async function loadSectorRows() {
-    const session = await sessionOrThrow();
-    const response = await fetch('/api/sector-intelligence', {
-      headers: { Authorization: `Bearer ${session.access_token}` }
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(payload.error || `Sectorinzichten konden niet worden geladen (${response.status}).`);
+    const payload = await sectorApi();
     sectorRows = Array.isArray(payload.sectors) ? payload.sectors : [];
     renderSectorRows();
   }
 
   function renderSectorRows() {
     if (!sectorRows.length) {
-      sectorList.innerHTML = '<div class="list-empty">Nog geen sectoronderzoek gepubliceerd of in review.</div>';
+      sectorList.innerHTML = '<div class="list-empty">Nog geen sectoronderzoek beschikbaar of ter beoordeling.</div>';
       return;
     }
     sectorList.innerHTML = '';
     for (const row of sectorRows) {
       const item = document.createElement('div');
       item.className = 'run-row';
-      const links = [];
-      if (row.source_url) links.push(`<a href="${escapeHtml(row.source_url)}" target="_blank" rel="noopener">Onderzoek ↗</a>`);
-      if (row.review_url) links.push(`<a href="${escapeHtml(row.review_url)}" target="_blank" rel="noopener">Review ↗</a>`);
+      const date = row.researched_at ? ` · ${escapeHtml(row.researched_at)}` : '';
       item.innerHTML = `
         <div>
-          <strong>${escapeHtml(row.canonical_sector_key)}</strong>
-          <span>${escapeHtml(statusLabel(row.status))}</span>
+          <strong>${escapeHtml(row.research_label)}</strong>
+          <span>${escapeHtml(statusLabel(row.status))}${date}</span>
         </div>
         <div class="compact-actions">
-          ${links.join('')}
-          <button type="button" class="secondary" data-use-sector>Gebruik</button>
+          ${row.has_published ? '<button type="button" class="secondary" data-view-published>Bekijken</button>' : ''}
+          ${row.has_pending_review ? '<button type="button" class="primary" data-review-pending>Beoordelen</button>' : '<button type="button" class="secondary" data-update-sector>Bijwerken</button>'}
+          <button type="button" class="secondary" data-link-sector>Koppel aan prospect</button>
         </div>`;
-      item.querySelector('[data-use-sector]').addEventListener('click', () => {
-        researchTerm.value = row.canonical_sector_key;
-        syncResearchToLegacyInputs();
+      item.querySelector('[data-view-published]')?.addEventListener('click', () => openSectorDetail(row, 'published').catch(showDetailError));
+      item.querySelector('[data-review-pending]')?.addEventListener('click', () => openSectorDetail(row, 'pending').catch(showDetailError));
+      item.querySelector('[data-update-sector]')?.addEventListener('click', () => {
+        researchTerm.value = row.research_label;
         researchTerm.focus();
+        setResearchMessage(`Werk het onderzoek voor “${row.research_label}” bij. Controleer de marktterm en startlocatie voordat je start.`);
+      });
+      item.querySelector('[data-link-sector]').addEventListener('click', () => {
+        linkTerm.value = row.research_label;
+        linkStatus.textContent = sectorAvailability(row.canonical_sector_key, row.research_label);
+        linkMessage.textContent = `Kies het bedrijf dat je aan “${row.research_label}” wilt koppelen.`;
+        linkMessage.classList.remove('error');
+        linkTarget.focus();
       });
       sectorList.appendChild(item);
     }
   }
+
+  function showDetailError(error) {
+    detail.hidden = false;
+    setDetailMessage(error.message || String(error), true);
+    detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function openSectorDetail(row, version) {
+    setDetailMessage('Sectoronderzoek laden…');
+    const payload = await sectorApi({
+      query: `?key=${encodeURIComponent(row.canonical_sector_key)}&version=${version}`
+    });
+    const sector = payload.sector;
+    detailRow = row;
+    detailTitle.textContent = sector.research_label || row.research_label;
+    detailMeta.textContent = `${version === 'pending' ? 'Ter beoordeling' : 'Beschikbare versie'}${sector.researched_at ? ` · ${sector.researched_at}` : ''}`;
+    detailContent.value = sector.content || '';
+    detail.hidden = false;
+    const reviewing = version === 'pending';
+    rejectButton.hidden = !reviewing;
+    approveButton.hidden = !reviewing;
+    viewPublishedButton.hidden = !(reviewing && row.has_published);
+    setDetailMessage('');
+    detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  document.getElementById('closeSectorIntelligenceDetail').addEventListener('click', () => {
+    detail.hidden = true;
+    detailRow = null;
+    setDetailMessage('');
+  });
+
+  viewPublishedButton.addEventListener('click', () => {
+    if (detailRow) openSectorDetail(detailRow, 'published').catch(showDetailError);
+  });
+
+  async function reviewSector(action) {
+    if (!detailRow) return;
+    const label = detailRow.research_label;
+    const verb = action === 'approve' ? 'publiceren' : 'afwijzen';
+    if (!window.confirm(`Wil je het sectoronderzoek voor “${label}” ${verb}?`)) return;
+    rejectButton.disabled = true;
+    approveButton.disabled = true;
+    setDetailMessage(action === 'approve' ? 'Sectoronderzoek publiceren…' : 'Sectoronderzoek afwijzen…');
+    try {
+      await sectorApi({
+        method: 'POST',
+        body: { action, canonical_sector_key: detailRow.canonical_sector_key }
+      });
+      detail.hidden = true;
+      setResearchMessage(action === 'approve'
+        ? `Sectoronderzoek voor “${label}” is gepubliceerd.`
+        : `Sectoronderzoek voor “${label}” is afgewezen.`);
+      detailRow = null;
+      await loadSectorRows();
+      updateLinkFormFromTarget();
+    } catch (error) {
+      setDetailMessage(error.message || String(error), true);
+    } finally {
+      rejectButton.disabled = false;
+      approveButton.disabled = false;
+    }
+  }
+
+  rejectButton.addEventListener('click', () => reviewSector('reject'));
+  approveButton.addEventListener('click', () => reviewSector('approve'));
 
   async function loadLinkTargets() {
     const { data, error } = await db.rpc('operator_list_sector_link_targets');
@@ -291,13 +477,6 @@
     return linkTargets.find((target) => target.id === linkTarget.value) || null;
   }
 
-  function sectorAvailability(key) {
-    if (!key) return 'Geen sector gekoppeld';
-    const row = sectorRows.find((item) => item.canonical_sector_key === key);
-    if (!row) return `${key} · nog geen onderzoek`;
-    return `${key} · ${statusLabel(row.status).toLowerCase()}`;
-  }
-
   function updateLinkFormFromTarget() {
     const target = selectedLinkTarget();
     if (!target) {
@@ -305,31 +484,32 @@
       linkStatus.textContent = 'Geen prospect beschikbaar.';
       return;
     }
-    linkTerm.value = target.canonical_sector_key || '';
-    linkStatus.textContent = sectorAvailability(target.canonical_sector_key);
+    const row = rowForKey(target.canonical_sector_key);
+    linkTerm.value = row?.research_label || humanizeKey(target.canonical_sector_key);
+    linkStatus.textContent = sectorAvailability(target.canonical_sector_key, row?.research_label || '');
   }
 
   linkTarget.addEventListener('change', updateLinkFormFromTarget);
 
-  document.getElementById('sectorLinkSave').addEventListener('click', async () => {
-    const button = document.getElementById('sectorLinkSave');
+  document.getElementById('sectorLinkSave').addEventListener('click', async (event) => {
+    const button = event.currentTarget;
     const target = selectedLinkTarget();
     if (!target) return;
     button.disabled = true;
     linkMessage.textContent = 'Sector koppelen…';
     linkMessage.classList.remove('error');
     try {
-      const key = await resolveSector(linkTerm.value);
+      const resolved = await resolveSingleSector(linkTerm.value);
       const { data, error } = await db.rpc('operator_set_prospect_sector', {
         p_id: target.id,
-        p_sector_key: key
+        p_sector_key: resolved.canonicalKey
       });
       if (error) throw error;
       if (!data) throw new Error('Sector kon niet aan het prospect worden gekoppeld.');
-      target.canonical_sector_key = key;
-      linkTerm.value = key;
-      linkStatus.textContent = sectorAvailability(key);
-      linkMessage.textContent = `Sector “${key}” gekoppeld aan ${target.name}.`;
+      target.canonical_sector_key = resolved.canonicalKey;
+      linkTerm.value = rowForKey(resolved.canonicalKey)?.research_label || resolved.humanTerm;
+      linkStatus.textContent = sectorAvailability(resolved.canonicalKey, resolved.humanTerm);
+      linkMessage.textContent = `“${resolved.humanTerm}” is gekoppeld aan ${target.name}.`;
       bindCurrentProspectSector(true).catch(console.error);
     } catch (error) {
       linkMessage.textContent = error.message || String(error);
@@ -342,35 +522,20 @@
   document.getElementById('sectorLinkResearch').addEventListener('click', () => {
     const target = selectedLinkTarget();
     if (!target) return;
-    const term = linkTerm.value.trim() || target.canonical_sector_key || '';
-    researchTerm.value = term;
+    const row = rowForKey(target.canonical_sector_key);
+    researchTerm.value = row?.research_label || '';
     researchLocation.value = target.city || researchLocation.value;
-    syncResearchToLegacyInputs();
+    setResearchMessage(row
+      ? `Onderzoek of actualiseer “${row.research_label}”.`
+      : 'Vul de menselijke marktterm in voor deze gekoppelde sector.');
     researchTerm.focus();
   });
 
-  document.getElementById('refreshSectorIntelligence').addEventListener('click', () => refreshWorkspace().catch((error) => {
-    researchMessage.textContent = error.message || String(error);
-    researchMessage.classList.add('error');
-  }));
+  document.getElementById('refreshSectorIntelligence').addEventListener('click', () => refreshWorkspace().catch((error) => setResearchMessage(error.message || String(error), true)));
 
   async function refreshWorkspace() {
-    researchMessage.classList.remove('error');
+    setResearchMessage('');
     await Promise.all([loadSectorRows(), loadLinkTargets()]);
-  }
-
-  const discoveryMessage = document.getElementById('discoveryMessage');
-  if (discoveryMessage) {
-    const mirrorMessage = () => {
-      if (sectorView.classList.contains('hidden')) return;
-      researchMessage.textContent = discoveryMessage.textContent || '';
-      researchMessage.classList.toggle('error', discoveryMessage.classList.contains('error'));
-      const text = researchMessage.textContent.toLowerCase();
-      if (text.includes('opgeslagen voor review') || text.includes('al actueel')) {
-        loadSectorRows().then(() => updateLinkFormFromTarget()).catch(console.error);
-      }
-    };
-    new MutationObserver(mirrorMessage).observe(discoveryMessage, { childList: true, characterData: true, subtree: true, attributes: true });
   }
 
   async function bindCurrentProspectSector(force = false) {
@@ -411,23 +576,24 @@
 
     const input = control.querySelector('[data-prospect-sector-input]');
     const status = control.querySelector('[data-prospect-sector-status]');
-    input.value = prospect.canonical_sector_key || '';
-    status.textContent = sectorAvailability(prospect.canonical_sector_key);
+    const row = rowForKey(prospect.canonical_sector_key);
+    input.value = row?.research_label || humanizeKey(prospect.canonical_sector_key);
+    status.textContent = sectorAvailability(prospect.canonical_sector_key, row?.research_label || '');
 
     control.querySelector('[data-prospect-sector-save]').addEventListener('click', async (event) => {
       const button = event.currentTarget;
       button.disabled = true;
       try {
-        const key = await resolveSector(input.value);
+        const resolved = await resolveSingleSector(input.value);
         const { data: changed, error: saveError } = await db.rpc('operator_set_prospect_sector', {
           p_id: prospect.id,
-          p_sector_key: key
+          p_sector_key: resolved.canonicalKey
         });
         if (saveError) throw saveError;
         if (!changed) throw new Error('Sector kon niet worden gekoppeld.');
-        prospect.canonical_sector_key = key;
-        input.value = key;
-        status.textContent = sectorAvailability(key);
+        prospect.canonical_sector_key = resolved.canonicalKey;
+        input.value = rowForKey(resolved.canonicalKey)?.research_label || resolved.humanTerm;
+        status.textContent = sectorAvailability(resolved.canonicalKey, resolved.humanTerm);
       } catch (error) {
         window.alert(error.message || String(error));
       } finally {
@@ -436,16 +602,20 @@
     });
 
     control.querySelector('[data-prospect-sector-research]').addEventListener('click', () => {
+      const currentRow = rowForKey(prospect.canonical_sector_key);
       showSectorView({
-        sectorTerm: input.value.trim() || prospect.canonical_sector_key || '',
+        sectorTerm: currentRow?.research_label || '',
         location: prospect.city || '',
-        targetId: prospect.id
+        targetId: prospect.id,
+        focusResearch: true
+      }).then(() => {
+        if (!currentRow) setResearchMessage('Vul de menselijke marktterm in voor het sectoronderzoek.');
       }).catch((error) => window.alert(error.message || String(error)));
     });
     root.dataset.sectorLinkBound = 'true';
   }
 
-  installExistingResearchControls();
+  installDiscoveryShortcut();
   new MutationObserver(() => bindCurrentProspectSector().catch(console.error)).observe(detailPanel, { childList: true, subtree: true });
   bindCurrentProspectSector().catch(console.error);
 })();
