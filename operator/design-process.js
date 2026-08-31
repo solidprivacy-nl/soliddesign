@@ -54,7 +54,7 @@
 
     const { data, error } = await db
       .from('prospects')
-      .select('id,name,category,city,address,website_url,phone,qualification,verified_facts,discovery_run_id,public_slug,design_brief_token,design_workspace_url,design_brief_note,updated_at')
+      .select('id,name,category,city,address,website_url,phone,qualification,verified_facts,canonical_sector_key,discovery_run_id,public_slug,design_brief_token,design_workspace_url,design_brief_note,updated_at')
       .eq('name', name)
       .eq('website_url', website)
       .limit(2);
@@ -94,7 +94,12 @@
     };
   }
 
-  function canonicalSectorKey(discoveryRun) {
+  function canonicalSectorKey(prospect, discoveryRun) {
+    const explicit = oneLine(prospect?.canonical_sector_key).toLowerCase();
+    if (/^[a-z0-9][a-z0-9_-]{0,62}$/.test(explicit)) return explicit;
+
+    // Backwards-compatible fallback for older prospects that predate first-class
+    // sector identity. Discovery provenance is no longer the primary source.
     const source = Array.isArray(discoveryRun?.input?.keywords)
       ? discoveryRun.input.keywords
       : Array.isArray(discoveryRun?.result?.keywords)
@@ -243,7 +248,7 @@ Audit findings are diagnostic evidence. Separate design-actionable issues from h
     const { prospect, audit, demos, discoveryRun } = context;
     const generatedAt = new Date().toISOString();
     const location = [prospect.address, prospect.city].filter(Boolean).join(', ');
-    const canonicalKey = canonicalSectorKey(discoveryRun);
+    const canonicalKey = canonicalSectorKey(prospect, discoveryRun);
     const sectorLookup = canonicalKey ? `${SECTOR_INTELLIGENCE_ROOT}/${encodeURIComponent(canonicalKey)}.md` : null;
     const designState = designStateMarkdown(prospect, demos);
     const siteKind = prospect.qualification?.preparation?.site_kind || prospect.qualification?.triage?.site_kind || null;
