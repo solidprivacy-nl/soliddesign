@@ -6,13 +6,25 @@ const ROOT = 'sector-intelligence';
 async function authorize(request) {
   const authorization = request.headers.get('Authorization') || '';
   if (!authorization.startsWith('Bearer ')) return false;
-  const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+
+  const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
     headers: {
       Authorization: authorization,
       apikey: SUPABASE_PUBLISHABLE_KEY
     }
   });
-  return response.ok;
+  if (!userResponse.ok) return false;
+
+  const allowlistResponse = await fetch(`${SUPABASE_URL}/rest/v1/operator_allowlist?select=email&limit=1`, {
+    headers: {
+      Authorization: authorization,
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Accept: 'application/json'
+    }
+  });
+  if (!allowlistResponse.ok) return false;
+  const rows = await allowlistResponse.json().catch(() => []);
+  return Array.isArray(rows) && rows.length === 1;
 }
 
 function json(body, status = 200) {
