@@ -41,6 +41,24 @@ def test_sector_workspace_is_self_contained_and_reuses_only_resolution() -> None
     assert "installExistingResearchControls" not in ui
 
 
+def test_known_sector_identity_is_not_reresolved_from_display_label() -> None:
+    ui = read("operator/sector-intelligence-ui.js")
+
+    assert "async function resolveInputSector(input)" in ui
+    assert "input.dataset.canonicalKey" in ui
+    assert "setKnownCanonicalKey(linkTerm, row.canonical_sector_key)" in ui
+    assert "setKnownCanonicalKey(researchTerm, row.canonical_sector_key, true)" in ui
+    assert "canonicalKey: prospect.canonical_sector_key" in ui
+
+    # Research rows must load before prospect-link status is rendered, otherwise the
+    # UI can temporarily claim that no research exists for a sector that is available.
+    refresh_start = ui.index("async function refreshWorkspace()")
+    refresh_end = ui.index("async function bindCurrentProspectSector", refresh_start)
+    refresh = ui[refresh_start:refresh_end]
+    assert "Promise.all" not in refresh
+    assert refresh.index("await loadSectorRows();") < refresh.index("await loadLinkTargets();")
+
+
 def test_sector_server_facade_uses_current_membership_and_hides_transport() -> None:
     endpoint = read("operator/functions/api/sector-intelligence.js")
 
