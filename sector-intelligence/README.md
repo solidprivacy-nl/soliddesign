@@ -1,6 +1,6 @@
 # SolidDesign Sector Intelligence
 
-**Status:** canonical v0.3  
+**Status:** canonical v0.4  
 **Governing rule:** `ENGINEERING_CONSTITUTION.md`
 
 Sector Intelligence is reusable external design research for one canonical business sector. It exists to raise the quality bar of future SolidDesign designs without turning sectors into templates.
@@ -40,27 +40,43 @@ Do not maintain a second hand-built research taxonomy unless repeated failures p
 
 ## CMS launcher and operator flow
 
-The operator entry point lives in **Bedrijven zoeken**, directly below the normal area-search action.
+The primary operator entry point is the standalone **Sectoronderzoek** workspace in the CMS. **Bedrijven zoeken** keeps only a shortcut into that workspace so research is no longer coupled to the discovery form that happened to find a prospect.
 
-The operator uses the same inputs that already drive Discovery:
+The research inputs are:
 
-- `Locatie` remains the market starting point;
-- `Sector(en)` supplies the original human market term;
+- `Sector` supplies the original human market term, for example `kapper`;
+- `Startlocatie` remains the market starting point;
 - the existing validated Overture sector resolver supplies the canonical machine key.
+
+The human market term and the canonical key are deliberately different concepts. A canonical key such as `barber` must never be silently substituted for the human research term `kapper`.
 
 Sector Intelligence is one canonical file per sector, so the research flow accepts **one sector per run**. Discovery itself may still search multiple sectors in one run.
 
 The normal operator flow is:
 
 ```text
-1. Start sectoronderzoek in ChatGPT
-2. ChatGPT researches and returns one final Markdown document
-3. Operator copies the final ChatGPT answer
-4. Verwerk onderzoeksresultaat
-5. CMS validates and submits it for review
+1. Open Sectoronderzoek
+2. Enter the human sector term and starting location
+3. Start sectoronderzoek in ChatGPT
+4. ChatGPT researches and returns one final Markdown document
+5. Operator copies the final ChatGPT answer
+6. Verwerk onderzoeksresultaat
+7. CMS validates and submits it for review
 ```
 
-The primary handoff is clipboard-first. If the browser cannot read the clipboard, the CMS reveals a plain paste field as fallback. No research job, draft object or extra lifecycle is stored in Supabase.
+The same workspace also shows published and in-review sector research and can link a validated canonical sector to any non-archived company/prospect, including a company added through a direct URL.
+
+Sector identity belongs to the prospect, not to its discovery provenance:
+
+```text
+Prospect
+→ canonical_sector_key
+→ sector-intelligence/<canonical_sector_key>.md
+```
+
+A single-sector AREA discovery can inherit its already validated canonical key automatically. A direct URL does not provide enough evidence to choose a sector safely, so SolidDesign does not guess; the operator links the correct sector explicitly.
+
+The primary ChatGPT handoff is clipboard-first. If the browser cannot read the clipboard, the CMS reveals a plain paste field as fallback. No research job, draft object or extra research lifecycle is stored in Supabase.
 
 ### What the launch prompt contains
 
@@ -127,7 +143,7 @@ The CMS backend uses one technical GitHub identity stored only as a Cloudflare P
 GITHUB_SECTOR_INTELLIGENCE_TOKEN
 ```
 
-For v0.3 the simplest viable credential is a fine-grained token scoped to the SolidDesign repository with only the permissions required to read/write contents and create pull requests. It is not stored in Git, browser code, Supabase or operator accounts.
+For v0.4 the simplest viable credential is a fine-grained token scoped to the SolidDesign repository with only the permissions required to read/write contents and create pull requests. It is not stored in Git, browser code, Supabase or operator accounts.
 
 A normal SolidDesign operator therefore needs:
 
@@ -233,11 +249,13 @@ Keep uncertainty explicit rather than manufacturing confidence.
 
 ## Use in design
 
-The design bootstrap derives the canonical sector key from the Prospect Design Brief and tries to load:
+The design bootstrap reads the prospect's first-class `canonical_sector_key` from the Prospect Design Brief and tries to load:
 
 ```text
 sector-intelligence/<canonical_sector_key>.md
 ```
+
+For older prospects that predate first-class sector identity, a single canonical sector from the legacy discovery run may be used only as a backwards-compatible fallback.
 
 If the file exists, ChatGPT reads it completely and uses it as advisory design evidence. If it does not exist, design work continues normally.
 
