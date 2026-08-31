@@ -1,7 +1,7 @@
 # SolidDesign Integrated Operating Architecture
 
 **Status:** current production operating architecture  
-**Date:** 2026-08-30
+**Date:** 2026-08-31
 
 ## Objective
 
@@ -37,6 +37,8 @@ OUTCOME
   ↓
 LEARNING
 ```
+
+Reusable Sector Intelligence is advisory input to DESIGN, not a second workflow/state plane.
 
 ## Two audiences, one system
 
@@ -143,6 +145,40 @@ Events do not record UI clicks/navigation.
 
 Current responsibility is read from assignments; history is read from events.
 
+## Sector Intelligence
+
+Sector Intelligence is reusable, reviewed design research for one canonical business sector.
+
+The prospect relationship is intentionally small:
+
+```text
+prospect
+→ canonical_sector_key
+→ current published Sector Intelligence
+```
+
+Discovery provenance and sector identity are separate facts. A single-sector area discovery may assign a known sector automatically. Multi-sector discovery and direct-URL discovery do not guess a primary sector. An operator can explicitly assign or correct the sector for any relevant company/prospect.
+
+Research uses the human market term and location. An optional free-text `Aanvullende onderzoeksrichting` lets an operator supply URLs, observations or other context without creating a reference-management subsystem. Such input is challengeable evidence and does not replace autonomous research.
+
+The CMS owns the operator workflow:
+
+```text
+research
+→ result validation
+→ Ter beoordeling
+→ CMS human review
+→ Beschikbaar
+```
+
+Normal CMS users see only business state/content. Repository URLs, review transport identifiers, branches, storage paths and engineering-provider details are never part of the operator-facing contract.
+
+The server-side Sector Intelligence capability uses the same active-team authorization predicate as the rest of the Operator. No parallel membership authority exists.
+
+Published Sector Intelligence is advisory design evidence only. Verified prospect facts and explicit prospect/operator design direction outrank it. Missing Sector Intelligence never blocks design production.
+
+Canonical contracts: `sector-intelligence/README.md` and `docs/SECTOR_INTELLIGENCE_LINKAGE.md`.
+
 ## Public delivery
 
 The temporary public route is:
@@ -225,6 +261,7 @@ Top-level navigation:
 Mijn werk
 Prospects
 Bedrijven zoeken
+Sectoronderzoek
 Team        # Key user/Admin only
 ```
 
@@ -242,6 +279,14 @@ Default landing page. Derived from assignments and contextually opens the releva
 
 Shared active/archive register with status and simple work-distribution filters, including unassigned responsibilities.
 
+### Bedrijven zoeken
+
+Owns prospect discovery and first-pass candidate handling. It may link to Sectoronderzoek but does not own Sectoronderzoek UI state or research execution.
+
+### Sectoronderzoek
+
+Owns reusable sector research, CMS review and explicit prospect-sector linkage. It shares the validated sector resolver with Discovery but has its own inputs and actions.
+
 ### Team
 
 Combines membership lifecycle and current work-distribution visibility. It is not an HR system or capacity-planning platform.
@@ -249,6 +294,8 @@ Combines membership lifecycle and current work-distribution visibility. It is no
 ### Design
 
 Owns design outputs: the website concept plus versioned printmailing artifacts. Printmailing files are stored here because they are designed output; physical-send state is not.
+
+Design also shows the prospect's primary sector association because that determines which published Sector Intelligence may be consulted. The operator can correct that association explicitly.
 
 ### Outreach
 
@@ -267,7 +314,7 @@ Outreach reads the same printmailing artifacts created in Design and records whi
 
 ## Implemented data expansion
 
-The integrated operating model adds only:
+The integrated operating model uses only the state needed by the current commercial loop:
 
 ```text
 team_members
@@ -275,11 +322,12 @@ prospect_assignments
 events.actor_user_id
 prospect_visits
 mailing_artifacts
+prospects.canonical_sector_key
 ```
 
-Existing prospects, demos, mailings, audits, discovery and Storage remain authoritative. `mailings` is extended only with the required reference to the exact print artifact sent.
+Sector Intelligence content itself is not duplicated into a Supabase research table. Existing prospects, demos, mailings, audits, discovery and Storage remain authoritative. `mailings` is extended only with the required reference to the exact print artifact sent.
 
-No task table, portfolio table, generic attachments table or analytics database was introduced.
+No task table, portfolio table, generic attachments table, research-content table or analytics database was introduced.
 
 ## Database evolution
 
@@ -331,7 +379,8 @@ Do not add without observed need:
 - separate BI platform;
 - generalized external-preview/reverse-proxy platform;
 - user-profile/avatar image subsystem;
-- print-vendor integration or print-order automation.
+- print-vendor integration or print-order automation;
+- Sector Intelligence reference library, research database or many-to-many sector taxonomy.
 
 ## Architecture invariants
 
@@ -359,4 +408,7 @@ Do not add without observed need:
 22. Production deploy success includes runtime smoke, not upload success alone.
 23. A printmailing file is immutable Design output; a physical send references one exact stored version.
 24. Design and Outreach may surface the same print artifact but never duplicate it into separate state.
-25. No new subsystem is added without an observed problem that justifies it.
+25. A prospect has one primary sector identity for reusable design intelligence; operator correction is explicit.
+26. Sector Intelligence transport/storage mechanics never become operator-facing CMS concepts.
+27. Sector research operator guidance is challengeable input, not verified truth.
+28. No new subsystem is added without an observed problem that justifies it.
