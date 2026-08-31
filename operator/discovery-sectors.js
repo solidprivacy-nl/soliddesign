@@ -215,19 +215,19 @@
     processAction.insertAdjacentElement('afterend', fallback);
 
     startButton.addEventListener('click', async () => {
-      const popup = window.open('about:blank', '_blank');
-      if (popup) popup.opener = null;
       startButton.disabled = true;
       setMessage('Sectoronderzoek voor ChatGPT voorbereiden…');
       try {
         const context = await resolveResearchContext();
         const prompt = sectorIntelligencePrompt(context);
         await navigator.clipboard.writeText(prompt);
-        if (popup) popup.location = 'https://chatgpt.com/';
-        else window.open('https://chatgpt.com/', '_blank', 'noopener');
-        setMessage(`Onderzoeksopdracht voor “${context.humanTerm}” in ${context.location} gekopieerd. Plak hem in een nieuwe ChatGPT-chat.`);
+        const popup = window.open('https://chatgpt.com/', '_blank', 'noopener');
+        if (popup) {
+          setMessage(`Onderzoeksopdracht voor “${context.humanTerm}” in ${context.location} gekopieerd. Plak hem in de nieuwe ChatGPT-chat.`);
+        } else {
+          setMessage(`Onderzoeksopdracht voor “${context.humanTerm}” in ${context.location} gekopieerd. De browser blokkeerde het nieuwe tabblad; open ChatGPT en plak de opdracht.`);
+        }
       } catch (error) {
-        if (popup) popup.close();
         setMessage(error.message || String(error), true);
       } finally {
         startButton.disabled = false;
