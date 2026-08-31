@@ -25,6 +25,15 @@ def test_sector_workspace_reuses_existing_research_flow() -> None:
     assert "/api/resolve-sector" in ui
 
 
+def test_sector_research_keeps_human_term_separate_from_machine_key() -> None:
+    ui = Path("operator/sector-intelligence-ui.js").read_text(encoding="utf-8")
+
+    assert "researchTerm.value = row.canonical_sector_key" not in ui
+    assert "linkTerm.value = row.canonical_sector_key" in ui
+    assert "resetResearchTerm: true" in ui
+    assert "menselijke marktterm" in ui
+
+
 def test_sector_overview_reports_published_and_review_state() -> None:
     endpoint = Path("operator/functions/api/sector-intelligence.js").read_text(encoding="utf-8")
 
