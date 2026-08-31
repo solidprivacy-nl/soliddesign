@@ -7,7 +7,7 @@
   const db = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
   const BRIEF_BUCKET = 'design-briefs';
   const START_URL = `${window.location.origin}/start-design`;
-  const SECTOR_INTELLIGENCE_ROOT = 'https://raw.githubusercontent.com/solidprivacy-nl/soliddesign/main/sector-intelligence';
+  const SECTOR_INTELLIGENCE_ROOT = `${window.location.origin}/sector-intelligence`;
   const detailPanel = document.getElementById('detailPanel');
   if (!detailPanel) return;
 
@@ -301,9 +301,9 @@ ${designState.markdown}
 ## Sector Intelligence
 
 - **Canonical sector key:** ${valueOrUnknown(canonicalKey)}
-- **Published lookup:** ${valueOrUnknown(sectorLookup)}
+- **Published Sector Intelligence URL:** ${valueOrUnknown(sectorLookup)}
 
-If the published file exists, use it only as advisory design evidence for quality bar, art direction, hierarchy, imagery, trust presentation, service presentation, conversion and anti-pattern awareness. It may never supply or override prospect facts. Do not copy external designs.
+If the published resource exists, use it only as advisory design evidence for quality bar, art direction, hierarchy, imagery, trust presentation, service presentation, conversion and anti-pattern awareness. It may never supply or override prospect facts. Do not copy external designs.
 
 ## Operator direction
 
