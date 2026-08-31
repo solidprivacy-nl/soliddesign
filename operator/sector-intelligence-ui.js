@@ -75,7 +75,7 @@
             <input id="sectorResearchLocation" type="text" maxlength="120" placeholder="Bijv. Amsterdam" />
           </label>
         </div>
-        <p class="subtle">De Nederlandse sectornaam wordt bij starten gevalideerd tegen de bestaande Overture-sectorresolver. De canonical key blijft alleen machine-identiteit.</p>
+        <p class="subtle">Gebruik hier de menselijke marktterm, bijvoorbeeld <strong>kapper</strong>, niet de canonical key <code>barber</code>. SolidDesign valideert de term en gebruikt de canonical key alleen als machine-identiteit.</p>
         <div id="sectorResearchControls"></div>
         <p id="sectorResearchMessage" class="message" aria-live="polite"></p>
       </div>
@@ -161,7 +161,8 @@
 
     const requestedTerm = String(options.sectorTerm || '').trim();
     const requestedLocation = String(options.location || '').trim();
-    researchTerm.value = requestedTerm || researchTerm.value || discoverySnapshot?.sector || '';
+    if (options.resetResearchTerm) researchTerm.value = '';
+    else researchTerm.value = requestedTerm || researchTerm.value || discoverySnapshot?.sector || '';
     researchLocation.value = requestedLocation || researchLocation.value || discoverySnapshot?.location || '';
     syncResearchToLegacyInputs();
 
@@ -260,12 +261,14 @@
         </div>
         <div class="compact-actions">
           ${links.join('')}
-          <button type="button" class="secondary" data-use-sector>Gebruik</button>
+          <button type="button" class="secondary" data-use-sector>Koppel aan prospect</button>
         </div>`;
       item.querySelector('[data-use-sector]').addEventListener('click', () => {
-        researchTerm.value = row.canonical_sector_key;
-        syncResearchToLegacyInputs();
-        researchTerm.focus();
+        linkTerm.value = row.canonical_sector_key;
+        linkStatus.textContent = sectorAvailability(row.canonical_sector_key);
+        linkMessage.textContent = `Sector “${row.canonical_sector_key}” geselecteerd. Kies het bedrijf en klik op Koppel sector.`;
+        linkMessage.classList.remove('error');
+        linkTarget.focus();
       });
       sectorList.appendChild(item);
     }
@@ -293,8 +296,9 @@
 
   function sectorAvailability(key) {
     if (!key) return 'Geen sector gekoppeld';
+    if (!sectorRows.length) return `${key} · sector gekoppeld`;
     const row = sectorRows.find((item) => item.canonical_sector_key === key);
-    if (!row) return `${key} · nog geen onderzoek`;
+    if (!row) return `${key} · geen onderzoek bekend`;
     return `${key} · ${statusLabel(row.status).toLowerCase()}`;
   }
 
@@ -342,10 +346,14 @@
   document.getElementById('sectorLinkResearch').addEventListener('click', () => {
     const target = selectedLinkTarget();
     if (!target) return;
-    const term = linkTerm.value.trim() || target.canonical_sector_key || '';
-    researchTerm.value = term;
+    researchTerm.value = '';
     researchLocation.value = target.city || researchLocation.value;
     syncResearchToLegacyInputs();
+    const key = linkTerm.value.trim() || target.canonical_sector_key || '';
+    researchMessage.textContent = key
+      ? `Sector-key “${key}” is de machine-identiteit. Vul hierboven de menselijke marktterm in waarmee ChatGPT moet onderzoeken.`
+      : 'Vul hierboven de menselijke marktterm in waarmee ChatGPT deze sector moet onderzoeken.';
+    researchMessage.classList.remove('error');
     researchTerm.focus();
   });
 
@@ -437,9 +445,16 @@
 
     control.querySelector('[data-prospect-sector-research]').addEventListener('click', () => {
       showSectorView({
-        sectorTerm: input.value.trim() || prospect.canonical_sector_key || '',
+        resetResearchTerm: true,
         location: prospect.city || '',
         targetId: prospect.id
+      }).then(() => {
+        const key = input.value.trim() || prospect.canonical_sector_key || '';
+        researchMessage.textContent = key
+          ? `Sector-key “${key}” is gekoppeld aan dit prospect. Vul de menselijke marktterm in voor het onderzoek.`
+          : 'Vul de menselijke marktterm in voor het sectoronderzoek.';
+        researchMessage.classList.remove('error');
+        researchTerm.focus();
       }).catch((error) => window.alert(error.message || String(error)));
     });
     root.dataset.sectorLinkBound = 'true';
