@@ -244,6 +244,7 @@
       researchTerm.value = requestedTerm;
       setKnownCanonicalKey(researchTerm, options.canonicalKey, Boolean(options.canonicalKey));
     } else if (options.canonicalKey) {
+      researchTerm.value = '';
       setKnownCanonicalKey(researchTerm, options.canonicalKey, true);
     }
     if (requestedLocation) researchLocation.value = requestedLocation;
