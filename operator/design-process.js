@@ -332,7 +332,7 @@ ${prospect.design_brief_note?.trim() || '_No additional operator design directio
         updated_at: new Date().toISOString()
       })
       .eq('id', context.prospect.id)
-      .select('design_workspace_url,design_brief_note,updated_at')
+      .select('design_workspace_url,design_brief_note,canonical_sector_key,updated_at')
       .single();
     if (error) throw error;
     Object.assign(context.prospect, data);
