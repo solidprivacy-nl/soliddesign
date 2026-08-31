@@ -41,6 +41,7 @@ def test_sector_overview_reports_published_and_review_state() -> None:
     assert "IN_REVIEW" in endpoint
     assert "UPDATE_IN_REVIEW" in endpoint
     assert "Sector Intelligence:" in endpoint
+    assert "operator_allowlist" in endpoint
 
 
 def test_single_sector_discovery_inherits_known_sector_identity() -> None:
