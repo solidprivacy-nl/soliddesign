@@ -29,6 +29,30 @@
     return text ? text.charAt(0).toUpperCase() + text.slice(1) : '';
   }
 
+  function validCanonicalKey(value) {
+    const key = String(value || '').trim().toLowerCase();
+    return /^[a-z0-9][a-z0-9_-]{0,62}$/.test(key) ? key : null;
+  }
+
+  function setKnownCanonicalKey(input, value, preserveWhileEditing = false) {
+    const key = validCanonicalKey(value);
+    if (key) {
+      input.dataset.canonicalKey = key;
+      input.dataset.preserveCanonicalKey = preserveWhileEditing ? 'true' : 'false';
+    } else {
+      delete input.dataset.canonicalKey;
+      delete input.dataset.preserveCanonicalKey;
+    }
+  }
+
+  async function resolveInputSector(input) {
+    const humanTerm = input.value.trim();
+    if (!humanTerm) throw new Error('Vul één sector in.');
+    const knownKey = validCanonicalKey(input.dataset.canonicalKey);
+    if (knownKey) return { humanTerm, canonicalKey: knownKey };
+    return resolveSingleSector(humanTerm);
+  }
+
   async function sessionOrThrow() {
     const { data: { session } } = await db.auth.getSession();
     if (!session?.access_token) throw new Error('Log opnieuw in om deze actie uit te voeren.');
@@ -170,6 +194,11 @@
   const rejectButton = document.getElementById('rejectSectorIntelligence');
   const approveButton = document.getElementById('approveSectorIntelligence');
 
+  researchTerm.addEventListener('input', () => {
+    if (researchTerm.dataset.preserveCanonicalKey !== 'true') setKnownCanonicalKey(researchTerm, null);
+  });
+  linkTerm.addEventListener('input', () => setKnownCanonicalKey(linkTerm, null));
+
   function setResearchMessage(text, isError = false) {
     researchMessage.textContent = text || '';
     researchMessage.classList.toggle('error', Boolean(isError));
@@ -192,10 +221,6 @@
     return sectorRows.find((row) => row.canonical_sector_key === key) || null;
   }
 
-  function labelForKey(key) {
-    return rowForKey(key)?.research_label || humanizeKey(key);
-  }
-
   function sectorAvailability(key, fallbackLabel = '') {
     if (!key) return 'Geen sector gekoppeld';
     const row = rowForKey(key);
@@ -212,8 +237,15 @@
   async function showSectorView(options = {}) {
     const requestedTerm = String(options.sectorTerm || '').trim();
     const requestedLocation = String(options.location || '').trim();
-    if (options.resetResearchTerm) researchTerm.value = '';
-    else if (requestedTerm) researchTerm.value = requestedTerm;
+    if (options.resetResearchTerm) {
+      researchTerm.value = '';
+      setKnownCanonicalKey(researchTerm, null);
+    } else if (requestedTerm) {
+      researchTerm.value = requestedTerm;
+      setKnownCanonicalKey(researchTerm, options.canonicalKey, Boolean(options.canonicalKey));
+    } else if (options.canonicalKey) {
+      setKnownCanonicalKey(researchTerm, options.canonicalKey, true);
+    }
     if (requestedLocation) researchLocation.value = requestedLocation;
 
     prospectsView.classList.add('hidden');
@@ -261,10 +293,9 @@
 
   async function resolveResearchContext() {
     const location = researchLocation.value.trim();
-    const sectorValue = researchTerm.value.trim();
     if (!location) throw new Error('Vul eerst een startlocatie in voor het sectoronderzoek.');
-    if (!sectorValue) throw new Error('Vul eerst één sector in voor het sectoronderzoek.');
-    return { location, ...(await resolveSingleSector(sectorValue)) };
+    const sector = await resolveInputSector(researchTerm);
+    return { location, ...sector };
   }
 
   function sectorIntelligencePrompt({ humanTerm, location, canonicalKey, guidance }) {
@@ -313,6 +344,8 @@
         ? `De sectorinzichten voor “${context.humanTerm}” zijn al actueel.`
         : `Sectorinzichten voor “${context.humanTerm}” staan klaar voor beoordeling in het CMS.`);
       await loadSectorRows();
+      updateLinkFormFromTarget();
+      await bindCurrentProspectSector(true);
     } finally {
       button.disabled = false;
     }
@@ -377,11 +410,13 @@
       item.querySelector('[data-review-pending]')?.addEventListener('click', () => openSectorDetail(row, 'pending').catch(showDetailError));
       item.querySelector('[data-update-sector]')?.addEventListener('click', () => {
         researchTerm.value = row.research_label;
+        setKnownCanonicalKey(researchTerm, row.canonical_sector_key, true);
         researchTerm.focus();
         setResearchMessage(`Werk het onderzoek voor “${row.research_label}” bij. Controleer de marktterm en startlocatie voordat je start.`);
       });
       item.querySelector('[data-link-sector]').addEventListener('click', () => {
         linkTerm.value = row.research_label;
+        setKnownCanonicalKey(linkTerm, row.canonical_sector_key);
         linkStatus.textContent = sectorAvailability(row.canonical_sector_key, row.research_label);
         linkMessage.textContent = `Kies het bedrijf dat je aan “${row.research_label}” wilt koppelen.`;
         linkMessage.classList.remove('error');
@@ -446,6 +481,7 @@
       detailRow = null;
       await loadSectorRows();
       updateLinkFormFromTarget();
+      await bindCurrentProspectSector(true);
     } catch (error) {
       setDetailMessage(error.message || String(error), true);
     } finally {
@@ -481,11 +517,13 @@
     const target = selectedLinkTarget();
     if (!target) {
       linkTerm.value = '';
+      setKnownCanonicalKey(linkTerm, null);
       linkStatus.textContent = 'Geen prospect beschikbaar.';
       return;
     }
     const row = rowForKey(target.canonical_sector_key);
     linkTerm.value = row?.research_label || humanizeKey(target.canonical_sector_key);
+    setKnownCanonicalKey(linkTerm, target.canonical_sector_key);
     linkStatus.textContent = sectorAvailability(target.canonical_sector_key, row?.research_label || '');
   }
 
@@ -499,7 +537,7 @@
     linkMessage.textContent = 'Sector koppelen…';
     linkMessage.classList.remove('error');
     try {
-      const resolved = await resolveSingleSector(linkTerm.value);
+      const resolved = await resolveInputSector(linkTerm);
       const { data, error } = await db.rpc('operator_set_prospect_sector', {
         p_id: target.id,
         p_sector_key: resolved.canonicalKey
@@ -508,6 +546,7 @@
       if (!data) throw new Error('Sector kon niet aan het prospect worden gekoppeld.');
       target.canonical_sector_key = resolved.canonicalKey;
       linkTerm.value = rowForKey(resolved.canonicalKey)?.research_label || resolved.humanTerm;
+      setKnownCanonicalKey(linkTerm, resolved.canonicalKey);
       linkStatus.textContent = sectorAvailability(resolved.canonicalKey, resolved.humanTerm);
       linkMessage.textContent = `“${resolved.humanTerm}” is gekoppeld aan ${target.name}.`;
       bindCurrentProspectSector(true).catch(console.error);
@@ -524,6 +563,7 @@
     if (!target) return;
     const row = rowForKey(target.canonical_sector_key);
     researchTerm.value = row?.research_label || '';
+    setKnownCanonicalKey(researchTerm, target.canonical_sector_key, true);
     researchLocation.value = target.city || researchLocation.value;
     setResearchMessage(row
       ? `Onderzoek of actualiseer “${row.research_label}”.`
@@ -535,7 +575,9 @@
 
   async function refreshWorkspace() {
     setResearchMessage('');
-    await Promise.all([loadSectorRows(), loadLinkTargets()]);
+    await loadSectorRows();
+    await loadLinkTargets();
+    await bindCurrentProspectSector(true);
   }
 
   async function bindCurrentProspectSector(force = false) {
@@ -578,13 +620,15 @@
     const status = control.querySelector('[data-prospect-sector-status]');
     const row = rowForKey(prospect.canonical_sector_key);
     input.value = row?.research_label || humanizeKey(prospect.canonical_sector_key);
+    setKnownCanonicalKey(input, prospect.canonical_sector_key);
     status.textContent = sectorAvailability(prospect.canonical_sector_key, row?.research_label || '');
+    input.addEventListener('input', () => setKnownCanonicalKey(input, null));
 
     control.querySelector('[data-prospect-sector-save]').addEventListener('click', async (event) => {
       const button = event.currentTarget;
       button.disabled = true;
       try {
-        const resolved = await resolveSingleSector(input.value);
+        const resolved = await resolveInputSector(input);
         const { data: changed, error: saveError } = await db.rpc('operator_set_prospect_sector', {
           p_id: prospect.id,
           p_sector_key: resolved.canonicalKey
@@ -593,6 +637,7 @@
         if (!changed) throw new Error('Sector kon niet worden gekoppeld.');
         prospect.canonical_sector_key = resolved.canonicalKey;
         input.value = rowForKey(resolved.canonicalKey)?.research_label || resolved.humanTerm;
+        setKnownCanonicalKey(input, resolved.canonicalKey);
         status.textContent = sectorAvailability(resolved.canonicalKey, resolved.humanTerm);
       } catch (error) {
         window.alert(error.message || String(error));
@@ -605,6 +650,7 @@
       const currentRow = rowForKey(prospect.canonical_sector_key);
       showSectorView({
         sectorTerm: currentRow?.research_label || '',
+        canonicalKey: prospect.canonical_sector_key,
         location: prospect.city || '',
         targetId: prospect.id,
         focusResearch: true
