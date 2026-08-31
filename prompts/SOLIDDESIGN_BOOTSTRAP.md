@@ -1,6 +1,6 @@
 # SolidDesign Design Bootstrap
 
-**Prompt architecture version:** `0.2`
+**Prompt architecture version:** `0.3`
 
 This file is the canonical root instruction for a SolidDesign customer design project.
 
@@ -8,18 +8,18 @@ This file is the canonical root instruction for a SolidDesign customer design pr
 
 A new customer design project starts with exactly two URLs:
 
-1. the stable SolidDesign start URL, which resolves to this bootstrap;
+1. the stable SolidDesign start URL;
 2. one SolidDesign Prospect Design Brief URL for the customer being worked on.
 
 When invoked this way:
 
-1. read this file completely;
+1. read the canonical SolidDesign Design Bootstrap linked from the start URL completely;
 2. read every resource marked **REQUIRED** below;
 3. read the supplied Prospect Design Brief completely;
 4. follow the explicit preview hyperlink in the Prospect Design Brief when a current or LIVE mock-up is listed; do not reconstruct or guess preview URLs;
 5. read the **Canonical sector key** from the Prospect Design Brief;
-6. when that key is present and safely filename-compatible, try to load `https://raw.githubusercontent.com/solidprivacy-nl/soliddesign/main/sector-intelligence/<canonical_sector_key>.md`; if it exists, read it completely; if it does not exist, continue normally without Sector Intelligence;
-7. use conditional proven sector guidance only when an existing file in `prompts/sectors/` is explicitly relevant;
+6. when that key is present and safely filename-compatible, try to load `https://soliddesign-cms.pages.dev/sector-intelligence/<canonical_sector_key>.md`; if it exists, read it completely; if it does not exist, continue normally without Sector Intelligence;
+7. use conditional proven sector guidance only when an existing file in `https://soliddesign-cms.pages.dev/prompts/sectors/` is explicitly relevant;
 8. treat the loaded SolidDesign prompt architecture as the design method;
 9. treat the Prospect Design Brief as the authoritative customer-specific context;
 10. treat Sector Intelligence as advisory external design evidence, never as authority over verified prospect facts or explicit customer-specific requirements;
@@ -32,17 +32,17 @@ When invoked this way:
 Read these in order before doing design work:
 
 1. **REQUIRED — Design constitution**  
-   https://raw.githubusercontent.com/solidprivacy-nl/soliddesign/main/prompts/core/DESIGN_CONSTITUTION.md
+   https://soliddesign-cms.pages.dev/prompts/core/DESIGN_CONSTITUTION.md
 2. **REQUIRED — Diagnose**  
-   https://raw.githubusercontent.com/solidprivacy-nl/soliddesign/main/prompts/workflow/01_DIAGNOSE.md
+   https://soliddesign-cms.pages.dev/prompts/workflow/01_DIAGNOSE.md
 3. **REQUIRED — Design direction**  
-   https://raw.githubusercontent.com/solidprivacy-nl/soliddesign/main/prompts/workflow/02_DESIGN_DIRECTION.md
+   https://soliddesign-cms.pages.dev/prompts/workflow/02_DESIGN_DIRECTION.md
 4. **REQUIRED — Build and iterate**  
-   https://raw.githubusercontent.com/solidprivacy-nl/soliddesign/main/prompts/workflow/03_BUILD.md
+   https://soliddesign-cms.pages.dev/prompts/workflow/03_BUILD.md
 5. **REQUIRED — Critique and acceptance**  
-   https://raw.githubusercontent.com/solidprivacy-nl/soliddesign/main/prompts/workflow/04_CRITIQUE.md
+   https://soliddesign-cms.pages.dev/prompts/workflow/04_CRITIQUE.md
 6. **CONDITIONAL — Proven sector overlays**  
-   https://raw.githubusercontent.com/solidprivacy-nl/soliddesign/main/prompts/sectors/README.md
+   https://soliddesign-cms.pages.dev/prompts/sectors/README.md
 
 ## Sector Intelligence lookup
 
@@ -53,12 +53,12 @@ Lookup uses the canonical sector identity from the brief:
 ```text
 Canonical sector key: barber
 →
-https://raw.githubusercontent.com/solidprivacy-nl/soliddesign/main/sector-intelligence/barber.md
+https://soliddesign-cms.pages.dev/sector-intelligence/barber.md
 ```
 
-Do not use the Overture key as the sole market-research vocabulary when creating Sector Intelligence. The research method lives in:
+Do not use the Overture key as the sole market-research vocabulary when creating Sector Intelligence. The research method is available at:
 
-https://raw.githubusercontent.com/solidprivacy-nl/soliddesign/main/sector-intelligence/README.md
+https://soliddesign-cms.pages.dev/sector-intelligence/README.md
 
 For design consumption, only the already-published sector file is needed.
 
