@@ -58,6 +58,15 @@ def test_known_sector_identity_is_not_reresolved_from_display_label() -> None:
     assert "Promise.all" not in refresh
     assert refresh.index("await loadSectorRows();") < refresh.index("await loadLinkTargets();")
 
+    # When a prospect supplies a known canonical identity but there is no published
+    # human label yet, an old research term from another sector must be cleared.
+    show_start = ui.index("async function showSectorView")
+    show_end = ui.index("window.SOLIDDESIGN_OPEN_SECTOR_INTELLIGENCE", show_start)
+    show = ui[show_start:show_end]
+    assert "else if (options.canonicalKey)" in show
+    assert "researchTerm.value = '';" in show
+    assert "setKnownCanonicalKey(researchTerm, options.canonicalKey, true)" in show
+
 
 def test_sector_server_facade_uses_current_membership_and_hides_transport() -> None:
     endpoint = read("operator/functions/api/sector-intelligence.js")
