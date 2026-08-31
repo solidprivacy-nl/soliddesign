@@ -42,6 +42,15 @@ def test_single_sector_discovery_inherits_known_sector_identity() -> None:
     assert "coalesce(" in migration
 
 
+def test_sector_link_rpc_is_not_anonymous_capability() -> None:
+    migration = Path("supabase/migrations/20260831_sector_linking_security_v03.sql").read_text(encoding="utf-8")
+
+    assert "from anon" in migration
+    assert "operator_list_sector_link_targets" in migration
+    assert "operator_set_prospect_sector" in migration
+    assert "revoke update (canonical_sector_key)" in migration
+
+
 def test_direct_url_is_not_silently_classified() -> None:
     discovery = Path("operator/discovery.js").read_text(encoding="utf-8")
     linkage = Path("docs/SECTOR_INTELLIGENCE_LINKAGE.md").read_text(encoding="utf-8")
