@@ -14,6 +14,7 @@ const EVENT_LABELS = {
   prospect_restored: 'Prospect hersteld'
 };
 
+const DOSSIER_TAB_STORAGE_PREFIX = 'soliddesign:dossier-tab:';
 let pendingWorkTab = null;
 
 function addStylesheet() {
@@ -38,10 +39,29 @@ async function selectedProspect(root) {
   return data?.length === 1 ? data[0] : null;
 }
 
+function storedTab(prospectId) {
+  if (!prospectId) return null;
+  try {
+    return window.sessionStorage.getItem(`${DOSSIER_TAB_STORAGE_PREFIX}${prospectId}`);
+  } catch {
+    return null;
+  }
+}
+
+function rememberTab(prospectId, tab) {
+  if (!prospectId) return;
+  try {
+    window.sessionStorage.setItem(`${DOSSIER_TAB_STORAGE_PREFIX}${prospectId}`, tab);
+  } catch {
+    // Tab persistence is a convenience; the dossier must keep working without storage access.
+  }
+}
+
 function activateTab(root, name) {
   const target = root.querySelector(`[data-dossier-tab="${name}"]`) ? name : 'overview';
   root.querySelectorAll('[data-dossier-tab]').forEach((button) => button.classList.toggle('active', button.dataset.dossierTab === target));
   root.querySelectorAll('[data-dossier-pane]').forEach((pane) => pane.classList.toggle('hidden', pane.dataset.dossierPane !== target));
+  rememberTab(root.dataset.dossierProspectId, target);
 }
 
 function eventDescription(event) {
@@ -128,6 +148,7 @@ async function bindDossier(root) {
     delete root.dataset.dossierTabsBound;
     return;
   }
+  root.dataset.dossierProspectId = prospect.id;
 
   const nav = document.createElement('div');
   nav.className = 'dossier-tabs';
@@ -162,7 +183,7 @@ async function bindDossier(root) {
   placeLateComponents(root);
 
   nav.querySelectorAll('[data-dossier-tab]').forEach((button) => button.addEventListener('click', () => activateTab(root, button.dataset.dossierTab)));
-  activateTab(root, pendingWorkTab || 'overview');
+  activateTab(root, pendingWorkTab || storedTab(prospect.id) || 'overview');
   pendingWorkTab = null;
   await loadActivity(prospect.id, activity);
 
