@@ -20,24 +20,18 @@ async function authorizeAndLoadProspect(request, prospectId) {
   const authorization = request.headers.get('Authorization') || '';
   if (!authorization.startsWith('Bearer ')) return null;
 
-  const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: {
-      Authorization: authorization,
-      apikey: SUPABASE_PUBLISHABLE_KEY
-    }
-  });
-  if (!userResponse.ok) return null;
-
-  const allowlistResponse = await fetch(`${SUPABASE_URL}/rest/v1/operator_allowlist?select=email&limit=1`, {
+  const membershipResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/operator_is_active_team_member`, {
+    method: 'POST',
     headers: {
       Authorization: authorization,
       apikey: SUPABASE_PUBLISHABLE_KEY,
-      Accept: 'application/json'
-    }
+      'Content-Type': 'application/json'
+    },
+    body: '{}'
   });
-  if (!allowlistResponse.ok) return null;
-  const allowed = await allowlistResponse.json().catch(() => []);
-  if (!Array.isArray(allowed) || allowed.length !== 1) return null;
+  if (!membershipResponse.ok) return null;
+  const activeMember = await membershipResponse.json().catch(() => false);
+  if (activeMember !== true) return null;
 
   const prospectResponse = await fetch(`${SUPABASE_URL}/rest/v1/prospects?id=eq.${encodeURIComponent(prospectId)}&select=id,state&limit=1`, {
     headers: {

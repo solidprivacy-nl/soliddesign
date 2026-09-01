@@ -18,6 +18,11 @@ class OperatorAllowlistRetirementTests(unittest.TestCase):
         self.assertIn(".eq('active', true)", app)
         self.assertNotIn(".from('operator_allowlist')", app)
 
+    def test_first_concept_endpoint_uses_canonical_membership_predicate(self):
+        endpoint = self.read("operator/functions/api/prepare-prospect.js")
+        self.assertIn("operator_is_active_team_member", endpoint)
+        self.assertNotIn("operator_allowlist", endpoint)
+
     def test_sector_intelligence_uses_canonical_membership_predicate(self):
         endpoint = self.read("operator/functions/api/sector-intelligence.js")
         self.assertIn("operator_is_active_team_member", endpoint)
