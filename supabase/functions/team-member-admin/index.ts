@@ -96,22 +96,9 @@ export default {
       if ((activeAdminCount || 0) <= 1) return json(409, { error: 'Er moet minimaal één actieve Admin overblijven.' });
     }
 
-    const { error: allowlistError } = await ctx.supabaseAdmin
-      .from('operator_allowlist')
-      .delete()
-      .eq('email', target.email);
-    if (allowlistError) {
-      console.error('team-member-admin allowlist cleanup failed', allowlistError);
-      return json(502, { error: 'Toegang kon niet veilig worden verwijderd.' });
-    }
-
     const { error: authDeleteError } = await ctx.supabaseAdmin.auth.admin.deleteUser(targetUserId);
     if (authDeleteError) {
       console.error('team-member-admin auth delete failed', authDeleteError);
-      await ctx.supabaseAdmin.from('operator_allowlist').upsert(
-        { email: target.email, active: target.active },
-        { onConflict: 'email' },
-      );
       return json(502, { error: 'Account kon niet definitief worden verwijderd.' });
     }
 
