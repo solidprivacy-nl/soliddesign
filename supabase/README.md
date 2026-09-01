@@ -55,15 +55,38 @@ Human-visible team identity is `team_members.display_name`; the stable Auth UUID
 
 ## Edge Functions
 
-`supabase/functions/` contains bounded server capabilities such as:
+`supabase/functions/` is the repository source of truth for bounded server capabilities. Current deployed function slugs are:
 
-- team invitations;
-- Admin-only permanent deletion of history-free/test team accounts;
-- public prospect engagement.
+```text
+mockup-preview
+prospect-preparation
+prospect-engagement
+team-invite
+team-member-admin
+```
 
 Permanent team deletion belongs server-side because it must use the Supabase Auth Admin API and re-check role, assignment, history and last-Admin safeguards before deleting the Auth user.
 
 Browser-called Edge Functions must implement explicit CORS/preflight handling and must still perform their own authentication/authorization where required.
+
+### Deployment parity rule
+
+An Edge Function change is not complete when the repository changed. It is complete only when the exact repository source has been deployed to the SolidDesign Supabase project and the deployed source has been re-read or otherwise verified against that revision.
+
+Use the ordinary Supabase function deployment capability; do not maintain a second generated source copy or edit production functions independently from `supabase/functions/`.
+
+For authorization-sensitive changes, closeout requires all of the following:
+
+```text
+repository source updated
+→ CI invariant passes
+→ affected Edge Function deployed
+→ deployed source re-read
+→ production database authorization state checked
+→ security advisor reviewed where relevant
+```
+
+The retired `operator_allowlist` may remain visible only in historical bootstrap/migration material. It is forbidden in active Edge Function source.
 
 ## Consolidation rule
 

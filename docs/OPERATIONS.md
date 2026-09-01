@@ -203,13 +203,23 @@ LIVE promotion and mailing remain explicit human actions.
 
 ## 12. Team access and onboarding
 
-Supabase Auth provides identity. `team_members` is the durable membership/role model:
+Supabase Auth provides identity. `team_members` is the sole durable application membership/role model:
 
 ```text
 ADMIN
 KEY_USER
 USER
 ```
+
+Authorization is:
+
+```text
+auth.uid()
+→ active team_members
+→ role-aware RLS / RPC / server capability
+```
+
+The historical database `operator_allowlist` was retired on 2026-08-30. It is not a compatibility layer and must not appear in active browser, Pages Function or Edge Function runtime code. Historical bootstrap/migration material remains unchanged so the database evolution chain stays reproducible.
 
 Routine onboarding is invite-only:
 
@@ -237,11 +247,10 @@ https://soliddesign-cms.pages.dev/
 
 Redirect URLs
 https://soliddesign-cms.pages.dev
-https://pr-28.soliddesign-cms.pages.dev
 https://pr-*.soliddesign-cms.pages.dev
 ```
 
-The exact `pr-28` entry is the current acceptance environment; the wildcard covers future numbered PR-preview origins. Do not add `/**` when the application itself redirects only to an origin. Keep the requested `redirectTo` and the configured Redirect URL in the same canonical representation.
+The wildcard covers numbered PR-preview origins without hard-coding a temporary acceptance PR into this current document. Do not add `/**` when the application itself redirects only to an origin. Keep the requested `redirectTo` and the configured Redirect URL in the same canonical representation.
 
 `http://localhost:3000` must not remain the hosted production Site URL. It is local-development configuration only.
 
@@ -261,7 +270,7 @@ and set the `team-invite` Edge Function environment value:
 SOLIDDESIGN_INTERNAL_ORIGIN=https://cms.<brand>.nl
 ```
 
-Re-test invitations before removing the old internal hostname from the allow list. Full rationale and invariants: `docs/AUTH_REDIRECTS.md`.
+Re-test invitations before removing the old internal hostname from the redirect-origin allowlist. Full rationale and invariants: `docs/AUTH_REDIRECTS.md`.
 
 ### Auth e-mail delivery
 
@@ -288,8 +297,6 @@ custom SMTP configured in Supabase
 ```
 
 SMTP credentials belong in Supabase configuration/secrets, never in repository or browser code. Provider selection can remain independent of SolidDesign architecture.
-
-`operator_allowlist` still exists as **transitional compatibility** for older Operator RLS/access checks. It is not a second membership model and should disappear only after the remaining RLS/access paths have been deliberately cut over and verified.
 
 Never expose a secret/service-role credential to browser code. Browser access uses the Supabase publishable key with least-privilege grants, RLS and narrow RPC/server capabilities.
 
@@ -379,16 +386,21 @@ There is one Cloudflare Pages project: `soliddesign-cms`.
 
 - push to `main` deploys production;
 - pull requests deploy to an isolated Pages preview branch in the **same project**;
+- the Pages Functions `/api/*` boundary requires active `team_members` membership before endpoint execution;
 - the deployment smoke verifies representative CMS/public routes and browser Edge-Function CORS boundaries before merge.
+
+Supabase Edge Functions are deployed from the exact source under `supabase/functions/`. A repository change to an Edge Function is not complete until the affected function has been deployed and the deployed source has been re-read or otherwise checked against the repository revision. See `supabase/README.md`.
 
 Do not create a second Pages application merely for public branding or preview QA.
 
 After schema/auth/RLS/function changes:
 
-1. run CI;
+1. run CI, including the application-wide authorization-retirement invariant;
 2. run the Pages/runtime smoke where relevant;
-3. run Supabase security advisors;
-4. reconcile current documentation if a contract changed.
+3. deploy affected Supabase Edge Functions from repository source;
+4. verify deployed Edge Function source/behavior rather than assuming source control equals production;
+5. run Supabase security advisors;
+6. reconcile current documentation if a contract changed.
 
 ## 19. When Overture is insufficient
 

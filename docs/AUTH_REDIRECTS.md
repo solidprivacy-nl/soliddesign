@@ -1,7 +1,7 @@
 # SolidDesign Auth Redirect & Mail Delivery Configuration
 
 **Status:** current runtime contract  
-**Date:** 2026-08-29
+**Date:** 2026-09-01
 
 ## Purpose
 
@@ -32,6 +32,8 @@ https://pr-<number>.soliddesign-cms.pages.dev
 https://cms.<brand>.nl        # after brand cutover, configured explicitly
 ```
 
+This origin allowlist is a redirect-safety boundary and is unrelated to the retired database `operator_allowlist` membership model.
+
 `redirectTo` is the validated `URL.origin` **verbatim**. Do not append a synthetic trailing slash or path. Supabase compares the requested redirect with its configured Redirect URLs; using one canonical origin representation prevents an otherwise valid preview origin from falling back to the Site URL because of a representation mismatch.
 
 The Edge Function returns the selected safe `activation_origin` to the Team UI after creating the invite. The UI must show that value. An invite test is not considered valid unless the server-confirmed activation origin is the environment being tested.
@@ -60,11 +62,10 @@ https://soliddesign-cms.pages.dev/
 
 Redirect URLs
 https://soliddesign-cms.pages.dev
-https://pr-28.soliddesign-cms.pages.dev
 https://pr-*.soliddesign-cms.pages.dev
 ```
 
-The exact `pr-28` entry exists for the current acceptance test. The preview wildcard permits future numbered PR origins without expanding access to unrelated hosts. Because SolidDesign redirects to origins rather than application subpaths, do not add `/**` merely by convention.
+The preview wildcard permits numbered PR origins without embedding a temporary acceptance PR in the current runtime contract. Because SolidDesign redirects to origins rather than application subpaths, do not add `/**` merely by convention.
 
 After the final brand/domain decision:
 
@@ -94,7 +95,7 @@ Do not create a custom token-exchange/auth service merely to solve ordinary host
 
 ## Auth mail delivery contract
 
-Supabase's built-in default SMTP service is suitable for development and bounded acceptance testing, but it is intentionally rate-limited and best-effort. At the time of this rollout the hosted default is limited to a very small number of Auth messages per hour; repeated invite testing can therefore return:
+Supabase's built-in default SMTP service is suitable for development and bounded acceptance testing, but it is intentionally rate-limited and best-effort. Repeated invite testing can therefore return:
 
 ```text
 HTTP 429
@@ -121,11 +122,11 @@ Reference: https://supabase.com/docs/guides/auth/auth-smtp
 
 ## Verification gate
 
-Before M1 invite/onboarding is marked browser-verified:
+For an invite/onboarding acceptance run:
 
 1. verify the visible environment marker before inviting;
 2. verify the Team invite card shows the expected `Activatieomgeving` before sending;
-3. invite from `pr-<number>` and confirm the server reports that exact preview as `activation_origin` and the email returns there;
+3. when testing from a PR preview, confirm the server reports that exact preview as `activation_origin` and the email returns there;
 4. confirm a mismatched or unapproved `invite_origin` is rejected;
 5. finish first-password setup and verify `joined_at` is recorded only afterward;
 6. verify a clean retry after an Auth mail-rate-limit failure creates no duplicate/half account;
