@@ -161,17 +161,6 @@ export default {
       return json(502, { error: 'Teamlid kon niet worden aangemaakt.' });
     }
 
-    const { error: allowlistError } = await ctx.supabaseAdmin
-      .from('operator_allowlist')
-      .upsert({ email, active: true }, { onConflict: 'email' });
-
-    if (allowlistError) {
-      console.error('team-invite allowlist compatibility failed', allowlistError);
-      await ctx.supabaseAdmin.from('team_members').delete().eq('user_id', invited.id);
-      await ctx.supabaseAdmin.auth.admin.deleteUser(invited.id).catch((error) => console.error('team-invite cleanup failed', error));
-      return json(502, { error: 'Toegang kon niet worden voorbereid.' });
-    }
-
     const { error: eventError } = await ctx.supabaseAdmin.from('events').insert({
       event_type: 'user_invited',
       actor_user_id: callerId,
