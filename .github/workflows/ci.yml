@@ -100,10 +100,11 @@ jobs:
           grep -q 'Implementation boundary:' operator/start-design.html
           ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com|supabase\.co' operator/start-design.html
           grep -q 'Prompt architecture version.*0.4-preview' prompts/SOLIDDESIGN_BOOTSTRAP.md
-          grep -q 'soliddesign-cms.pages.dev/prompts/' prompts/SOLIDDESIGN_BOOTSTRAP.md
-          grep -q 'soliddesign-cms.pages.dev/sector-intelligence/' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          grep -q 'SOLIDDESIGN_ORIGIN' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          grep -q '/prompts/core/DESIGN_CONSTITUTION.md' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          grep -q 'SOLIDDESIGN_ORIGIN/sector-intelligence/<canonical_sector_key>.md' prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'Do not discover, inspect or infer underlying source repositories' prompts/SOLIDDESIGN_BOOTSTRAP.md
-          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com|supabase\.co' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com|supabase\.co|https://soliddesign-cms\.pages\.dev' prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'operator_ingest_discovery_candidates' supabase/migrations/20260826_discovery_archive_v01.sql
           grep -q 'operator_promote_discovery_candidate' supabase/migrations/20260827_discovery_triage_v01.sql
           grep -q 'operator_set_discovery_triage' supabase/migrations/20260827_discovery_triage_v01.sql
