@@ -1,7 +1,7 @@
 # Decision candidate — AI member/provider boundary preview
 
 **Date:** 2026-09-02  
-**Status:** preview validation; not yet production-promoted
+**Status:** UX accepted; technical preview verified; production cutover not yet performed
 
 ## Business objective
 
@@ -46,25 +46,44 @@ No second public repository, AI gateway, generic context service, duplicate prom
 
 `Ontwerpversies` is the single visible source of truth for design lifecycle state.
 
-- remove the prominent top-level `Live mock-up` shortcut from the operator-facing interface;
-- do not show a second redundant `Huidige live mock-up` summary above the same version history;
-- keep version rows and their `CONCEPT` / `LIVE` state as the lifecycle truth;
+- no prominent top-level `Live mock-up` shortcut;
+- no redundant `Huidige live mock-up` summary above the same version history;
+- version rows and their `CONCEPT` / `LIVE` state remain the lifecycle truth;
 - publishing remains an explicit human action on a version;
 - the automatically generated first concept is a concept, not a product-level current/live designation merely because it exists;
-- technical preview mechanics may remain in code for compatibility, but they are not a competing visible workflow.
+- `Nieuwste ontwerp` is a convenience link to the most recently created design version and is not a second status model;
+- `Sector voor design` is optional to change: the prospect's existing canonical sector remains selected unless the operator deliberately chooses another sector with published Sector Intelligence;
+- selecting another sector reuses the existing canonical sector field and RPC; no second sector-selection state is introduced.
 
-## Preview scope
+## Canonical UI ownership
 
-This PR may safely validate, without changing production behavior:
+The approved prospect-detail UX is owned by `operator/design-detail-ui.js`.
+
+That module owns:
+
+- the `Nieuwste ontwerp` top action;
+- the optional `Sector voor design` selector;
+- published-sector choices for that selector;
+- synchronization of the detail selector when sector research or prospect-sector linkage changes.
+
+`operator/sector-intelligence-ui.js` owns the sector research/review/linking workspace and emits change events, but does not render a competing prospect-detail sector selector.
+
+The earlier temporary `operator/design-ui-preview.js` has been removed. There is one implementation owner for the approved detail UX.
+
+## Preview validation status
+
+Completed on the isolated PR preview:
 
 - provider-blind bootstrap instructions;
 - the existing two-URL handoff;
 - static CMS-owned prompt/Sector Intelligence delivery;
 - one visible CMS design-lifecycle surface (`Ontwerpversies`);
+- `Nieuwste ontwerp` linked to the newest CMS design version;
+- optional published-sector selector;
 - automated checks that AI-facing resources do not disclose GitHub or Supabase provider endpoints;
-- automated checks that the redundant live-mock-up UI does not reappear;
+- automated checks that the redundant live-mock-up UI and temporary preview implementation do not reappear;
 - PR-specific Cloudflare Pages deployment and smoke tests;
-- a manual clean-ChatGPT acceptance run against the PR preview.
+- UX review and acceptance by the user on 2026-09-02.
 
 ## Out-of-band production cutover
 
@@ -77,8 +96,7 @@ Before production promotion:
 3. change the implementation repository to private;
 4. verify the existing GitHub Actions/Cloudflare deployment still works from the private repository;
 5. run a clean ChatGPT acceptance using only the SolidDesign start URL and Prospect Design Brief URL and no GitHub connector;
-6. visually accept the `Ontwerpversies` single-source CMS workflow in the PR preview;
-7. only then promote the preview contract to the production prompt architecture version and merge.
+6. promote `0.4-preview` to the production prompt architecture version and merge only after those gates pass.
 
 Prompt instructions are defense in depth and workflow guidance, not a substitute for repository privacy.
 
@@ -89,19 +107,21 @@ Prompt instructions are defense in depth and workflow guidance, not a substitute
 - granting every CMS member source-control access;
 - creating a second identity, authorization or connector-distribution system;
 - creating another design/version status model;
+- creating a second persistent sector-selection model;
 - preventing maintainers who are legitimately authorized for source control from using GitHub.
 
 ## Acceptance criteria
 
-The candidate is acceptable when:
+The candidate is acceptable for production promotion when:
 
 1. CI passes;
 2. the PR Pages preview deploys successfully;
 3. `/start-design` and the canonical bootstrap on the preview contain no GitHub/Supabase implementation endpoints;
 4. the bootstrap explicitly keeps internal SolidDesign context on the SolidDesign delivery surface while preserving external prospect/market research;
 5. the CMS presents `Ontwerpversies` as the sole visible design lifecycle and no prominent `Live mock-up` shortcut or redundant live summary remains;
-6. a clean ChatGPT environment can execute a representative SolidDesign design run from the two supplied SolidDesign URLs without a GitHub connector;
-7. no production source-repository visibility or production prompt version is changed before explicit cutover.
+6. the approved `Nieuwste ontwerp` and optional published-sector selector are owned by the canonical detail UI module with no preview-only implementation left behind;
+7. a clean ChatGPT environment can execute a representative SolidDesign design run from the two supplied SolidDesign URLs without a GitHub connector;
+8. no production source-repository visibility or production prompt version is changed before explicit cutover.
 
 ## Governing rule
 
