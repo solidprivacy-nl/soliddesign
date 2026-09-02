@@ -37,6 +37,24 @@ def test_design_resources_are_served_through_the_cms_origin() -> None:
     assert "cp -R sector-intelligence operator/sector-intelligence" in deploy
 
 
+def test_ai_contract_is_provider_blind() -> None:
+    start = read("operator/start-design.html")
+    bootstrap = read("prompts/SOLIDDESIGN_BOOTSTRAP.md")
+
+    assert "for internal SolidDesign context, use only resources served through" in bootstrap
+    assert "Do not discover, inspect or infer underlying source repositories" in bootstrap
+    assert "Do not substitute an implementation-source lookup" in bootstrap
+    assert "Normal external market research" in bootstrap
+
+    assert "Implementation boundary:" in start
+    assert "Underlying repositories, database providers and deployment infrastructure are outside the design contract." in start
+
+    combined = f"{start}\n{bootstrap}".lower()
+    assert "supabase.co" not in combined
+    assert "repository_full_name" not in combined
+    assert "pull request" not in start.lower()
+
+
 def test_provider_transport_remains_server_only() -> None:
     server = read("operator/functions/api/sector-intelligence.js").lower()
     ui = read("operator/sector-intelligence-ui.js").lower()
