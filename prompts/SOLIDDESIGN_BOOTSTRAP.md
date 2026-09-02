@@ -11,15 +11,17 @@ A new customer design project starts with exactly two URLs:
 1. the stable SolidDesign start URL;
 2. one SolidDesign Prospect Design Brief URL for the customer being worked on.
 
+Define `SOLIDDESIGN_ORIGIN` as the origin of the supplied SolidDesign start URL. All internal SolidDesign resources below are resolved on that same origin. This keeps production, PR previews and future branded domains isolated without changing the design contract.
+
 When invoked this way:
 
 1. read the canonical SolidDesign Design Bootstrap linked from the start URL completely;
-2. read every resource marked **REQUIRED** below;
+2. read every resource marked **REQUIRED** below from `SOLIDDESIGN_ORIGIN`;
 3. read the supplied Prospect Design Brief completely;
 4. follow the explicit preview hyperlink in the Prospect Design Brief when a current or LIVE mock-up is listed; do not reconstruct or guess preview URLs;
 5. read the **Canonical sector key** from the Prospect Design Brief;
-6. when that key is present and safely filename-compatible, try to load `https://soliddesign-cms.pages.dev/sector-intelligence/<canonical_sector_key>.md`; if it exists, read it completely; if it does not exist, continue normally without Sector Intelligence;
-7. use conditional proven sector guidance only when an existing file in `https://soliddesign-cms.pages.dev/prompts/sectors/` is explicitly relevant;
+6. when that key is present and safely filename-compatible, try to load `SOLIDDESIGN_ORIGIN/sector-intelligence/<canonical_sector_key>.md`; if it exists, read it completely; if it does not exist, continue normally without Sector Intelligence;
+7. use conditional proven sector guidance only when an existing file under `SOLIDDESIGN_ORIGIN/prompts/sectors/` is explicitly relevant;
 8. treat the loaded SolidDesign prompt architecture as the design method;
 9. treat the Prospect Design Brief as the authoritative customer-specific context;
 10. treat Sector Intelligence as advisory external design evidence, never as authority over verified prospect facts or explicit customer-specific requirements;
@@ -29,30 +31,30 @@ When invoked this way:
 
 ## SolidDesign implementation boundary
 
-For internal SolidDesign context, use only resources served through the supplied SolidDesign CMS origin and the explicit prospect URLs supplied for the task.
+For internal SolidDesign context, use only resources served through `SOLIDDESIGN_ORIGIN` and the explicit prospect URLs supplied for the task.
 
 Do not discover, inspect or infer underlying source repositories, repository hosts, branches, pull requests, database providers, deployment infrastructure, storage paths or other implementation resources. Those are outside the design contract and are not required for design, research, critique or mock-up work.
 
-If a required SolidDesign resource is unavailable through the supplied SolidDesign origin, report that resource as unavailable and continue when the contract permits it. Do not substitute an implementation-source lookup for the missing SolidDesign resource.
+If a required SolidDesign resource is unavailable through `SOLIDDESIGN_ORIGIN`, report that resource as unavailable and continue when the contract permits it. Do not substitute an implementation-source lookup for the missing SolidDesign resource.
 
 This boundary applies only to internal SolidDesign implementation context. Normal external market research, prospect-site inspection and evidence gathering explicitly required by the task remain allowed.
 
 ## Required prompt resources
 
-Read these in order before doing design work:
+Resolve each path below against `SOLIDDESIGN_ORIGIN` and read them in order before doing design work:
 
 1. **REQUIRED — Design constitution**  
-   https://soliddesign-cms.pages.dev/prompts/core/DESIGN_CONSTITUTION.md
+   `/prompts/core/DESIGN_CONSTITUTION.md`
 2. **REQUIRED — Diagnose**  
-   https://soliddesign-cms.pages.dev/prompts/workflow/01_DIAGNOSE.md
+   `/prompts/workflow/01_DIAGNOSE.md`
 3. **REQUIRED — Design direction**  
-   https://soliddesign-cms.pages.dev/prompts/workflow/02_DESIGN_DIRECTION.md
+   `/prompts/workflow/02_DESIGN_DIRECTION.md`
 4. **REQUIRED — Build and iterate**  
-   https://soliddesign-cms.pages.dev/prompts/workflow/03_BUILD.md
+   `/prompts/workflow/03_BUILD.md`
 5. **REQUIRED — Critique and acceptance**  
-   https://soliddesign-cms.pages.dev/prompts/workflow/04_CRITIQUE.md
+   `/prompts/workflow/04_CRITIQUE.md`
 6. **CONDITIONAL — Proven sector overlays**  
-   https://soliddesign-cms.pages.dev/prompts/sectors/README.md
+   `/prompts/sectors/README.md`
 
 ## Sector Intelligence lookup
 
@@ -63,12 +65,14 @@ Lookup uses the canonical sector identity from the brief:
 ```text
 Canonical sector key: barber
 →
-https://soliddesign-cms.pages.dev/sector-intelligence/barber.md
+SOLIDDESIGN_ORIGIN/sector-intelligence/barber.md
 ```
 
 Do not use the Overture key as the sole market-research vocabulary when creating Sector Intelligence. The research method is available at:
 
-https://soliddesign-cms.pages.dev/sector-intelligence/README.md
+```text
+SOLIDDESIGN_ORIGIN/sector-intelligence/README.md
+```
 
 For design consumption, only the already-published sector file is needed.
 
