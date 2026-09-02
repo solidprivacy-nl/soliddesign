@@ -59,6 +59,18 @@ class CmsRepositoryBoundaryTests(unittest.TestCase):
         self.assertNotIn("repository_full_name", combined)
         self.assertNotIn("pull request", start.lower())
 
+    def test_design_lifecycle_ui_has_one_visible_source_of_truth(self) -> None:
+        operator = read("operator/index.html")
+
+        self.assertIn("<h3>Ontwerpversies</h3>", operator)
+        self.assertIn("Dit is de enige plek voor de ontwerpstatus.", operator)
+        self.assertIn('data-link="preview" target="_blank" rel="noopener" class="hidden"', operator)
+        self.assertIn('data-field="liveMockup" class="mockup-live hidden"', operator)
+        self.assertIn("<h4>Alle ontwerpversies</h4>", operator)
+        self.assertIn("<span>Ontwerpstatus</span>", operator)
+        self.assertNotIn(">Live mock-up ↗</a>", operator)
+        self.assertNotIn("<h3>Mock-up versies</h3>", operator)
+
     def test_provider_transport_remains_server_only(self) -> None:
         server = read("operator/functions/api/sector-intelligence.js").lower()
         ui = read("operator/sector-intelligence-ui.js").lower()
