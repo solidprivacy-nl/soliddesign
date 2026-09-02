@@ -15,6 +15,7 @@ class CmsRepositoryBoundaryTests(unittest.TestCase):
             "operator/start-design.html",
             "operator/design-process.js",
             "operator/sector-intelligence-ui.js",
+            "operator/design-detail-ui.js",
             "prompts/SOLIDDESIGN_BOOTSTRAP.md",
         ]
 
@@ -71,21 +72,27 @@ class CmsRepositoryBoundaryTests(unittest.TestCase):
         self.assertNotIn(">Live mock-up ↗</a>", operator)
         self.assertNotIn("<h3>Mock-up versies</h3>", operator)
 
-    def test_design_ui_refinement_uses_published_sector_choices_and_newest_version(self) -> None:
+    def test_design_detail_ui_uses_published_sector_choices_and_newest_version(self) -> None:
         operator = read("operator/index.html")
-        refinement = read("operator/design-ui-preview.js")
+        detail_ui = read("operator/design-detail-ui.js")
+        sector_ui = read("operator/sector-intelligence-ui.js")
 
-        self.assertIn('src="./design-ui-preview.js"', operator)
+        self.assertIn('src="./design-detail-ui.js"', operator)
+        self.assertNotIn('src="./design-ui-preview.js"', operator)
+        self.assertFalse((ROOT / "operator/design-ui-preview.js").exists())
         self.assertIn("Nieuwste ontwerp ↗", operator)
-        self.assertIn("Sector voor design ", refinement)
-        self.assertIn("(optioneel)", refinement)
-        self.assertIn(".filter((row) => row?.has_published)", refinement)
-        self.assertIn("Automatisch gekoppeld ·", refinement)
-        self.assertIn("operator_set_prospect_sector", refinement)
-        self.assertIn(".order('created_at', { ascending: false })", refinement)
-        self.assertIn("Nieuwste ontwerp ↗", refinement)
-        self.assertNotIn("github.com", refinement.lower())
-        self.assertNotIn("api.github.com", refinement.lower())
+        self.assertIn("Sector voor design ", detail_ui)
+        self.assertIn("(optioneel aanpassen)", detail_ui)
+        self.assertIn(".filter((row) => row?.has_published)", detail_ui)
+        self.assertIn("operator_set_prospect_sector", detail_ui)
+        self.assertIn(".order('created_at', { ascending: false })", detail_ui)
+        self.assertIn("Nieuwste ontwerp ↗", detail_ui)
+        self.assertIn("soliddesign:sector-intelligence-changed", detail_ui)
+        self.assertNotIn("data-prospect-sector-control", sector_ui)
+        self.assertNotIn("bindCurrentProspectSector", sector_ui)
+        self.assertIn("soliddesign:sector-intelligence-changed", sector_ui)
+        self.assertNotIn("github.com", detail_ui.lower())
+        self.assertNotIn("api.github.com", detail_ui.lower())
 
     def test_provider_transport_remains_server_only(self) -> None:
         server = read("operator/functions/api/sector-intelligence.js").lower()
