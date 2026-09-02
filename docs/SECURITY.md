@@ -129,6 +129,26 @@ PR previews are isolated verification environments. Their prospect links deliber
 
 The deployment workflow smoke-tests both preview and production delivery, including the active-team membership bootstrap, public resolver, telemetry asset and Edge Function CORS.
 
+## AI member-facing implementation boundary
+
+Normal SolidDesign design, research, critique and mock-up work is performed through the SolidDesign CMS delivery surface, not through the implementation repository.
+
+The AI-facing contract is:
+
+```text
+SolidDesign team member
+→ clean ChatGPT environment
+→ SolidDesign start URL + Prospect Design Brief URL
+→ SolidDesign-owned CMS resources
+→ design/research output
+```
+
+Normal team members therefore do not need a GitHub connector merely to execute the SolidDesign design workflow. Source-control access remains a separate maintainer/developer capability.
+
+AI-facing SolidDesign resources must not disclose or require repository hostnames, repository identity, branches, pull requests, database-provider identity, deployment infrastructure or internal storage paths. External prospect and market research remains allowed because it is part of the business task rather than implementation discovery.
+
+The production source repository is intended to be private before this preview contract is promoted. Repository visibility is a GitHub setting and is deliberately not mutated by application code or by a pull request. Preview deployment may run while the repository is still public; production promotion must not rely on prompt instructions as a security boundary.
+
 ## LIVE artifact and legacy-delivery boundary
 
 New LIVE publication requires a canonical stored artifact. External HTTPS previews are review/DRAFT inputs only.
@@ -253,13 +273,15 @@ No invented testimonials, services, awards, opening hours or commercial claims.
 
 ## Repository and dependency rules
 
-Because the repository can be public:
+Repository privacy is a boundary against casual implementation discovery, not permission to commit secrets. Treat source control as potentially inspectable by every authorized maintainer and by historical clones.
 
 - no `.env` or secrets;
 - no raw private prospect/customer datasets;
 - no privileged API keys;
 - dependencies pinned/recorded where practical;
 - every dependency must earn its operational complexity.
+
+Before changing the repository from public to private, run a one-time history secret scan. If a privileged credential was ever committed, rotate it; public/publishable client credentials do not require rotation merely because they were visible.
 
 ## Security review rule
 

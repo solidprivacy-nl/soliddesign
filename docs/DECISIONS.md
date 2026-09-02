@@ -20,7 +20,7 @@
 
 ## ADR-004 — GitHub as software/documentation truth
 
-**Decision:** mission, schemas, code, tests, prompts safe for disclosure, provenance and decisions live in GitHub.
+**Decision:** mission, schemas, code, tests, provenance and decisions live in GitHub as source truth. AI-facing prompts and published Sector Intelligence are delivered through the SolidDesign CMS origin; normal operators do not need repository access merely to execute design/research work.
 
 ## ADR-005 — Pre-sale proof separated from production delivery
 
@@ -34,9 +34,9 @@
 
 **Decision:** use hard gates plus five 0–5 rubrics; do not introduce arbitrary factor weights before outcome data.
 
-## ADR-008 — Public-repo safety boundary
+## ADR-008 — Repository safety boundary
 
-**Decision:** this public repo contains no secrets, real prospect/customer datasets or intentionally proprietary core material.
+**Decision:** source control contains no secrets, real prospect/customer datasets or privileged credentials. Repository privacy may reduce casual implementation discovery, but it is never treated as a secrets mechanism; authorized maintainers and historical clones must still be assumed able to inspect committed history.
 
 ## ADR-009 — Overture Maps is the canonical Phase-1 discovery source
 

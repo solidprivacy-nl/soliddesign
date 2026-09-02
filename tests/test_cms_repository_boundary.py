@@ -1,3 +1,4 @@
+import unittest
 from pathlib import Path
 
 
@@ -8,40 +9,100 @@ def read(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 
 
-def test_browser_and_handoff_contracts_do_not_expose_repository_hosts() -> None:
-    browser_contracts = [
-        "operator/start-design.html",
-        "operator/design-process.js",
-        "operator/sector-intelligence-ui.js",
-        "prompts/SOLIDDESIGN_BOOTSTRAP.md",
-    ]
+class CmsRepositoryBoundaryTests(unittest.TestCase):
+    def test_browser_and_handoff_contracts_do_not_expose_repository_hosts(self) -> None:
+        browser_contracts = [
+            "operator/start-design.html",
+            "operator/design-process.js",
+            "operator/sector-intelligence-ui.js",
+            "operator/design-detail-ui.js",
+            "prompts/SOLIDDESIGN_BOOTSTRAP.md",
+        ]
 
-    for path in browser_contracts:
-        source = read(path).lower()
-        assert "github.com" not in source, path
-        assert "raw.githubusercontent.com" not in source, path
-        assert "api.github.com" not in source, path
+        for path in browser_contracts:
+            source = read(path).lower()
+            self.assertNotIn("github.com", source, path)
+            self.assertNotIn("raw.githubusercontent.com", source, path)
+            self.assertNotIn("api.github.com", source, path)
+
+    def test_design_resources_are_served_through_the_current_solid_design_origin(self) -> None:
+        start = read("operator/start-design.html")
+        bootstrap = read("prompts/SOLIDDESIGN_BOOTSTRAP.md")
+        design = read("operator/design-process.js")
+        deploy = read(".github/workflows/deploy-operator.yml")
+
+        self.assertIn('href="/prompts/SOLIDDESIGN_BOOTSTRAP.md"', start)
+        self.assertIn("Define `SOLIDDESIGN_ORIGIN` as the origin of the supplied SolidDesign start URL", bootstrap)
+        self.assertIn("`/prompts/core/DESIGN_CONSTITUTION.md`", bootstrap)
+        self.assertIn("SOLIDDESIGN_ORIGIN/sector-intelligence/<canonical_sector_key>.md", bootstrap)
+        self.assertNotIn("https://soliddesign-cms.pages.dev", bootstrap)
+        self.assertIn("`${window.location.origin}/sector-intelligence`", design)
+        self.assertIn("cp -R prompts operator/prompts", deploy)
+        self.assertIn("cp -R sector-intelligence operator/sector-intelligence", deploy)
+
+    def test_ai_contract_is_provider_blind(self) -> None:
+        start = read("operator/start-design.html")
+        bootstrap = read("prompts/SOLIDDESIGN_BOOTSTRAP.md")
+
+        self.assertIn("For internal SolidDesign context, use only resources served through `SOLIDDESIGN_ORIGIN`", bootstrap)
+        self.assertIn("Do not discover, inspect or infer underlying source repositories", bootstrap)
+        self.assertIn("Do not substitute an implementation-source lookup", bootstrap)
+        self.assertIn("Normal external market research", bootstrap)
+
+        self.assertIn("Implementation boundary:", start)
+        self.assertIn(
+            "Underlying repositories, database providers and deployment infrastructure are outside the design contract.",
+            start,
+        )
+
+        combined = f"{start}\n{bootstrap}".lower()
+        self.assertNotIn("supabase.co", combined)
+        self.assertNotIn("repository_full_name", combined)
+        self.assertNotIn("pull request", start.lower())
+
+    def test_design_lifecycle_ui_has_one_visible_source_of_truth(self) -> None:
+        operator = read("operator/index.html")
+
+        self.assertIn("<h3>Ontwerpversies</h3>", operator)
+        self.assertIn("Dit is de enige plek voor de ontwerpstatus.", operator)
+        self.assertIn('data-link="preview" target="_blank" rel="noopener" class="hidden"', operator)
+        self.assertIn('data-field="liveMockup" class="mockup-live hidden"', operator)
+        self.assertIn("<h4>Alle ontwerpversies</h4>", operator)
+        self.assertIn("<span>Ontwerpstatus</span>", operator)
+        self.assertNotIn(">Live mock-up ↗</a>", operator)
+        self.assertNotIn("<h3>Mock-up versies</h3>", operator)
+
+    def test_design_detail_ui_uses_published_sector_choices_and_newest_version(self) -> None:
+        operator = read("operator/index.html")
+        detail_ui = read("operator/design-detail-ui.js")
+        sector_ui = read("operator/sector-intelligence-ui.js")
+
+        self.assertIn('src="./design-detail-ui.js"', operator)
+        self.assertNotIn('src="./design-ui-preview.js"', operator)
+        self.assertFalse((ROOT / "operator/design-ui-preview.js").exists())
+        self.assertIn("Nieuwste ontwerp ↗", operator)
+        self.assertIn("Sector voor design ", detail_ui)
+        self.assertIn("(optioneel aanpassen)", detail_ui)
+        self.assertIn(".filter((row) => row?.has_published)", detail_ui)
+        self.assertIn("operator_set_prospect_sector", detail_ui)
+        self.assertIn(".order('created_at', { ascending: false })", detail_ui)
+        self.assertIn("Nieuwste ontwerp ↗", detail_ui)
+        self.assertIn("soliddesign:sector-intelligence-changed", detail_ui)
+        self.assertNotIn("data-prospect-sector-control", sector_ui)
+        self.assertNotIn("bindCurrentProspectSector", sector_ui)
+        self.assertIn("soliddesign:sector-intelligence-changed", sector_ui)
+        self.assertNotIn("github.com", detail_ui.lower())
+        self.assertNotIn("api.github.com", detail_ui.lower())
+
+    def test_provider_transport_remains_server_only(self) -> None:
+        server = read("operator/functions/api/sector-intelligence.js").lower()
+        ui = read("operator/sector-intelligence-ui.js").lower()
+
+        self.assertIn("api.github.com", server)
+        self.assertNotIn("api.github.com", ui)
+        self.assertNotIn("source_url", ui)
+        self.assertNotIn("review_url", ui)
 
 
-def test_design_resources_are_served_through_the_cms_origin() -> None:
-    start = read("operator/start-design.html")
-    bootstrap = read("prompts/SOLIDDESIGN_BOOTSTRAP.md")
-    design = read("operator/design-process.js")
-    deploy = read(".github/workflows/deploy-operator.yml")
-
-    assert 'href="/prompts/SOLIDDESIGN_BOOTSTRAP.md"' in start
-    assert "https://soliddesign-cms.pages.dev/prompts/" in bootstrap
-    assert "https://soliddesign-cms.pages.dev/sector-intelligence/" in bootstrap
-    assert "`${window.location.origin}/sector-intelligence`" in design
-    assert "cp -R prompts operator/prompts" in deploy
-    assert "cp -R sector-intelligence operator/sector-intelligence" in deploy
-
-
-def test_provider_transport_remains_server_only() -> None:
-    server = read("operator/functions/api/sector-intelligence.js").lower()
-    ui = read("operator/sector-intelligence-ui.js").lower()
-
-    assert "api.github.com" in server
-    assert "api.github.com" not in ui
-    assert "source_url" not in ui
-    assert "review_url" not in ui
+if __name__ == "__main__":
+    unittest.main()
