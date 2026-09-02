@@ -71,6 +71,22 @@ class CmsRepositoryBoundaryTests(unittest.TestCase):
         self.assertNotIn(">Live mock-up ↗</a>", operator)
         self.assertNotIn("<h3>Mock-up versies</h3>", operator)
 
+    def test_design_ui_refinement_uses_published_sector_choices_and_newest_version(self) -> None:
+        operator = read("operator/index.html")
+        refinement = read("operator/design-ui-preview.js")
+
+        self.assertIn('src="./design-ui-preview.js"', operator)
+        self.assertIn("Nieuwste ontwerp ↗", operator)
+        self.assertIn("Sector voor design ", refinement)
+        self.assertIn("(optioneel)", refinement)
+        self.assertIn(".filter((row) => row?.has_published)", refinement)
+        self.assertIn("Automatisch gekoppeld ·", refinement)
+        self.assertIn("operator_set_prospect_sector", refinement)
+        self.assertIn(".order('created_at', { ascending: false })", refinement)
+        self.assertIn("Nieuwste ontwerp ↗", refinement)
+        self.assertNotIn("github.com", refinement.lower())
+        self.assertNotIn("api.github.com", refinement.lower())
+
     def test_provider_transport_remains_server_only(self) -> None:
         server = read("operator/functions/api/sector-intelligence.js").lower()
         ui = read("operator/sector-intelligence-ui.js").lower()
