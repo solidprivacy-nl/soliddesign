@@ -96,12 +96,14 @@ jobs:
           grep -q 'cms.<brand>.nl' docs/INTEGRATED_OPERATING_ARCHITECTURE.md
           grep -q '<brand>.nl/<public_slug>' docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md
           grep -q 'prompts/SOLIDDESIGN_BOOTSTRAP.md' operator/start-design.html
-          grep -q 'Prompt architecture version: 0.3' operator/start-design.html
-          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' operator/start-design.html
-          grep -q 'Prompt architecture version.*0.3' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          grep -q 'Prompt architecture version: 0.4-preview' operator/start-design.html
+          grep -q 'Implementation boundary:' operator/start-design.html
+          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com|supabase\.co' operator/start-design.html
+          grep -q 'Prompt architecture version.*0.4-preview' prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'soliddesign-cms.pages.dev/prompts/' prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'soliddesign-cms.pages.dev/sector-intelligence/' prompts/SOLIDDESIGN_BOOTSTRAP.md
-          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          grep -q 'Do not discover, inspect or infer underlying source repositories' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com|supabase\.co' prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'operator_ingest_discovery_candidates' supabase/migrations/20260826_discovery_archive_v01.sql
           grep -q 'operator_promote_discovery_candidate' supabase/migrations/20260827_discovery_triage_v01.sql
           grep -q 'operator_set_discovery_triage' supabase/migrations/20260827_discovery_triage_v01.sql
