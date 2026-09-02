@@ -79,7 +79,7 @@
       <section id="detailPanel" class="detail-panel empty-state">
         <div>
           <h2>Selecteer een prospect</h2>
-          <p class="muted">Bekijk website, mock-up, technisch dossier en werk de contactstatus bij.</p>
+          <p class="muted">Bekijk website, ontwerpversies, technisch dossier en werk de contactstatus bij.</p>
         </div>
       </section>
     </main>
@@ -167,14 +167,14 @@
 
       <div class="link-row">
         <a data-link="website" target="_blank" rel="noopener">Huidige website ↗</a>
-        <a data-link="preview" target="_blank" rel="noopener">Live mock-up ↗</a>
+        <a data-link="preview" target="_blank" rel="noopener" class="hidden" aria-hidden="true" tabindex="-1">Ontwerp preview ↗</a>
         <button data-action="report" class="link-button">Technisch rapport ↗</button>
         <button data-ops-action="archive" class="link-button">Archiveer</button>
       </div>
 
       <section class="card" data-design-process>
         <h3>Designproces</h3>
-        <p class="subtle">Gebruik ChatGPT om de mock-up verder te ontwerpen. Beschikbare sectorinzichten worden automatisch meegenomen.</p>
+        <p class="subtle">Gebruik ChatGPT om het ontwerp verder te ontwikkelen. Beschikbare sectorinzichten worden automatisch meegenomen.</p>
         <div class="link-row">
           <a data-design-link="brief" target="_blank" rel="noopener">Open designbrief ↗</a>
           <a data-design-link="workspace" target="_blank" rel="noopener" class="disabled">Geen ChatGPT-project gekoppeld</a>
@@ -203,11 +203,12 @@
       </section>
 
       <section class="card mockup-card">
-        <h3>Mock-up versies</h3>
-        <div data-field="liveMockup" class="mockup-live"></div>
+        <h3>Ontwerpversies</h3>
+        <p class="subtle">Beheer hier concepten, het huidige ontwerp en publicatie. Dit is de enige plek voor de ontwerpstatus.</p>
+        <div data-field="liveMockup" class="mockup-live hidden" aria-hidden="true"></div>
 
         <div class="mockup-upload-grid">
-          <label>Nieuwe mock-up (.html of .zip)
+          <label>Nieuwe ontwerpversie (.html of .zip)
             <input data-input="mockupFile" type="file" accept=".html,.zip,text/html,application/zip" />
           </label>
           <label>Wat is er gewijzigd?
@@ -220,14 +221,14 @@
         </div>
 
         <div class="mockup-external">
-          <label>Mock-up via externe link
+          <label>Ontwerp via externe link
             <input data-input="externalPreview" type="url" inputmode="url" placeholder="https://…" />
           </label>
           <button data-action="addExternalPreview" class="secondary">Voeg toe als conceptversie</button>
         </div>
 
         <p class="message" data-field="mockupMessage" aria-live="polite"></p>
-        <div class="version-heading"><h4>Versiehistorie</h4><span data-field="versionCount" class="subtle"></span></div>
+        <div class="version-heading"><h4>Alle ontwerpversies</h4><span data-field="versionCount" class="subtle"></span></div>
         <div data-field="versionList" class="version-list"></div>
       </section>
 
@@ -254,7 +255,7 @@
           <div><span>Website</span><strong data-field="websiteUrl"></strong></div>
           <div><span>Telefoon</span><strong data-field="phone"></strong></div>
           <div><span>Websitebeoordeling</span><strong data-field="auditSummary"></strong></div>
-          <div><span>Mock-up</span><strong data-field="demoStatus"></strong></div>
+          <div><span>Ontwerpstatus</span><strong data-field="demoStatus"></strong></div>
         </div>
       </section>
 
