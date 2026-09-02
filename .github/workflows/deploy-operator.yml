@@ -28,6 +28,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22.18.0"
+      - name: Enforce private source repository for production
+        if: github.event_name == 'push'
+        env:
+          REPOSITORY_PRIVATE: ${{ github.event.repository.private }}
+        run: |
+          if [ "$REPOSITORY_PRIVATE" != "true" ]; then
+            echo "::error::Production AI-boundary promotion requires the SolidDesign source repository to be private."
+            exit 1
+          fi
       - name: Ensure one Pages project exists
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
