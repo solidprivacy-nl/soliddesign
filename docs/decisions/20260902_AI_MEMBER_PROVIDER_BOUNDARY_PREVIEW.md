@@ -1,7 +1,8 @@
 # Decision candidate — AI member/provider boundary preview
 
 **Date:** 2026-09-02  
-**Status:** UX accepted; technical preview verified; production cutover not yet performed
+**Cutover execution updated:** 2026-09-03  
+**Status:** UX accepted; technical preview verified; full-history secret scan passed; production cutover blocked only on repository visibility authority
 
 ## Business objective
 
@@ -85,18 +86,46 @@ Completed on the isolated PR preview:
 - PR-specific Cloudflare Pages deployment and smoke tests;
 - UX review and acceptance by the user on 2026-09-02.
 
-## Out-of-band production cutover
+## Cutover execution evidence — 2026-09-03
 
-Repository visibility is a GitHub repository setting and cannot be meaningfully simulated by a branch. Therefore this PR deliberately does **not** change repository visibility.
+### Full-history secret scan
 
-Before production promotion:
+A one-time `gitleaks/gitleaks-action@v2` workflow checked out the repository with `fetch-depth: 0` and scanned the full Git history before repository privacy cutover.
 
-1. run a one-time repository-history secret scan;
-2. rotate any privileged credential that was ever committed, if found;
-3. change the implementation repository to private;
-4. verify the existing GitHub Actions/Cloudflare deployment still works from the private repository;
-5. run a clean ChatGPT acceptance using only the SolidDesign start URL and Prospect Design Brief URL and no GitHub connector;
-6. promote `0.4-preview` to the production prompt architecture version and merge only after those gates pass.
+Result: **PASS**.
+
+- workflow: `Secret History Scan`
+- run id: `33690707066`
+- conclusion: `success`
+- no privileged credential leak was detected;
+- no credential rotation is required from this gate;
+- the temporary scan workflow was removed immediately after the successful run so it does not become permanent infrastructure.
+
+The existing Supabase browser publishable key remains intentionally browser-visible and is not treated as a privileged secret.
+
+### Post-scan repository verification
+
+After removal of the one-time scan workflow, the PR branch was re-verified:
+
+- CI run `33690742981`: **success**;
+- isolated Cloudflare Pages deploy/smoke run `33690742983`: **success**.
+
+### Current blocker
+
+The repository is still public. The GitHub capability available to this execution environment has repository `push` access but does not expose repository-administration/visibility mutation authority. The connected GitHub App installation for the repository likewise reports no `admin` or `maintain` capability through the available tool contract.
+
+Therefore changing `solidprivacy-nl/soliddesign` from public to private is the single external action currently required before the remaining production cutover gates can be executed safely.
+
+Do not merge while the repository is public: the production deployment workflow intentionally fails closed on a `main` push from a public repository.
+
+## Remaining production cutover
+
+1. change `solidprivacy-nl/soliddesign` repository visibility to **Private** in GitHub;
+2. verify repository metadata reports `visibility=private`;
+3. prove the existing GitHub Actions/Cloudflare deployment still works from the private repository;
+4. run the final clean ChatGPT acceptance using only the SolidDesign start URL and Prospect Design Brief URL and no GitHub connector;
+5. promote `0.4-preview` to the stable production prompt architecture version;
+6. merge only after all gates pass and re-verify production.
 
 Prompt instructions are defense in depth and workflow guidance, not a substitute for repository privacy.
 
@@ -120,8 +149,10 @@ The candidate is acceptable for production promotion when:
 4. the bootstrap explicitly keeps internal SolidDesign context on the SolidDesign delivery surface while preserving external prospect/market research;
 5. the CMS presents `Ontwerpversies` as the sole visible design lifecycle and no prominent `Live mock-up` shortcut or redundant live summary remains;
 6. the approved `Nieuwste ontwerp` and optional published-sector selector are owned by the canonical detail UI module with no preview-only implementation left behind;
-7. a clean ChatGPT environment can execute a representative SolidDesign design run from the two supplied SolidDesign URLs without a GitHub connector;
-8. no production source-repository visibility or production prompt version is changed before explicit cutover.
+7. the full-history secret scan passes before privacy cutover;
+8. the source repository is private and deployment is proven from that private state;
+9. a clean ChatGPT environment can execute a representative SolidDesign design run from the two supplied SolidDesign URLs without a GitHub connector;
+10. the prompt architecture is promoted from preview to stable only after those gates pass.
 
 ## Governing rule
 
