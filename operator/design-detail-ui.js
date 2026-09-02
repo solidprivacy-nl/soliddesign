@@ -188,9 +188,6 @@
         prospect.canonical_sector_key = selectedKey;
         const selectedRow = sectors.find((row) => row.canonical_sector_key === selectedKey);
         status.textContent = `${selectedRow?.research_label || humanizeKey(selectedKey)} · gepubliceerd onderzoek geselecteerd`;
-        window.dispatchEvent(new CustomEvent('soliddesign:prospect-sector-changed', {
-          detail: { prospectId: prospect.id, canonicalSectorKey: selectedKey }
-        }));
       } catch (error) {
         window.alert(error.message || String(error));
         select.value = previousKey;
