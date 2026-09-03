@@ -13,14 +13,17 @@ Make the prospect design workflow simpler and unambiguous without coupling the U
 - `CONCEPT` and `LIVE` remain the version-state truth; publication is an explicit human action.
 - `Nieuwste ontwerp ↗` is a convenience link to the most recently created design version, regardless of LIVE/CONCEPT state. It is not a second lifecycle state.
 - `Sector voor design` is optional to change. The existing prospect sector remains selected by default.
-- Optional sector choices are limited to sectors with published Sector Intelligence.
-- A sector override reuses the existing canonical prospect-sector field/RPC; there is no second persistent sector-selection model.
+- Optional design-sector choices are limited to sectors with published Sector Intelligence.
+- In `Koppel een sector`, the sector field offers known Sector Intelligence entries as native dropdown suggestions while remaining free-text capable for a new sector.
+- Choosing a known sector suggestion reuses its canonical sector key directly; typing a new sector still goes through the existing sector resolver.
+- Sector linkage and design-sector overrides both reuse the existing canonical prospect-sector field/RPC; there is no second persistent sector-selection model.
 - `Sectoronderzoek` remains the separate research/review workflow.
 
 ## Implementation ownership
 
 - `operator/design-detail-ui.js`: prospect-detail design conveniences (`Nieuwste ontwerp`, optional sector selector).
-- `operator/sector-intelligence-ui.js`: sector research/review/linking workspace; it does not render a competing prospect-detail selector.
+- `operator/sector-intelligence-ui.js`: sector research/review/linking workspace and persistence.
+- `operator/sector-link-suggestions.js`: native known-sector suggestions for the existing sector-link input; it does not persist sector state itself.
 - `operator/index.html`: visible lifecycle labels and module wiring.
 
 ## Explicit separation from provider-boundary work
