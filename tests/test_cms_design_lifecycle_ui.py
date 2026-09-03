@@ -19,6 +19,14 @@ class CmsDesignLifecycleUiTests(unittest.TestCase):
             text=True,
         )
 
+    def test_sector_link_suggestions_javascript_is_valid(self) -> None:
+        subprocess.run(
+            ["node", "--check", str(ROOT / "operator/sector-link-suggestions.js")],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
     def test_single_visible_design_lifecycle(self) -> None:
         operator = read("operator/index.html")
 
@@ -49,6 +57,21 @@ class CmsDesignLifecycleUiTests(unittest.TestCase):
         self.assertIn("operator_set_prospect_sector", detail_ui)
         self.assertNotIn("bindCurrentProspectSector", sector_ui)
         self.assertIn("soliddesign:sector-intelligence-changed", sector_ui)
+
+    def test_sector_linking_supports_known_sector_dropdown_and_free_text(self) -> None:
+        operator = read("operator/index.html")
+        suggestions = read("operator/sector-link-suggestions.js")
+        sector_ui = read("operator/sector-intelligence-ui.js")
+
+        self.assertEqual(operator.count('src="./sector-link-suggestions.js"'), 1)
+        self.assertIn("document.createElement('datalist')", suggestions)
+        self.assertIn("sectorLinkOptions", suggestions)
+        self.assertIn("Kies een bekende sector of typ een nieuwe", suggestions)
+        self.assertIn("/api/sector-intelligence", suggestions)
+        self.assertIn("row.research_label", suggestions)
+        self.assertIn("input.dataset.canonicalKey = row.canonical_sector_key", suggestions)
+        self.assertNotIn("operator_set_prospect_sector", suggestions)
+        self.assertIn("operator_set_prospect_sector", sector_ui)
 
     def test_canonical_detail_module_is_wired_once(self) -> None:
         operator = read("operator/index.html")
