@@ -346,7 +346,6 @@
         : `Sectorinzichten voor “${context.humanTerm}” staan klaar voor beoordeling in het CMS.`);
       await loadSectorRows();
       updateLinkFormFromTarget();
-      await bindCurrentProspectSector(true);
     } finally {
       button.disabled = false;
     }
@@ -385,6 +384,7 @@
     const payload = await sectorApi();
     sectorRows = Array.isArray(payload.sectors) ? payload.sectors : [];
     renderSectorRows();
+    window.dispatchEvent(new CustomEvent('soliddesign:sector-intelligence-changed'));
   }
 
   function renderSectorRows() {
@@ -482,7 +482,6 @@
       detailRow = null;
       await loadSectorRows();
       updateLinkFormFromTarget();
-      await bindCurrentProspectSector(true);
     } catch (error) {
       setDetailMessage(error.message || String(error), true);
     } finally {
@@ -550,7 +549,9 @@
       setKnownCanonicalKey(linkTerm, resolved.canonicalKey);
       linkStatus.textContent = sectorAvailability(resolved.canonicalKey, resolved.humanTerm);
       linkMessage.textContent = `“${resolved.humanTerm}” is gekoppeld aan ${target.name}.`;
-      bindCurrentProspectSector(true).catch(console.error);
+      window.dispatchEvent(new CustomEvent('soliddesign:prospect-sector-changed', {
+        detail: { prospectId: target.id, canonicalSectorKey: resolved.canonicalKey }
+      }));
     } catch (error) {
       linkMessage.textContent = error.message || String(error);
       linkMessage.classList.add('error');
@@ -578,91 +579,7 @@
     setResearchMessage('');
     await loadSectorRows();
     await loadLinkTargets();
-    await bindCurrentProspectSector(true);
-  }
-
-  async function bindCurrentProspectSector(force = false) {
-    const root = detailPanel.querySelector('.detail-content');
-    if (!root) return;
-    if (!force && root.dataset.sectorLinkBound === 'true') return;
-    const card = root.querySelector('[data-design-process]');
-    const website = root.querySelector('[data-field="websiteUrl"]')?.textContent?.trim();
-    const name = root.querySelector('[data-field="name"]')?.textContent?.trim();
-    if (!card || !website || !name) return;
-
-    const { data, error } = await db.from('prospects')
-      .select('id,name,website_url,city,canonical_sector_key')
-      .eq('name', name)
-      .eq('website_url', website)
-      .limit(2);
-    if (error || data?.length !== 1 || !root.isConnected) return;
-    const prospect = data[0];
-
-    root.querySelector('[data-prospect-sector-control]')?.remove();
-    const control = document.createElement('div');
-    control.dataset.prospectSectorControl = 'true';
-    control.className = 'form-grid';
-    control.innerHTML = `
-      <label>Sector voor design
-        <input data-prospect-sector-input type="text" maxlength="120" placeholder="Bijv. juwelier" />
-      </label>
-      <div>
-        <span class="subtle" data-prospect-sector-status></span>
-        <div class="compact-actions">
-          <button type="button" class="secondary" data-prospect-sector-research>Sectoronderzoek</button>
-          <button type="button" class="secondary" data-prospect-sector-save>Koppel sector</button>
-        </div>
-      </div>`;
-    const intro = card.querySelector(':scope > p.subtle');
-    if (intro) intro.insertAdjacentElement('afterend', control);
-    else card.prepend(control);
-
-    const input = control.querySelector('[data-prospect-sector-input]');
-    const status = control.querySelector('[data-prospect-sector-status]');
-    const row = rowForKey(prospect.canonical_sector_key);
-    input.value = row?.research_label || humanizeKey(prospect.canonical_sector_key);
-    setKnownCanonicalKey(input, prospect.canonical_sector_key);
-    status.textContent = sectorAvailability(prospect.canonical_sector_key, row?.research_label || '');
-    input.addEventListener('input', () => setKnownCanonicalKey(input, null));
-
-    control.querySelector('[data-prospect-sector-save]').addEventListener('click', async (event) => {
-      const button = event.currentTarget;
-      button.disabled = true;
-      try {
-        const resolved = await resolveInputSector(input);
-        const { data: changed, error: saveError } = await db.rpc('operator_set_prospect_sector', {
-          p_id: prospect.id,
-          p_sector_key: resolved.canonicalKey
-        });
-        if (saveError) throw saveError;
-        if (!changed) throw new Error('Sector kon niet worden gekoppeld.');
-        prospect.canonical_sector_key = resolved.canonicalKey;
-        input.value = rowForKey(resolved.canonicalKey)?.research_label || resolved.humanTerm;
-        setKnownCanonicalKey(input, resolved.canonicalKey);
-        status.textContent = sectorAvailability(resolved.canonicalKey, resolved.humanTerm);
-      } catch (error) {
-        window.alert(error.message || String(error));
-      } finally {
-        button.disabled = false;
-      }
-    });
-
-    control.querySelector('[data-prospect-sector-research]').addEventListener('click', () => {
-      const currentRow = rowForKey(prospect.canonical_sector_key);
-      showSectorView({
-        sectorTerm: currentRow?.research_label || '',
-        canonicalKey: prospect.canonical_sector_key,
-        location: prospect.city || '',
-        targetId: prospect.id,
-        focusResearch: true
-      }).then(() => {
-        if (!currentRow) setResearchMessage('Vul de menselijke marktterm in voor het sectoronderzoek.');
-      }).catch((error) => window.alert(error.message || String(error)));
-    });
-    root.dataset.sectorLinkBound = 'true';
   }
 
   installDiscoveryShortcut();
-  new MutationObserver(() => bindCurrentProspectSector().catch(console.error)).observe(detailPanel, { childList: true, subtree: true });
-  bindCurrentProspectSector().catch(console.error);
 })();
