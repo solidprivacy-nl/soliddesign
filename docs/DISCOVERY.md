@@ -33,7 +33,84 @@ RESEARCH IMPORT | OVERTURE AREA SEARCH | SPECIFIC URL
        deeper audit / qualification / design
 ```
 
-## 2. Exactly three current intake paths
+## 2. Operator UX principle
+
+The CMS presents the business task, not the implementation machinery.
+
+A new User should be able to answer three questions immediately:
+
+1. How do I find companies?
+2. Which candidates deserve attention?
+3. How do I add one to Prospects?
+
+The governing UI rule is:
+
+> Show the decision; hide the machinery.
+
+Therefore **Bedrijven zoeken** has one search card with exactly three modes. Only one mode is visible at a time:
+
+```text
+Gericht zoeken  |  Breed zoeken  |  Bekend bedrijf
+    default
+```
+
+The technical source names remain durable provenance, not primary operator vocabulary.
+
+### Gericht zoeken
+
+Recommended default when prospect quality matters most.
+
+Visible fields:
+
+```text
+Sector
+Plaats
++ Extra instructie     # collapsed by default
+```
+
+The interaction is deliberately two-step:
+
+```text
+1. Kopieer onderzoeksopdracht
+2. Importeer CSV-resultaat
+```
+
+No PDOS terminology, import-contract mechanics or evidence-model explanation is required in the normal operator path.
+
+### Breed zoeken
+
+Used for inexpensive recall.
+
+Visible fields:
+
+```text
+Plaats
+Sector
+```
+
+The current result limit is a system default of 10 and is not exposed as routine operator configuration. Add a control only if real operator evidence shows that changing the limit is a recurring need.
+
+Overture and geocoding remain implementation/source details. Attribution remains present but visually secondary.
+
+### Bekend bedrijf
+
+Used when the operator already knows a business.
+
+Visible field:
+
+```text
+Website
+```
+
+Reachability and duplicate checks happen automatically.
+
+### Sectoronderzoek is separate
+
+Sectoronderzoek has its own top-level navigation item and is not duplicated inside Bedrijven zoeken.
+
+Do not reintroduce a shortcut from the broad-search card: it creates uncertainty about whether sector research is a prerequisite for finding companies.
+
+## 3. Exactly three current intake paths
 
 ### A. Research import
 
@@ -72,7 +149,7 @@ Purpose:
 
 The existing website preflight and deduplication path remains unchanged.
 
-## 3. No provider framework
+## 4. No provider framework
 
 Do not introduce:
 
@@ -88,7 +165,7 @@ The present need is only three concrete paths that each produce the same plain c
 
 If a fourth source is later justified by measured coverage/value, map it to that same boundary first. Generalize only when concrete duplication actually exists.
 
-## 4. Candidate boundary
+## 5. Candidate boundary
 
 All sources normalize to the existing prospect-ingest fields required for Discovery:
 
@@ -107,11 +184,11 @@ qualification
 
 Source-specific fields remain optional.
 
-The existing Supabase `operator_ingest_discovery_candidates` RPC stays authoritative for persistence and existing website-domain deduplication.
+The existing Supabase `operator_ingest_discovery_candidates` RPC stays authoritative for persistence and website-domain deduplication.
 
 No second candidate table exists.
 
-## 5. Research transfer contract
+## 6. Research transfer contract
 
 The canonical machine-readable transport contract is:
 
@@ -133,9 +210,7 @@ CMS importer
 
 Do not maintain a second manually copied list of CSV columns in JavaScript or documentation.
 
-The contract is deliberately narrow and versioned because producer/consumer drift is a real failure mode.
-
-## 6. CSV parsing and validation
+## 7. CSV parsing and validation
 
 The browser uses a mature pinned CSV parser rather than custom delimiter splitting.
 
@@ -153,7 +228,9 @@ Malformed imports fail clearly before candidate persistence.
 
 No silent column guessing or fabricated default evidence.
 
-## 7. Research evidence
+When a research row matches an existing website domain, the existing record is enriched rather than duplicated. The import feedback distinguishes newly created candidates from existing candidates that received research evidence.
+
+## 8. Research evidence
 
 Accepted research evidence is stored inside the existing JSON qualification record:
 
@@ -191,7 +268,7 @@ Conceptual shape:
 
 Research triage is discovery evidence. It is not the current full commercial qualification.
 
-## 8. Deterministic triage
+## 9. Deterministic triage
 
 Every newly discovered website may receive the existing cheap deterministic preflight before human selection.
 
@@ -226,7 +303,7 @@ qualification.triage
 
 Neither silently replaces the other.
 
-## 9. Qualification merge invariant
+## 10. Qualification merge invariant
 
 Any code that writes `prospects.qualification` must preserve unrelated evidence namespaces.
 
@@ -243,34 +320,59 @@ update full qualification
 → preserve research + triage
 ```
 
-The Discovery triage writer explicitly spreads existing qualification content before replacing its own `triage` namespace.
+Regression tests protect this boundary.
 
-Regression tests must protect this boundary.
-
-## 10. Discovery Inbox
+## 11. Discovery Inbox — decision-first presentation
 
 There is one human decision surface.
 
-Presentation derives the richest available evidence without creating another persisted state.
-
-Suggested grouping semantics:
+The default candidate row answers only:
 
 ```text
-AFGEWEZEN
-  state = DISQUALIFIED or hard basis gate failed
+Who is this?
+Is it worth attention?
+What should I do?
+```
 
-AANBEVOLEN
+Visible row hierarchy:
+
+```text
+Company + place
+status + one short reason
+
+[Toevoegen]   [Waarom?]   [Website ↗]   [•••]
+```
+
+`Toevoegen` is the single primary action for a normal discovered candidate.
+
+`Waarom?` progressively reveals evidence. Internal research scores, deterministic scores, source provenance and basis-gate detail are not repeated permanently across every row.
+
+Positive normal system state such as `Basischeck OK` is not shown as a permanent badge. Exceptions such as an unreachable website remain explicit.
+
+Rare/destructive actions such as **Afwijzen** and **Verwijderen** stay behind the existing overflow menu.
+
+### Grouping semantics
+
+```text
+KANSRIJK
   research.decision = DEEP_AUDIT
   OR no research and deterministic verdict = STRONG
 
-BEOORDELEN
+NOG BEOORDELEN
   research.decision = VERIFY_FIRST
   OR deterministic POSSIBLE / UNASSESSED / pending
 
 LAGE PRIORITEIT
   research.decision = LOWER_PRIORITY / REJECT
   OR no research and deterministic verdict = WEAK
+
+AFGEWEZEN
+  state = DISQUALIFIED or hard basis gate failed
 ```
+
+`KANSRIJK` and `NOG BEOORDELEN` are expanded by default.
+
+`LAGE PRIORITEIT` and `AFGEWEZEN` are collapsed by default so the normal workflow is not dominated by candidates the system already considers less actionable.
 
 Research ordering, when present:
 
@@ -281,7 +383,21 @@ Research ordering, when present:
 
 No `candidate_priority` column or combined x/10 score is persisted.
 
-## 11. Human authority
+## 12. Recent searches
+
+Recent search history is supporting context, not the main task.
+
+It is collapsed by default and limited to the five most recent runs. Labels use operator vocabulary:
+
+```text
+IMPORT → Gericht zoeken
+AREA   → Breed zoeken
+URL    → Bekend bedrijf
+```
+
+Raw run types remain durable system state but are not primary UI language.
+
+## 13. Human authority
 
 No source automatically promotes a company into the active prospect workflow.
 
@@ -299,7 +415,7 @@ Deterministic website triage is evidence.
 
 None is commercial authority.
 
-## 12. Workflow state versus qualification
+## 14. Workflow state versus qualification
 
 `QUALIFIED` as the workflow state means the operator deliberately selected the discovered candidate into active prospect work.
 
@@ -314,7 +430,7 @@ Nog niet uitgevoerd
 
 rather than displaying an ambiguous `— / 25`.
 
-## 13. Current commercial qualification
+## 15. Current commercial qualification
 
 The existing five-factor 0–25 commercial qualification remains current during the pilot:
 
@@ -330,7 +446,7 @@ PDOS/WES/RDS/CPF can be used as experimental deeper evidence where fully measure
 
 After sufficient outreach outcomes, compare predictive usefulness against replies, meetings, proposals, wins and gross margin. Choose one future canonical qualification model only when evidence supports it, then remove superseded competing logic.
 
-## 14. Overture role
+## 16. Overture role
 
 Overture has already demonstrated useful Dutch candidate recall. It remains supported while it earns that value.
 
@@ -340,25 +456,25 @@ Do not preserve it merely because it exists either.
 
 Compare incremental qualified yield and operator minutes in the commercial pilot.
 
-## 15. Failure behaviour
+## 17. Failure behaviour
 
 ### Research import
 
 - malformed CSV → reject import before persistence;
 - contract mismatch → reject explicitly;
-- duplicate website → existing ingest dedupe prevents duplicate prospect;
+- duplicate website → enrich existing candidate, no duplicate;
 - missing evidence → preserve as missing/verification-needed, never invent;
 - site-check unavailable → candidate remains reviewable as unassessed rather than receiving fabricated scores.
 
 ### Overture
 
-Source/query failures remain explicit as documented in `DISCOVERY_OVERTURE.md`.
+Source/query failures remain explicit as documented in `docs/DISCOVERY_OVERTURE.md`.
 
 ### URL
 
 Existing reachability/deduplication rules remain current.
 
-## 16. Data minimization
+## 18. Data minimization
 
 Discovery targets business entities and public business websites.
 
@@ -366,7 +482,7 @@ Retain only information needed for prospect selection and the acquisition/learni
 
 Do not intentionally harvest private personal contact information or create individual enrichment merely because a source exposes it.
 
-## 17. Non-goals
+## 19. Non-goals
 
 Do not add without observed need:
 
@@ -379,30 +495,43 @@ Do not add without observed need:
 - automatic deep audit across the raw candidate universe;
 - PDOS database columns;
 - entity-resolution ML;
-- bulk scheduled refresh infrastructure.
+- bulk scheduled refresh infrastructure;
+- discovery wizard;
+- generic UI-form builder;
+- per-user search-layout preferences.
 
-## 18. Acceptance
+## 20. Acceptance
 
-Discovery cutover is complete only when:
+Discovery is technically complete only when:
 
 ```text
-[ ] research invocation uses the canonical Prompt Library
+[ ] one search card presents exactly three modes
+[ ] Gericht zoeken is the default mode
+[ ] only one search mode is visible at a time
+[ ] research extra instruction is collapsed by default
+[ ] broad search exposes only place + sector in the normal path
+[ ] Sectoronderzoek is not duplicated inside Bedrijven zoeken
 [ ] producer and importer use the same research import contract
 [ ] real research CSV imports without manual SQL
 [ ] malformed CSV fails clearly
-[ ] website dedupe still works
+[ ] website dedupe/enrichment works
 [ ] imported research persists under qualification.research
 [ ] deterministic triage persists under qualification.triage
 [ ] one cannot erase the other
-[ ] research evidence appears in the existing Discovery Inbox
+[ ] candidate rows have one primary normal action: Toevoegen
+[ ] detailed evidence is behind Waarom?
+[ ] positive basis checks are not repeated as permanent badges
+[ ] low-priority and rejected groups are collapsed by default
+[ ] recent searches are collapsed and operator-labelled
 [ ] human promotion remains explicit
 [ ] Overture search still works
 [ ] direct URL intake still works
 [ ] missing full qualification is not presented as a score
 [ ] no parallel candidate/workflow state was introduced
+[ ] obsolete discovery UI copy/shortcut code is removed
 ```
 
-## 19. Business evidence gate
+## 21. Business evidence gate
 
 For real batches, measure by discovery source:
 
