@@ -14,7 +14,7 @@ class TeamIdentityLifecycleTests(unittest.TestCase):
     def test_team_identity_uses_display_name_and_derived_initials(self):
         config = self.read("operator/config.js")
         team_work = self.read("operator/team-work.js")
-        architecture = self.read("docs/INTEGRATED_OPERATING_ARCHITECTURE.md")
+        operator_contract = self.read("operator/README.md")
 
         self.assertIn("import('./team-work.js')", config)
         self.assertNotIn("team-identity.js", config)
@@ -22,8 +22,8 @@ class TeamIdentityLifecycleTests(unittest.TestCase):
         self.assertIn("function memberInitials", team_work)
         self.assertIn("team-avatar", team_work)
         self.assertIn("display_name", team_work)
-        self.assertIn("team_members.display_name", architecture)
-        self.assertIn("primary human-readable work identity", architecture)
+        self.assertIn("team_members.display_name", operator_contract)
+        self.assertIn("primary visible identity", operator_contract)
         self.assertNotIn("avatar_url", team_work)
 
     def test_display_name_change_is_admin_only_and_actor_aware(self):
