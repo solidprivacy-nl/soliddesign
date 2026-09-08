@@ -1,33 +1,43 @@
 # Decision — CMS design lifecycle UX
 
 **Date:** 2026-09-03  
-**Status:** approved for production independently of repository-privacy cutover
+**Status:** PARTIALLY SUPERSEDED on 2026-09-09 by `20260909_PROSPECT_FIRST_DESIGN_SECTOR_RETIREMENT.md`
 
-## Objective
+## Historical objective
 
-Make the prospect design workflow simpler and unambiguous without coupling the UX release to the separate GitHub/private-implementation boundary work.
+Make the prospect design workflow simpler and unambiguous without coupling the UX release to separate repository/provider-boundary work.
 
-## Current product truth
+## Still-current decisions
 
-- `Ontwerpversies` is the single visible lifecycle/status surface for designs.
+The following parts remain current:
+
+- `Ontwerpversies` is the single visible lifecycle/status surface for website designs.
 - `CONCEPT` and `LIVE` remain the version-state truth; publication is an explicit human action.
-- `Nieuwste ontwerp ↗` is a convenience link to the most recently created design version, regardless of LIVE/CONCEPT state. It is not a second lifecycle state.
-- `Sector voor design` is optional to change. The existing prospect sector remains selected by default.
-- Optional design-sector choices are limited to sectors with published Sector Intelligence.
-- In `Koppel een sector`, the sector field offers known Sector Intelligence entries as native dropdown suggestions while remaining free-text capable for a new sector.
-- Choosing a known sector suggestion reuses its canonical sector key directly; typing a new sector still goes through the existing sector resolver.
-- Sector linkage and design-sector overrides both reuse the existing canonical prospect-sector field/RPC; there is no second persistent sector-selection model.
-- `Sectoronderzoek` remains the separate research/review workflow.
+- `Nieuwste ontwerp ↗` remains a convenience link to the most recently created design version, regardless of LIVE/CONCEPT state. It is not a second lifecycle state.
+- provider/private-repository work remains independent from ordinary operator Design UX.
 
-## Implementation ownership
+## Superseded decisions
 
-- `operator/design-detail-ui.js`: prospect-detail design conveniences (`Nieuwste ontwerp`, optional sector selector).
-- `operator/sector-intelligence-ui.js`: sector research/review/linking workspace and persistence.
-- `operator/sector-link-suggestions.js`: native known-sector suggestions for the existing sector-link input; it does not persist sector state itself.
-- `operator/index.html`: visible lifecycle labels and module wiring.
+The following 2026-09-03 decisions are no longer current:
 
-## Explicit separation from provider-boundary work
+- `Sector voor design`;
+- limiting design choices to published Sector Intelligence;
+- known-sector suggestions in a `Koppel een sector` workflow;
+- design-sector overrides through a prospect-sector RPC;
+- `Sectoronderzoek` as a separate research/review workspace;
+- Sector Intelligence responsibilities inside `operator/design-detail-ui.js` or separate Sector Intelligence browser modules.
 
-This UX release does **not** require the GitHub repository to be private and does not include the provider-blind bootstrap, same-origin AI contract, or production privacy guard from the separate provider-boundary candidate.
+Current Design is prospect-first and uses no sector lookup or reusable Sector Intelligence.
 
-That security cutover remains isolated in its own Draft PR and can be completed later without blocking this approved CMS UX.
+See:
+
+- `docs/PROSPECT_FIRST_DESIGN.md`;
+- `docs/decisions/20260909_PROSPECT_FIRST_DESIGN_SECTOR_RETIREMENT.md`.
+
+## Current implementation ownership
+
+- `operator/design-detail-ui.js` owns only prospect-detail design conveniences such as `Nieuwste ontwerp ↗`.
+- `operator/design-process.js` owns the prospect-specific two-URL ChatGPT handoff and Design Brief generation.
+- `operator/index.html` owns the visible Design controls and lifecycle labels.
+
+The retired Sector Intelligence UI/linking modules are no longer part of current runtime.
