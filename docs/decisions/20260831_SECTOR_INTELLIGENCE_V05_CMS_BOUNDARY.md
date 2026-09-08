@@ -1,12 +1,12 @@
 # Decision — Sector Intelligence v0.5 CMS boundary
 
 **Date:** 2026-08-31  
-**Status:** accepted architecture for the v0.5 reconciliation  
-**Supersedes:** ADR-016 only where ADR-016 describes current authorization, operator review mechanics or operator-visible repository concepts. ADR-015/016 remain historical rationale for using existing version-control infrastructure rather than adding a research datastore.
+**Status:** SUPERSEDED on 2026-09-09 by `20260909_PROSPECT_FIRST_DESIGN_SECTOR_RETIREMENT.md`  
+**Historical scope:** this file records the rationale and implementation boundary that applied while Sector Intelligence was active. It is not current architecture.
 
-## Problem
+## Problem at the time
 
-Sector Intelligence correctly became reusable across prospects, but its first CMS implementation crossed architectural boundaries:
+Sector Intelligence had become reusable across prospects, but its first CMS implementation crossed architectural boundaries:
 
 - browser/API contracts exposed technical source and review URLs;
 - the operator was sent outside the CMS for review;
@@ -15,23 +15,11 @@ Sector Intelligence correctly became reusable across prospects, but its first CM
 - current documentation and CI protected parts of that transitional implementation;
 - design bootstrap/handoff resources still exposed repository-host URLs.
 
-The business requirement is simpler: operators need reusable sector knowledge, explicit prospect-sector discretion, optional research direction and human review without needing to know how SolidDesign stores or versions that knowledge.
+The business requirement at that time was to provide reusable sector knowledge, explicit prospect-sector discretion, optional research direction and human review without exposing engineering storage/versioning mechanics.
 
-## Hard requirements
+## Historical solution
 
-- one primary canonical sector per prospect;
-- operator may explicitly assign or correct that sector, including for a manually added URL;
-- human market language remains separate from machine identity;
-- optional operator research direction is challengeable input, not approved evidence;
-- broad autonomous sector research remains intact;
-- human review is required before new research becomes published design evidence;
-- normal CMS users have zero exposure to repository hostnames, repository identity, branches, pull requests, technical review URLs or storage paths;
-- active `team_members` membership is the sole application authorization truth;
-- no second research database, reference library, task engine or review subsystem is introduced.
-
-## Simplest viable solution
-
-Keep the existing canonical Markdown/versioning infrastructure behind one narrow server-side Sector Intelligence façade.
+The v0.5 implementation kept Markdown/versioning infrastructure behind a narrow server-side Sector Intelligence façade:
 
 ```text
 CMS
@@ -43,68 +31,30 @@ CMS
 → published Sector Intelligence
 ```
 
-The browser sees domain state only:
+It reused active `team_members` authorization and hid GitHub transport from operators.
+
+## Why it was later retired
+
+By 2026-09-09 the broader SolidDesign architecture had changed materially:
+
+- discovery had become a separate evidence-rich research workflow;
+- the generic design method and Prospect Design Brief were strong enough to evaluate the actual prospect directly;
+- Sector Intelligence remained advisory and non-blocking;
+- no canonical `prompts/sectors/` overlay had been earned from production evidence;
+- maintaining research/review/linkage/lookup machinery added more interface and maintenance burden than demonstrated design value.
+
+The accepted successor decision therefore moved the boundary:
 
 ```text
-Beschikbaar
-Ter beoordeling
-Bijwerking ter beoordeling
-Bekijken
-Beoordelen
-Publiceer
-Afwijzen
+sector
+→ Discovery/search/classification only
+
+Prospect Design
+→ prospect-specific evidence only
 ```
 
-Discovery and Sectoronderzoek share only the validated sector resolver. Sectoronderzoek owns its own inputs, prompt generation, clipboard handoff, result processing, review and linkage UI.
+See `docs/decisions/20260909_PROSPECT_FIRST_DESIGN_SECTOR_RETIREMENT.md` for current rationale and acceptance criteria.
 
-Canonical prompts and published Sector Intelligence remain single-source files in source control, but the existing Pages deployment copies them into the CMS static deployment. ChatGPT and operators therefore consume only SolidDesign-owned CMS URLs. No runtime proxy or second prompt store is added.
+## Historical value
 
-## Authorization
-
-All Sector Intelligence CMS capabilities use:
-
-```text
-auth.uid()
-→ active team_members
-→ operator_is_active_team_member()
-```
-
-The retired `operator_allowlist` model is explicitly forbidden as a fallback or second authority.
-
-## Operator research direction
-
-`Aanvullende onderzoeksrichting` is one optional free-text field. It may contain URLs, observations or other research context.
-
-The research instruction treats this as a hypothesis that must be independently inspected and may be rejected. No URL entity, rating system, tag model or reusable reference library is created.
-
-## Review and versioning
-
-Human review happens inside the CMS. The backend may internally use existing version-control review/versioning mechanics, but those mechanics are not browser/API domain concepts.
-
-A successful publish/reject action is a business result. Best-effort technical cleanup after that result must not turn the completed business action into an apparent failure.
-
-## Failure modes addressed
-
-- stale authorization executor → one current membership predicate;
-- GitHub/provider leakage → server-only transport + static CMS-owned design resources;
-- duplicate executors → one Sector Intelligence server façade;
-- hidden Discovery coupling → self-contained Sectoronderzoek workspace;
-- operator bias → challengeable optional direction, autonomous research preserved;
-- CI preserving transitional behavior → tests/gates assert architectural invariants instead of DOM wiring;
-- stale current docs → v0.5 contracts and current operating architecture reconciled.
-
-## Rejected alternatives
-
-- **Sector Intelligence table in Supabase:** duplicates content/version state without business need.
-- **Reference-management subsystem:** solves a larger problem than observed; free text is sufficient.
-- **Runtime repository proxy:** adds a moving part when deployment-time static copy solves the exposure problem.
-- **Automatic AI classification of arbitrary URLs:** URL alone is weak evidence and unnecessary when operator discretion exists.
-- **Many-to-many prospect sectors:** no demonstrated design-selection need.
-
-## Reversibility
-
-High. Prospect sector identity is one existing field; research remains Markdown; the CMS façade and static deployment copy are thin. No new operational datastore or background system is introduced.
-
-## Final rule
-
-> SolidDesign operators work with business concepts. Engineering transport remains an implementation detail.
+This decision remains useful as history because it documents why provider/repository mechanics were hidden from normal operators and why active `team_members` became the only authorization truth. Those principles remain valid even though the Sector Intelligence capability itself was retired.
