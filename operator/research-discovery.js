@@ -11,41 +11,39 @@
   let papaPromise = null;
   let contractPromise = null;
 
-  const grid = document.querySelector('#discoveryView .discovery-grid');
-  if (!grid) return;
+  const panel = document.querySelector('[data-discovery-panel="research"]');
+  if (!panel) return;
 
-  const card = document.createElement('div');
-  card.className = 'card discovery-card';
-  card.dataset.researchDiscovery = 'true';
-  card.innerHTML = `
-    <div class="eyebrow">Evidence-backed research</div>
-    <h2>Onderzoek geschikte prospects</h2>
-    <p class="subtle">Gebruik de centrale SolidDesign-onderzoeksmethode in ChatGPT. Importeer daarna het CSV-resultaat in dezelfde Discovery-inbox als Overture en losse websites.</p>
-    <div class="discovery-form">
+  panel.innerHTML = `
+    <div class="discovery-mode-intro">
+      <h2>Gericht zoeken</h2>
+      <p>Vind kansrijke bedrijven met uitgebreider onderzoek.</p>
+    </div>
+    <div class="discovery-form discovery-form-simple">
       <label>Sector
         <input id="researchDiscoverySector" type="text" maxlength="120" placeholder="Bijv. loodgieter" />
       </label>
-      <label>Locatie
+      <label>Plaats
         <input id="researchDiscoveryLocation" type="text" maxlength="120" placeholder="Bijv. Rotterdam" />
       </label>
     </div>
-    <label>Aanvullende onderzoeksrichting <span class="subtle">(optioneel)</span>
-      <textarea id="researchDiscoveryDirection" rows="3" maxlength="1500" placeholder="Bijv. focus op lokale B2B-bedrijven; behandel dit als richting, niet als feit."></textarea>
-    </label>
-    <div class="discovery-action">
-      <span class="subtle">Kopieert alleen de prompt-URL plus deze onderzoekscontext.</span>
-      <button id="copyProspectResearch" type="button" class="secondary">Kopieer onderzoeksopdracht</button>
+    <details class="discovery-extra">
+      <summary>+ Extra instructie</summary>
+      <label>
+        <textarea id="researchDiscoveryDirection" rows="3" maxlength="1500" placeholder="Bijv. focus op lokale B2B-bedrijven."></textarea>
+      </label>
+    </details>
+    <div class="research-step">
+      <div><strong>1. Kopieer opdracht</strong><span>Plak de opdracht in ChatGPT.</span></div>
+      <button id="copyProspectResearch" type="button" class="primary">Kopieer onderzoeksopdracht</button>
     </div>
-    <div class="discovery-form">
-      <label>Onderzoeksresultaat (.csv)
+    <div class="research-step research-import-step">
+      <div><strong>2. Importeer resultaat</strong><span>Download het CSV-bestand uit ChatGPT en kies het hier.</span></div>
+      <label class="research-file">CSV-resultaat
         <input id="researchDiscoveryFile" type="file" accept=".csv,text/csv" />
       </label>
-    </div>
-    <div class="discovery-action">
-      <span class="subtle">De CSV wordt gevalideerd, gededupliceerd op website en toegevoegd als research-evidence.</span>
-      <button id="importProspectResearch" type="button" class="primary">Importeer onderzoeksresultaat</button>
+      <button id="importProspectResearch" type="button" class="secondary">Importeer resultaat</button>
     </div>`;
-  grid.prepend(card);
 
   const sectorInput = document.getElementById('researchDiscoverySector');
   const locationInput = document.getElementById('researchDiscoveryLocation');
@@ -83,7 +81,7 @@
 
   async function researchContext() {
     const location = locationInput.value.trim();
-    if (!location) throw new Error('Vul eerst een locatie in.');
+    if (!location) throw new Error('Vul eerst een plaats in.');
     const sector = await resolveSector();
     return { ...sector, location, direction: directionInput.value.trim() };
   }
@@ -97,7 +95,7 @@
         location: context.location,
         additional_direction: context.direction
       });
-      setMessage(`Onderzoeksopdracht voor “${context.humanTerm}” in ${context.location} is gekopieerd. Plak hem in ChatGPT.`);
+      setMessage('✓ Onderzoeksopdracht gekopieerd. Plak hem in ChatGPT en download daarna het CSV-resultaat.');
     } catch (error) {
       setMessage(error.message || String(error), true);
     } finally {
@@ -311,7 +309,7 @@
       const file = fileInput.files?.[0];
       if (!file) throw new Error('Kies eerst het CSV-resultaat uit ChatGPT.');
       if (file.size > 2 * 1024 * 1024) throw new Error('De CSV is groter dan 2 MB.');
-      setMessage('Research-CSV controleren…');
+      setMessage('CSV controleren…');
       const [Papa, contract, text] = await Promise.all([loadPapa(), loadContract(), file.text()]);
       const parsed = Papa.parse(text, { header: true, skipEmptyLines: 'greedy' });
       const rows = validateRows(parsed, contract);
@@ -321,6 +319,7 @@
         p_run_id: runId,
         p_candidates: normalized
       });
+      const enriched = Number(ingest.enriched_count || 0);
       await finishRun(runId, {
         status: 'COMPLETED',
         found_count: ingest.found_count || normalized.length,
@@ -331,11 +330,14 @@
           contract: contract.contract,
           method: 'prospect_research',
           method_version: RESEARCH_METHOD_VERSION,
-          existing_count: ingest.existing_count || 0
+          existing_count: ingest.existing_count || 0,
+          enriched_count: enriched
         },
         error: null
       });
-      setMessage(`${ingest.found_count || normalized.length} onderzocht · ${ingest.new_count || 0} nieuw. Nieuwe kandidaten staan in de Discovery-inbox en krijgen de bestaande website-basischeck.`);
+      const parts = [`${ingest.found_count || normalized.length} onderzocht`, `${ingest.new_count || 0} nieuw`];
+      if (enriched) parts.push(`${enriched} bestaand aangevuld`);
+      setMessage(`✓ ${parts.join(' · ')}. Bekijk de kandidaten hieronder.`);
       fileInput.value = '';
       document.getElementById('refreshDiscoveryBtn')?.click();
     } catch (error) {
