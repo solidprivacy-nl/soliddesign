@@ -19,9 +19,9 @@ class CmsDesignLifecycleUiTests(unittest.TestCase):
             text=True,
         )
 
-    def test_sector_link_suggestions_javascript_is_valid(self) -> None:
+    def test_design_process_javascript_is_valid(self) -> None:
         subprocess.run(
-            ["node", "--check", str(ROOT / "operator/sector-link-suggestions.js")],
+            ["node", "--check", str(ROOT / "operator/design-process.js")],
             check=True,
             capture_output=True,
             text=True,
@@ -31,8 +31,8 @@ class CmsDesignLifecycleUiTests(unittest.TestCase):
         operator = read("operator/index.html")
 
         self.assertIn("<h3>Ontwerpversies</h3>", operator)
-        self.assertIn("Dit is de enige plek voor de ontwerpstatus.", operator)
-        self.assertIn("<h4>Alle ontwerpversies</h4>", operator)
+        self.assertIn("Upload concept", operator)
+        self.assertIn("<h4>Ontwerpversies</h4>", operator)
         self.assertIn("<span>Ontwerpstatus</span>", operator)
         self.assertNotIn(">Live mock-up ↗</a>", operator)
         self.assertNotIn("<h3>Mock-up versies</h3>", operator)
@@ -47,37 +47,44 @@ class CmsDesignLifecycleUiTests(unittest.TestCase):
         self.assertIn("Nieuwste ontwerp ↗", detail_ui)
         self.assertIn("Meest recente ontwerpversie", detail_ui)
 
-    def test_sector_for_design_is_optional_and_uses_published_research(self) -> None:
-        detail_ui = read("operator/design-detail-ui.js")
-        sector_ui = read("operator/sector-intelligence-ui.js")
-
-        self.assertIn("Sector voor design ", detail_ui)
-        self.assertIn("(optioneel aanpassen)", detail_ui)
-        self.assertIn(".filter((row) => row?.has_published)", detail_ui)
-        self.assertIn("operator_set_prospect_sector", detail_ui)
-        self.assertNotIn("bindCurrentProspectSector", sector_ui)
-        self.assertIn("soliddesign:sector-intelligence-changed", sector_ui)
-
-    def test_sector_linking_supports_known_sector_dropdown_and_free_text(self) -> None:
+    def test_design_tab_has_one_primary_chatgpt_action(self) -> None:
         operator = read("operator/index.html")
-        suggestions = read("operator/sector-link-suggestions.js")
-        sector_ui = read("operator/sector-intelligence-ui.js")
+        process = read("operator/design-process.js")
 
-        self.assertEqual(operator.count('src="./sector-link-suggestions.js"'), 1)
-        self.assertIn("document.createElement('datalist')", suggestions)
-        self.assertIn("sectorLinkOptions", suggestions)
-        self.assertIn("Kies een bekende sector of typ een nieuwe", suggestions)
-        self.assertIn("/api/sector-intelligence", suggestions)
-        self.assertIn("row.research_label", suggestions)
-        self.assertIn("input.dataset.canonicalKey = row.canonical_sector_key", suggestions)
-        self.assertNotIn("operator_set_prospect_sector", suggestions)
-        self.assertIn("operator_set_prospect_sector", sector_ui)
+        self.assertEqual(operator.count('data-design-action="copyStart"'), 1)
+        self.assertIn("Kopieer designopdracht", operator)
+        self.assertIn("Designinstructie", operator)
+        self.assertIn("Projectinstellingen", operator)
+        self.assertIn("Open designbrief", operator)
+        self.assertIn("Open ChatGPT-project ↗", process)
+        self.assertIn("✓ Designopdracht gekopieerd", process)
+        self.assertNotIn("copySectorUpgrade", operator)
+        self.assertNotIn("Sectoronderzoek", operator)
+        self.assertNotIn("Designbrieflink", operator)
+
+    def test_design_is_not_coupled_to_sector_state(self) -> None:
+        process = read("operator/design-process.js")
+        detail_ui = read("operator/design-detail-ui.js")
+
+        for source in (process, detail_ui):
+            self.assertNotIn("canonical_sector_key", source)
+            self.assertNotIn("sector-intelligence", source.lower())
+            self.assertNotIn("operator_set_prospect_sector", source)
+
+    def test_external_preview_is_secondary_progressive_disclosure(self) -> None:
+        operator = read("operator/index.html")
+
+        self.assertIn("<summary>Gebruik externe conceptlink</summary>", operator)
+        self.assertIn('data-input="externalPreview"', operator)
+        self.assertIn("Voeg concept toe", operator)
 
     def test_canonical_detail_module_is_wired_once(self) -> None:
         operator = read("operator/index.html")
 
         self.assertEqual(operator.count('src="./design-detail-ui.js"'), 1)
         self.assertNotIn('src="./design-ui-preview.js"', operator)
+        self.assertNotIn('src="./sector-intelligence-ui.js"', operator)
+        self.assertNotIn('src="./sector-link-suggestions.js"', operator)
 
 
 if __name__ == "__main__":
