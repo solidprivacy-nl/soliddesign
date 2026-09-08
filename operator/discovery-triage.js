@@ -7,11 +7,12 @@
   const db = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
   const inFlight = new Set();
   const GROUPS = Object.freeze([
-    { key: 'recommended', label: 'AANBEVOLEN', hint: 'Sterke kandidaten om als eerste te beoordelen.' },
-    { key: 'review', label: 'BEOORDELEN', hint: 'Mogelijke kandidaten of nog niet volledig beoordeeld.' },
-    { key: 'low', label: 'LAGE PRIORITEIT', hint: 'Weinig zichtbare verbeterkans of minder eenvoudig overtuigend te verbeteren.' },
-    { key: 'disqualified', label: 'AFGEWEZEN', hint: 'Kandidaten die niet door de basiscontrole kwamen.' }
+    { key: 'recommended', label: 'AANBEVOLEN', hint: 'Sterke research- of websitekandidaten om als eerste te beoordelen.' },
+    { key: 'review', label: 'BEOORDELEN', hint: 'Kandidaten die verificatie of menselijke beoordeling nodig hebben.' },
+    { key: 'low', label: 'LAGE PRIORITEIT', hint: 'Minder sterke redesigncase of weinig zichtbare verbeterkans.' },
+    { key: 'disqualified', label: 'AFGEWEZEN', hint: 'Kandidaten die niet door een harde basiscontrole kwamen.' }
   ]);
+  const PRIORITY = Object.freeze({ VERY_HIGH: 4, HIGH: 3, MEDIUM: 2, LOW: 1 });
 
   let decorateTimer = null;
   let candidateObserver = null;
@@ -30,6 +31,10 @@
     return ({ STRONG: 'STERK', POSSIBLE: 'MOGELIJK', WEAK: 'LAGE PRIORITEIT', UNASSESSED: 'NIET BEOORDEELD' })[value] || 'NIET BEOORDEELD';
   }
 
+  function researchDecisionLabel(value) {
+    return ({ DEEP_AUDIT: 'DEEP AUDIT', VERIFY_FIRST: 'EERST VERIFIËREN', LOWER_PRIORITY: 'LAGE PRIORITEIT', REJECT: 'AFWIJZEN' })[value] || null;
+  }
+
   function stateLabel(value) {
     return ({ DISCOVERED: 'Gevonden', DISQUALIFIED: 'Afgewezen' })[value] || value || '—';
   }
@@ -38,17 +43,46 @@
     return value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
   }
 
+  function hardGateFailed(row) {
+    return Object.values(row.qualification?.triage?.hard_gates || {}).some((value) => value === false);
+  }
+
   function groupKey(row) {
-    if (row.state === 'DISQUALIFIED') return 'disqualified';
+    if (row.state === 'DISQUALIFIED' || hardGateFailed(row)) return 'disqualified';
+    const research = row.qualification?.research;
+    if (research?.decision === 'DEEP_AUDIT') return 'recommended';
+    if (research?.decision === 'VERIFY_FIRST') return 'review';
+    if (research?.decision === 'LOWER_PRIORITY' || research?.decision === 'REJECT') return 'low';
     const verdict = row.qualification?.triage?.verdict;
     if (verdict === 'STRONG') return 'recommended';
     if (verdict === 'WEAK') return 'low';
     return 'review';
   }
 
+  function researchPriority(row) {
+    return PRIORITY[String(row.qualification?.research?.priority || '').toUpperCase()] || 0;
+  }
+
+  function researchRank(row) {
+    const value = Number(row.qualification?.research?.rank);
+    return Number.isFinite(value) && value > 0 ? value : Number.MAX_SAFE_INTEGER;
+  }
+
   function scoreValue(row, key) {
     const value = row.qualification?.triage?.[key]?.score;
     return hasScore(value) ? Number(value) : -1;
+  }
+
+  function compareRows(a, b) {
+    const researchDelta = researchPriority(b) - researchPriority(a);
+    if (researchDelta) return researchDelta;
+    const rankDelta = researchRank(a) - researchRank(b);
+    if (rankDelta) return rankDelta;
+    const opportunityDelta = scoreValue(b, 'conversion_opportunity') - scoreValue(a, 'conversion_opportunity');
+    if (opportunityDelta) return opportunityDelta;
+    const fitDelta = scoreValue(b, 'execution_fit') - scoreValue(a, 'execution_fit');
+    if (fitDelta) return fitDelta;
+    return String(a.name || '').localeCompare(String(b.name || ''), 'nl');
   }
 
   function scoreClass(value) {
@@ -67,10 +101,8 @@
   }
 
   function hardGateLabel(key) {
-    return ({
-      website_reachable: 'Website bereikbaar',
-      html_response: 'Bruikbare webpagina ontvangen'
-    })[key] || String(key || '').replaceAll('_', ' ');
+    return ({ website_reachable: 'Website bereikbaar', html_response: 'Bruikbare webpagina ontvangen' })[key]
+      || String(key || '').replaceAll('_', ' ');
   }
 
   function setDiscoveryMessage(text, isError = false) {
@@ -99,10 +131,7 @@
   async function siteCheck(url, accessToken) {
     const response = await fetch('/api/site-check', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ url })
     });
     const payload = await response.json().catch(() => ({}));
@@ -113,10 +142,7 @@
   async function prepareProspect(prospectId, accessToken) {
     const response = await fetch('/api/prepare-prospect', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ prospect_id: prospectId })
     });
     const payload = await response.json().catch(() => ({}));
@@ -130,12 +156,8 @@
       stage: 'triage',
       eligible: null,
       evidence_required: true,
-      triage: {
-        ...triage,
-        site_status: check.status ?? null,
-        final_url: check.final_url || null
-      },
-      note: 'Discovery triage beoordeelt alleen goedkope website-/delivery-signalen. Volledige 0–25 qualification blijft evidence-gated.'
+      triage: { ...triage, site_status: check.status ?? null, final_url: check.final_url || null },
+      note: 'Discovery triage beoordeelt alleen goedkope website-/delivery-signalen. Research-evidence en volledige 0–25 qualification blijven afzonderlijk bewaard.'
     };
   }
 
@@ -148,25 +170,18 @@
       try {
         check = await siteCheck(row.website_url, accessToken);
         triage = check.triage || {
-          version: 'discovery-triage-v1',
-          verdict: 'UNASSESSED',
-          checked_at: new Date().toISOString(),
+          version: 'discovery-triage-v1', verdict: 'UNASSESSED', checked_at: new Date().toISOString(),
           evidence: ['Website-preflight gaf geen triage-resultaat.']
         };
       } catch (error) {
         check = { status: null, final_url: row.website_url, reachable: null };
         triage = {
-          version: 'discovery-triage-v1',
-          verdict: 'UNASSESSED',
-          checked_at: new Date().toISOString(),
-          hard_gates: {},
-          conversion_opportunity: { score: null, evidence: [] },
-          execution_fit: { score: null, evidence: [] },
+          version: 'discovery-triage-v1', verdict: 'UNASSESSED', checked_at: new Date().toISOString(), hard_gates: {},
+          conversion_opportunity: { score: null, evidence: [] }, execution_fit: { score: null, evidence: [] },
           unknown_factors: ['customer_economics', 'existing_demand', 'competitive_context'],
           evidence: [`Automatische beoordeling niet beschikbaar: ${error.message || error}`]
         };
       }
-
       const nextState = check.reachable === false ? 'DISQUALIFIED' : row.state;
       await rpc('operator_set_discovery_triage', {
         p_id: row.id,
@@ -184,10 +199,7 @@
     const session = await sessionOrThrow();
     let cursor = 0;
     const workers = Array.from({ length: Math.min(4, missing.length) }, async () => {
-      while (cursor < missing.length) {
-        const row = missing[cursor++];
-        await triageCandidate(row, session.access_token);
-      }
+      while (cursor < missing.length) await triageCandidate(missing[cursor++], session.access_token);
     });
     await Promise.all(workers);
     return true;
@@ -202,49 +214,58 @@
     return map;
   }
 
-  function scoreChip(label, score) {
-    const chip = document.createElement('span');
-    chip.className = `triage-score ${scoreClass(score)}`;
-    chip.innerHTML = `<span>${label}</span><strong>${hasScore(score) ? `${Number(score)}/5` : '—'}</strong>`;
-    return chip;
+  function chip(className, text) {
+    const node = document.createElement('span');
+    node.className = className;
+    node.textContent = text;
+    return node;
   }
 
-  function evidenceBlock(title, score, evidence) {
+  function scoreChip(label, score) {
+    const node = document.createElement('span');
+    node.className = `triage-score ${scoreClass(score)}`;
+    const labelNode = document.createElement('span');
+    labelNode.textContent = label;
+    const value = document.createElement('strong');
+    value.textContent = hasScore(score) ? `${Number(score)}/5` : '—';
+    node.append(labelNode, value);
+    return node;
+  }
+
+  function evidenceList(title, value) {
     const section = document.createElement('section');
     section.className = 'triage-assessment-section';
     const heading = document.createElement('div');
     heading.className = 'triage-assessment-heading';
     const strong = document.createElement('strong');
     strong.textContent = title;
-    const value = document.createElement('b');
-    value.textContent = hasScore(score) ? `${Number(score)}/5` : '—';
-    heading.append(strong, value);
+    heading.appendChild(strong);
     section.appendChild(heading);
-
-    const items = Array.isArray(evidence) ? evidence.filter(Boolean) : [];
-    if (items.length) {
-      const list = document.createElement('ul');
-      for (const item of items) {
-        const li = document.createElement('li');
-        li.textContent = item;
-        list.appendChild(li);
-      }
-      section.appendChild(list);
-    } else {
+    const items = Array.isArray(value) ? value.filter(Boolean) : [value].filter(Boolean);
+    if (!items.length) {
       const empty = document.createElement('p');
       empty.textContent = 'Geen extra toelichting beschikbaar.';
       section.appendChild(empty);
+      return section;
     }
+    const list = document.createElement('ul');
+    for (const item of items) {
+      const li = document.createElement('li');
+      li.textContent = String(item);
+      list.appendChild(li);
+    }
+    section.appendChild(list);
     return section;
   }
 
-  function renderAssessment(node, triage) {
+  function renderAssessment(node, row) {
+    const triage = row.qualification?.triage;
+    const research = row.qualification?.research;
     let panel = node.querySelector('.triage-assessment');
-    if (!triage) {
+    if (!triage && !research) {
       panel?.remove();
       return null;
     }
-
     if (!panel) {
       panel = document.createElement('div');
       panel.className = 'triage-assessment hidden';
@@ -252,63 +273,45 @@
     }
     panel.replaceChildren();
 
-    const intro = document.createElement('div');
-    intro.className = 'triage-assessment-intro';
-    const title = document.createElement('strong');
-    title.textContent = triage.site_kind === 'LINKHUB' ? 'Snelle aanwezigheidsbeoordeling' : 'Snelle websitebeoordeling';
-    const note = document.createElement('span');
-    note.textContent = 'Selectiecheck voor Discovery. Na toevoegen worden het technische rapport en de eerste mock-up automatisch voorbereid.';
-    intro.append(title, note);
-    panel.appendChild(intro);
-
-    panel.appendChild(evidenceBlock('Verbeterkans', triage.conversion_opportunity?.score, triage.conversion_opportunity?.evidence));
-    panel.appendChild(evidenceBlock('Uitvoerbaarheid', triage.execution_fit?.score, triage.execution_fit?.evidence));
-
-    const gates = document.createElement('section');
-    gates.className = 'triage-assessment-section';
-    const gateHeading = document.createElement('div');
-    gateHeading.className = 'triage-assessment-heading';
-    const gateTitle = document.createElement('strong');
-    gateTitle.textContent = 'Basischeck';
-    gateHeading.appendChild(gateTitle);
-    gates.appendChild(gateHeading);
-    const gateList = document.createElement('ul');
-    const entries = Object.entries(triage.hard_gates || {});
-    if (entries.length) {
-      for (const [key, value] of entries) {
-        const li = document.createElement('li');
-        const symbol = value === true ? '✓' : value === false ? '✕' : '·';
-        li.textContent = `${symbol} ${hardGateLabel(key)}`;
-        gateList.appendChild(li);
-      }
-    } else {
-      const li = document.createElement('li');
-      li.textContent = '· Geen basischeck beschikbaar.';
-      gateList.appendChild(li);
-    }
-    gates.appendChild(gateList);
-    panel.appendChild(gates);
-
-    const generalEvidence = Array.isArray(triage.evidence) ? triage.evidence.filter(Boolean) : [];
-    if (generalEvidence.length) {
-      const context = document.createElement('section');
-      context.className = 'triage-assessment-section';
-      const contextHeading = document.createElement('div');
-      contextHeading.className = 'triage-assessment-heading';
-      const contextTitle = document.createElement('strong');
-      contextTitle.textContent = 'Controle';
-      contextHeading.appendChild(contextTitle);
-      context.appendChild(contextHeading);
-      const list = document.createElement('ul');
-      for (const item of generalEvidence) {
-        const li = document.createElement('li');
-        li.textContent = item;
-        list.appendChild(li);
-      }
-      context.appendChild(list);
-      panel.appendChild(context);
+    if (research) {
+      const intro = document.createElement('div');
+      intro.className = 'triage-assessment-intro';
+      const title = document.createElement('strong');
+      title.textContent = 'Research-evidence';
+      const note = document.createElement('span');
+      note.textContent = `Prioriteit ${research.priority || '—'} · confidence ${research.confidence || '—'} · rang ${research.rank || '—'}`;
+      intro.append(title, note);
+      panel.appendChild(intro);
+      panel.appendChild(evidenceList('Commerciële signalen', research.commercial_signals));
+      panel.appendChild(evidenceList('Website-observaties', research.website_observations));
+      panel.appendChild(evidenceList('Structurele redesignhypothese', research.redesign_hypothesis));
+      panel.appendChild(evidenceList('Nog te verifiëren', research.verification_needed));
+      if (Array.isArray(research.source_urls) && research.source_urls.length) panel.appendChild(evidenceList('Bronnen', research.source_urls));
     }
 
+    if (triage) {
+      const intro = document.createElement('div');
+      intro.className = 'triage-assessment-intro';
+      const title = document.createElement('strong');
+      title.textContent = triage.site_kind === 'LINKHUB' ? 'Automatische aanwezigheidscheck' : 'Automatische websitecheck';
+      const note = document.createElement('span');
+      note.textContent = 'Onafhankelijke, goedkope basiscontrole; geen volledige commerciële qualification.';
+      intro.append(title, note);
+      panel.appendChild(intro);
+
+      const scoreSection = (titleText, score, evidence) => {
+        const section = evidenceList(titleText, evidence);
+        const heading = section.querySelector('.triage-assessment-heading');
+        const value = document.createElement('b');
+        value.textContent = hasScore(score) ? `${Number(score)}/5` : '—';
+        heading?.appendChild(value);
+        return section;
+      };
+      panel.appendChild(scoreSection('Verbeterkans', triage.conversion_opportunity?.score, triage.conversion_opportunity?.evidence));
+      panel.appendChild(scoreSection('Uitvoerbaarheid', triage.execution_fit?.score, triage.execution_fit?.evidence));
+      const gates = Object.entries(triage.hard_gates || {}).map(([key, value]) => `${value === true ? '✓' : value === false ? '✕' : '·'} ${hardGateLabel(key)}`);
+      panel.appendChild(evidenceList('Basischeck', gates));
+    }
     return panel;
   }
 
@@ -316,7 +319,6 @@
     const actions = node.querySelector('.compact-actions');
     if (!actions || actions.dataset.arranged === 'true') return;
     actions.dataset.arranged = 'true';
-
     const website = actions.querySelector('a[href]');
     const stateButton = actions.querySelector('[data-action="reject"], [data-action="reopen"]');
     const deleteButton = actions.querySelector('[data-action="delete"]');
@@ -327,7 +329,6 @@
       primary = document.createElement('button');
       primary.type = 'button';
       primary.className = 'primary promote-prospect';
-      primary.dataset.triageAction = 'promote';
       primary.textContent = 'Voeg toe aan Prospects';
       primary.addEventListener('click', async () => {
         primary.disabled = true;
@@ -335,7 +336,6 @@
           const session = await sessionOrThrow();
           const changed = await rpc('operator_promote_discovery_candidate', { p_id: row.id });
           if (!changed) throw new Error('Bedrijf kon niet aan Prospects worden toegevoegd.');
-
           try {
             await prepareProspect(row.id, session.access_token);
             setDiscoveryMessage(`${row.name} is toegevoegd. Technisch rapport en eerste mock-up worden voorbereid.`);
@@ -343,7 +343,6 @@
             console.error('Automatic prospect preparation failed to start', prepareError);
             setDiscoveryMessage(`${row.name} is toegevoegd, maar de automatische voorbereiding kon niet starten. Start die vanuit Prospects opnieuw.`, true);
           }
-
           document.getElementById('refreshDiscoveryBtn')?.click();
           document.getElementById('refreshBtn')?.click();
         } catch (error) {
@@ -358,8 +357,8 @@
       primary.textContent = 'Opnieuw beoordelen';
     }
 
-    let assessmentButton = null;
     const assessment = node.querySelector('.triage-assessment');
+    let assessmentButton = null;
     if (assessment) {
       assessmentButton = document.createElement('button');
       assessmentButton.type = 'button';
@@ -382,7 +381,6 @@
     summary.textContent = '•••';
     const panel = document.createElement('div');
     panel.className = 'candidate-more-panel';
-
     if (row.state === 'DISCOVERED' && stateButton) panel.appendChild(stateButton);
     if (deleteButton) panel.appendChild(deleteButton);
     menu.append(summary, panel);
@@ -396,6 +394,7 @@
 
   function decorateRow(node, row) {
     const triage = row.qualification?.triage;
+    const research = row.qualification?.research;
     const main = node.querySelector('.candidate-main');
     const meta = main?.querySelector('small');
     if (!main || !meta) return;
@@ -413,74 +412,59 @@
     }
     decision.replaceChildren();
 
-    if (!triage) {
-      const verdict = document.createElement('span');
-      verdict.className = 'triage-verdict unassessed';
-      verdict.textContent = 'BEOORDELING LOOPT';
-      decision.appendChild(verdict);
-      renderAssessment(node, null);
-      arrangeActions(node, row);
-      return;
-    }
-
-    const verdict = document.createElement('span');
-    const verdictCss = row.state === 'DISQUALIFIED' ? 'disqualified' : String(triage.verdict || 'UNASSESSED').toLowerCase();
-    verdict.className = `triage-verdict ${verdictCss}`;
-    verdict.textContent = row.state === 'DISQUALIFIED' ? 'AFGEWEZEN' : verdictLabel(triage.verdict);
-
-    const opportunity = triage.conversion_opportunity?.score;
-    const fit = triage.execution_fit?.score;
-    const gates = gateState(triage);
-    const gateChip = document.createElement('span');
-    gateChip.className = `triage-gates ${gates.css}`;
-    gateChip.textContent = `${gates.symbol} ${gates.label}`;
-
-    decision.append(verdict, scoreChip('Verbeterkans', opportunity), scoreChip('Uitvoerbaarheid', fit), gateChip);
-
-    let context = main.querySelector('.triage-context');
-    if (triage.verdict === 'UNASSESSED') {
-      if (!context) {
-        context = document.createElement('small');
-        context.className = 'triage-context';
-        main.appendChild(context);
-      }
-      context.textContent = triage.evidence?.[0] || 'Automatische beoordeling niet beschikbaar.';
+    if (row.state === 'DISQUALIFIED' || hardGateFailed(row)) {
+      decision.appendChild(chip('triage-verdict disqualified', 'AFGEWEZEN'));
+    } else if (research?.decision) {
+      const css = research.decision === 'DEEP_AUDIT' ? 'strong' : research.decision === 'VERIFY_FIRST' ? 'possible' : 'weak';
+      decision.appendChild(chip(`triage-verdict ${css}`, researchDecisionLabel(research.decision) || research.decision));
+      decision.appendChild(chip('triage-score unknown', `Research ${research.priority || '—'}`));
+      decision.appendChild(chip('triage-gates unknown', `Evidence ${research.confidence || '—'}`));
+    } else if (!triage) {
+      decision.appendChild(chip('triage-verdict unassessed', 'BEOORDELING LOOPT'));
     } else {
-      context?.remove();
+      decision.appendChild(chip(`triage-verdict ${String(triage.verdict || 'UNASSESSED').toLowerCase()}`, verdictLabel(triage.verdict)));
     }
 
-    renderAssessment(node, triage);
+    if (triage) {
+      const gates = gateState(triage);
+      decision.append(
+        scoreChip('Verbeterkans', triage.conversion_opportunity?.score),
+        scoreChip('Uitvoerbaarheid', triage.execution_fit?.score),
+        chip(`triage-gates ${gates.css}`, `${gates.symbol} ${gates.label}`)
+      );
+    }
+
+    renderAssessment(node, row);
     arrangeActions(node, row);
   }
 
   function renderGroups(container, rows) {
     const nodes = rowByWebsite(container);
     if (!nodes.size) return;
-
     const grouped = new Map(GROUPS.map((group) => [group.key, []]));
     for (const row of rows) {
       const node = nodes.get(normalizeUrl(row.website_url));
-      if (!node) continue;
-      grouped.get(groupKey(row))?.push({ row, node });
+      if (node) grouped.get(groupKey(row))?.push({ row, node });
     }
 
     const fragment = document.createDocumentFragment();
     for (const group of GROUPS) {
       const items = grouped.get(group.key) || [];
       if (!items.length) continue;
-      items.sort((a, b) => {
-        const opportunityDelta = scoreValue(b.row, 'conversion_opportunity') - scoreValue(a.row, 'conversion_opportunity');
-        if (opportunityDelta) return opportunityDelta;
-        const fitDelta = scoreValue(b.row, 'execution_fit') - scoreValue(a.row, 'execution_fit');
-        if (fitDelta) return fitDelta;
-        return String(a.row.name || '').localeCompare(String(b.row.name || ''), 'nl');
-      });
-
+      items.sort((a, b) => compareRows(a.row, b.row));
       const section = document.createElement('section');
       section.className = `triage-group ${group.key}`;
       const heading = document.createElement('div');
       heading.className = 'triage-group-heading';
-      heading.innerHTML = `<div><strong>${group.label}</strong><span>${group.hint}</span></div><b>${items.length}</b>`;
+      const left = document.createElement('div');
+      const strong = document.createElement('strong');
+      strong.textContent = group.label;
+      const hint = document.createElement('span');
+      hint.textContent = group.hint;
+      left.append(strong, hint);
+      const count = document.createElement('b');
+      count.textContent = String(items.length);
+      heading.append(left, count);
       const list = document.createElement('div');
       list.className = 'triage-group-list';
       for (const item of items) list.appendChild(item.node);
@@ -496,21 +480,18 @@
   async function decorateAndTriage() {
     const container = document.getElementById('discoveryCandidates');
     if (!container || container.closest('.hidden')) return;
-
     let rows;
     try {
       rows = await loadCandidates();
     } catch {
       return;
     }
-
     const map = rowByWebsite(container);
     for (const row of rows) {
       const node = map.get(normalizeUrl(row.website_url));
       if (node) decorateRow(node, row);
     }
     renderGroups(container, rows);
-
     try {
       const changed = await triageMissing(rows);
       if (changed) document.getElementById('refreshDiscoveryBtn')?.click();
