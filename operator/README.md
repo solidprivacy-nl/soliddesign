@@ -10,7 +10,9 @@ SolidDesign Operator remains deliberately narrow. It supports:
 
 - **Mijn werk** — personal work derived from current prospect responsibilities;
 - **Prospects** — shared prospect register and dossiers;
-- **Bedrijven zoeken** — manual discovery/intake;
+- **Bedrijven zoeken** — research import, Overture area search and specific URL intake into one Discovery Inbox;
+- **Prompts** — reusable operator ChatGPT methods with small per-run invocation fields;
+- **Sectoronderzoek** — reusable advisory design intelligence;
 - **Team** — invite, role/status and work-distribution view for Key users/Admins;
 - per-prospect **Overzicht / Design / Outreach / Activiteit**;
 - immutable website mock-up versions with explicit LIVE promotion;
@@ -19,7 +21,7 @@ SolidDesign Operator remains deliberately narrow. It supports:
 - minimal prospect engagement in Outreach;
 - actor-aware dossier history.
 
-It is explicitly not a general CRM, website builder, document-management system, task engine, workflow platform, HR system, capacity planner or analytics suite.
+It is explicitly not a general CRM, website builder, prompt platform, document-management system, task engine, workflow platform, HR system, capacity planner or analytics suite.
 
 ## One dossier, phase responsibilities
 
@@ -45,11 +47,11 @@ KEY_USER
 USER
 ```
 
-- **Admin** — governance, all normal team lifecycle and role changes.
+- **Admin** — governance, all normal team lifecycle and role changes, plus operator Prompt Library administration.
 - **Key user** — operational coordination, User invitations and User management.
 - **User** — normal prospect/design/outreach work.
 
-There is deliberately no Owner/Eigenaar role.
+There is deliberately no Owner/Eigenaar or Prompt Manager role.
 
 `team_members.display_name` is the primary visible identity. E-mail is secondary account/login metadata. Assignments and Activity use display names, with initials derived client-side; no profile-photo/avatar subsystem exists.
 
@@ -97,17 +99,52 @@ Invitation metadata used by the password-setup overlay is onboarding UX state, n
 
 ## Discovery workflow
 
-Discovery and active prospect work remain separate views while using the same canonical `prospects` model.
+Discovery has exactly three current intake paths and one human decision surface:
 
 ```text
-AREA / URL intake
-→ DISCOVERED / DISQUALIFIED
-→ evidence-backed qualification
-→ QUALIFIED and later states
-→ active prospect dossier
+RESEARCH IMPORT | OVERTURE AREA SEARCH | SPECIFIC URL
+                       ↓
+                same candidate ingest
+                       ↓
+             deterministic site check
+                       ↓
+                 Discovery Inbox
+                       ↓
+                 human selection
 ```
 
-Overture remains the canonical discovery source. Reachability/presence is discovery evidence, not proof of demand or qualification.
+Research uses the canonical `prospect-research` Prompt Library method and `prompts/contracts/prospect-research-import-v1.json`. Accepted evidence is stored under `qualification.research`.
+
+The existing cheap website preflight remains under `qualification.triage`. The two evidence namespaces are merge-safe and neither is a commercial qualification by itself.
+
+Overture remains a supported high-recall source adapter. It is no longer defined as the only canonical discovery source.
+
+A candidate becomes active prospect work only after explicit human promotion. Missing full commercial qualification is shown as **Nog niet uitgevoerd**, not as an implied score.
+
+Canonical details: `docs/DISCOVERY.md`.
+
+## Prompt Library
+
+Reusable operator methods live in GitHub:
+
+```text
+prompts/library/<slug>.md
+```
+
+The CMS **Prompts** page reads metadata and invocation fields. USER and KEY_USER may fill/copy invocations. ADMIN may additionally read/edit the prompt body and create/update/delete operator prompts.
+
+No prompt body/version table exists in Supabase. Git remains history and rollback.
+
+Repository writes are narrow and server-side:
+
+- path derives from a validated slug under `prompts/library/`;
+- update/delete uses the current GitHub content SHA;
+- PR previews cannot mutate GitHub `main` through the Prompt Library;
+- GitHub credentials never enter browser code.
+
+Static deployed Markdown is intentionally readable by ChatGPT/web tooling, so the current URL model is not a strict prompt-secrecy mechanism.
+
+Canonical details: `docs/PROMPT_LIBRARY.md`.
 
 ## Design and LIVE workflow
 
@@ -190,8 +227,9 @@ Activity shows material business changes and the actor where known. Current stat
 
 The same post-deploy HTTP smoke applies to PR previews and production. It verifies:
 
-- CMS root;
-- `app.js` uses `team_members.active` and contains no retired allowlist dependency;
+- CMS root and active-team bootstrap;
+- canonical Prompt Library and research-contract resources;
+- PR-preview Prompt Library mutation rejection;
 - engagement client asset;
 - canonical public route and noindex behavior;
 - bounded legacy LIVE compatibility;
@@ -203,6 +241,8 @@ Deployment upload success alone is not considered runtime acceptance.
 
 The frontend uses only the Supabase publishable key. Privileged operations use narrow authenticated RPC/server capabilities with server-side role checks. Public prospect delivery exposes only the minimum resolver data and engagement capability needed for the public surface.
 
+Research CSV and AI output are untrusted input and must pass the versioned import contract before persistence. Imported research never automatically promotes a prospect, publishes a design or sends outreach.
+
 Printmailing artifacts live in a private Storage bucket. Active team membership is required to upload/read them; browser opening uses a short-lived signed URL. They are not prospect-facing public assets by default.
 
-Do not expose service-role/secret credentials to this frontend. See `docs/SECURITY.md`.
+Do not expose service-role, GitHub-write or other secret credentials to browser code. See `docs/SECURITY.md`.
