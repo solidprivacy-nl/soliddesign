@@ -7,10 +7,10 @@
   const db = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
   const inFlight = new Set();
   const GROUPS = Object.freeze([
-    { key: 'recommended', label: 'AANBEVOLEN', hint: 'Sterke research- of websitekandidaten om als eerste te beoordelen.' },
-    { key: 'review', label: 'BEOORDELEN', hint: 'Kandidaten die verificatie of menselijke beoordeling nodig hebben.' },
-    { key: 'low', label: 'LAGE PRIORITEIT', hint: 'Minder sterke redesigncase of weinig zichtbare verbeterkans.' },
-    { key: 'disqualified', label: 'AFGEWEZEN', hint: 'Kandidaten die niet door een harde basiscontrole kwamen.' }
+    { key: 'recommended', label: 'KANSRIJK', hint: 'Beste kandidaten om eerst te bekijken.', collapsed: false },
+    { key: 'review', label: 'NOG BEOORDELEN', hint: 'Meer verificatie of menselijke beoordeling nodig.', collapsed: false },
+    { key: 'low', label: 'LAGE PRIORITEIT', hint: 'Minder sterke redesignkans.', collapsed: true },
+    { key: 'disqualified', label: 'AFGEWEZEN', hint: 'Niet door de basiscontrole gekomen.', collapsed: true }
   ]);
   const PRIORITY = Object.freeze({ VERY_HIGH: 4, HIGH: 3, MEDIUM: 2, LOW: 1 });
 
@@ -25,18 +25,6 @@
     } catch {
       return String(value || '').trim();
     }
-  }
-
-  function verdictLabel(value) {
-    return ({ STRONG: 'STERK', POSSIBLE: 'MOGELIJK', WEAK: 'LAGE PRIORITEIT', UNASSESSED: 'NIET BEOORDEELD' })[value] || 'NIET BEOORDEELD';
-  }
-
-  function researchDecisionLabel(value) {
-    return ({ DEEP_AUDIT: 'DEEP AUDIT', VERIFY_FIRST: 'EERST VERIFIËREN', LOWER_PRIORITY: 'LAGE PRIORITEIT', REJECT: 'AFWIJZEN' })[value] || null;
-  }
-
-  function stateLabel(value) {
-    return ({ DISCOVERED: 'Gevonden', DISQUALIFIED: 'Afgewezen' })[value] || value || '—';
   }
 
   function hasScore(value) {
@@ -85,24 +73,46 @@
     return String(a.name || '').localeCompare(String(b.name || ''), 'nl');
   }
 
-  function scoreClass(value) {
-    if (!hasScore(value)) return 'unknown';
-    const score = Number(value);
-    if (score >= 4) return 'good';
-    if (score >= 2) return 'medium';
-    return 'weak';
-  }
-
-  function gateState(triage) {
-    const values = Object.values(triage?.hard_gates || {});
-    if (values.some((value) => value === false)) return { label: 'Basischeck mislukt', symbol: '✕', css: 'fail' };
-    if (values.length && values.every(Boolean)) return { label: 'Basischeck OK', symbol: '✓', css: 'pass' };
-    return { label: 'Basischeck —', symbol: '·', css: 'unknown' };
-  }
-
   function hardGateLabel(key) {
     return ({ website_reachable: 'Website bereikbaar', html_response: 'Bruikbare webpagina ontvangen' })[key]
       || String(key || '').replaceAll('_', ' ');
+  }
+
+  function failedGateSummary(row) {
+    const failed = Object.entries(row.qualification?.triage?.hard_gates || {}).find(([, value]) => value === false);
+    if (!failed) return 'Basischeck niet gehaald.';
+    if (failed[0] === 'website_reachable') return 'Website niet bereikbaar.';
+    if (failed[0] === 'html_response') return 'Geen bruikbare webpagina ontvangen.';
+    return `${hardGateLabel(failed[0])} niet gehaald.`;
+  }
+
+  function candidateSummary(row) {
+    if (row.state === 'DISQUALIFIED' || hardGateFailed(row)) return failedGateSummary(row);
+    const research = row.qualification?.research;
+    if (research?.decision === 'DEEP_AUDIT') return 'Onderzoek wijst op een duidelijke redesignkans.';
+    if (research?.decision === 'VERIFY_FIRST') return 'Interessant, maar eerst extra verificatie nodig.';
+    if (research?.decision === 'LOWER_PRIORITY') return 'Minder sterke redesignkans.';
+    if (research?.decision === 'REJECT') return 'Onderzoek geeft onvoldoende aanleiding.';
+
+    const triage = row.qualification?.triage;
+    if (!triage) return 'Beoordeling loopt…';
+    const opportunity = scoreValue(row, 'conversion_opportunity');
+    const fit = scoreValue(row, 'execution_fit');
+    if (triage.verdict === 'STRONG' && opportunity >= 4 && fit >= 4) return 'Sterke verbeterkans · eenvoudig uitvoerbaar.';
+    if (triage.verdict === 'STRONG') return 'Sterke verbeterkans.';
+    if (triage.verdict === 'WEAK') return 'Weinig zichtbare verbeterkans.';
+    return 'Mogelijke verbeterkans · bekijk waarom.';
+  }
+
+  function statusChip(row) {
+    const key = groupKey(row);
+    const labels = { recommended: 'KANSRIJK', review: 'NOG BEOORDELEN', low: 'LAGE PRIORITEIT', disqualified: 'AFGEWEZEN' };
+    const css = { recommended: 'strong', review: 'possible', low: 'weak', disqualified: 'disqualified' };
+    return chip(`triage-verdict ${css[key]}`, labels[key]);
+  }
+
+  function sourceLabel(value) {
+    return ({ research: 'Gericht onderzoek', overture: 'Breed zoeken', manual_url: 'Bekend bedrijf' })[value] || 'Discovery';
   }
 
   function setDiscoveryMessage(text, isError = false) {
@@ -221,17 +231,6 @@
     return node;
   }
 
-  function scoreChip(label, score) {
-    const node = document.createElement('span');
-    node.className = `triage-score ${scoreClass(score)}`;
-    const labelNode = document.createElement('span');
-    labelNode.textContent = label;
-    const value = document.createElement('strong');
-    value.textContent = hasScore(score) ? `${Number(score)}/5` : '—';
-    node.append(labelNode, value);
-    return node;
-  }
-
   function evidenceList(title, value) {
     const section = document.createElement('section');
     section.className = 'triage-assessment-section';
@@ -273,32 +272,24 @@
     }
     panel.replaceChildren();
 
+    const intro = document.createElement('div');
+    intro.className = 'triage-assessment-intro';
+    const title = document.createElement('strong');
+    title.textContent = 'Waarom deze kandidaat?';
+    const note = document.createElement('span');
+    note.textContent = `Bron: ${sourceLabel(row.discovery_source)}`;
+    intro.append(title, note);
+    panel.appendChild(intro);
+
     if (research) {
-      const intro = document.createElement('div');
-      intro.className = 'triage-assessment-intro';
-      const title = document.createElement('strong');
-      title.textContent = 'Research-evidence';
-      const note = document.createElement('span');
-      note.textContent = `Prioriteit ${research.priority || '—'} · confidence ${research.confidence || '—'} · rang ${research.rank || '—'}`;
-      intro.append(title, note);
-      panel.appendChild(intro);
       panel.appendChild(evidenceList('Commerciële signalen', research.commercial_signals));
       panel.appendChild(evidenceList('Website-observaties', research.website_observations));
-      panel.appendChild(evidenceList('Structurele redesignhypothese', research.redesign_hypothesis));
+      panel.appendChild(evidenceList('Redesignhypothese', research.redesign_hypothesis));
       panel.appendChild(evidenceList('Nog te verifiëren', research.verification_needed));
       if (Array.isArray(research.source_urls) && research.source_urls.length) panel.appendChild(evidenceList('Bronnen', research.source_urls));
     }
 
     if (triage) {
-      const intro = document.createElement('div');
-      intro.className = 'triage-assessment-intro';
-      const title = document.createElement('strong');
-      title.textContent = triage.site_kind === 'LINKHUB' ? 'Automatische aanwezigheidscheck' : 'Automatische websitecheck';
-      const note = document.createElement('span');
-      note.textContent = 'Onafhankelijke, goedkope basiscontrole; geen volledige commerciële qualification.';
-      intro.append(title, note);
-      panel.appendChild(intro);
-
       const scoreSection = (titleText, score, evidence) => {
         const section = evidenceList(titleText, evidence);
         const heading = section.querySelector('.triage-assessment-heading');
@@ -329,7 +320,7 @@
       primary = document.createElement('button');
       primary.type = 'button';
       primary.className = 'primary promote-prospect';
-      primary.textContent = 'Voeg toe aan Prospects';
+      primary.textContent = 'Toevoegen';
       primary.addEventListener('click', async () => {
         primary.disabled = true;
         try {
@@ -338,7 +329,7 @@
           if (!changed) throw new Error('Bedrijf kon niet aan Prospects worden toegevoegd.');
           try {
             await prepareProspect(row.id, session.access_token);
-            setDiscoveryMessage(`${row.name} is toegevoegd. Technisch rapport en eerste mock-up worden voorbereid.`);
+            setDiscoveryMessage(`✓ ${row.name} is toegevoegd aan Prospects.`);
           } catch (prepareError) {
             console.error('Automatic prospect preparation failed to start', prepareError);
             setDiscoveryMessage(`${row.name} is toegevoegd, maar de automatische voorbereiding kon niet starten. Start die vanuit Prospects opnieuw.`, true);
@@ -363,13 +354,13 @@
       assessmentButton = document.createElement('button');
       assessmentButton.type = 'button';
       assessmentButton.className = 'secondary candidate-assessment-toggle';
-      assessmentButton.textContent = 'Bekijk beoordeling';
+      assessmentButton.textContent = 'Waarom?';
       assessmentButton.setAttribute('aria-expanded', 'false');
       assessmentButton.addEventListener('click', () => {
         const opening = assessment.classList.contains('hidden');
         assessment.classList.toggle('hidden', !opening);
         assessmentButton.setAttribute('aria-expanded', String(opening));
-        assessmentButton.textContent = opening ? 'Sluit beoordeling' : 'Bekijk beoordeling';
+        assessmentButton.textContent = opening ? 'Sluit' : 'Waarom?';
       });
     }
 
@@ -393,46 +384,26 @@
   }
 
   function decorateRow(node, row) {
-    const triage = row.qualification?.triage;
-    const research = row.qualification?.research;
     const main = node.querySelector('.candidate-main');
     const meta = main?.querySelector('small');
-    if (!main || !meta) return;
+    if (!main) return;
 
     node.classList.add('triage-candidate');
     node.dataset.group = groupKey(row);
-    meta.className = 'candidate-source';
-    meta.textContent = `${stateLabel(row.state)} · ${row.discovery_source || '—'}`;
+    meta?.remove();
 
     let decision = main.querySelector('.triage-decision');
     if (!decision) {
       decision = document.createElement('div');
       decision.className = 'triage-decision';
-      meta.before(decision);
+      main.appendChild(decision);
     }
     decision.replaceChildren();
-
-    if (row.state === 'DISQUALIFIED' || hardGateFailed(row)) {
-      decision.appendChild(chip('triage-verdict disqualified', 'AFGEWEZEN'));
-    } else if (research?.decision) {
-      const css = research.decision === 'DEEP_AUDIT' ? 'strong' : research.decision === 'VERIFY_FIRST' ? 'possible' : 'weak';
-      decision.appendChild(chip(`triage-verdict ${css}`, researchDecisionLabel(research.decision) || research.decision));
-      decision.appendChild(chip('triage-score unknown', `Research ${research.priority || '—'}`));
-      decision.appendChild(chip('triage-gates unknown', `Evidence ${research.confidence || '—'}`));
-    } else if (!triage) {
-      decision.appendChild(chip('triage-verdict unassessed', 'BEOORDELING LOOPT'));
-    } else {
-      decision.appendChild(chip(`triage-verdict ${String(triage.verdict || 'UNASSESSED').toLowerCase()}`, verdictLabel(triage.verdict)));
-    }
-
-    if (triage) {
-      const gates = gateState(triage);
-      decision.append(
-        scoreChip('Verbeterkans', triage.conversion_opportunity?.score),
-        scoreChip('Uitvoerbaarheid', triage.execution_fit?.score),
-        chip(`triage-gates ${gates.css}`, `${gates.symbol} ${gates.label}`)
-      );
-    }
+    decision.appendChild(statusChip(row));
+    const summary = document.createElement('span');
+    summary.className = 'candidate-summary';
+    summary.textContent = candidateSummary(row);
+    decision.appendChild(summary);
 
     renderAssessment(node, row);
     arrangeActions(node, row);
@@ -452,9 +423,9 @@
       const items = grouped.get(group.key) || [];
       if (!items.length) continue;
       items.sort((a, b) => compareRows(a.row, b.row));
-      const section = document.createElement('section');
-      section.className = `triage-group ${group.key}`;
-      const heading = document.createElement('div');
+      const section = document.createElement(group.collapsed ? 'details' : 'section');
+      section.className = `triage-group ${group.key}${group.collapsed ? ' collapsible' : ''}`;
+      const heading = document.createElement(group.collapsed ? 'summary' : 'div');
       heading.className = 'triage-group-heading';
       const left = document.createElement('div');
       const strong = document.createElement('strong');
