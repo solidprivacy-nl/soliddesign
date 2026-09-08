@@ -225,6 +225,80 @@ M7 is therefore technically complete. Role-by-role authenticated browser accepta
 
 Run the production system with real operators and real acquisition batches. The objective is to validate operator effort and qualified/commercial yield, not to validate whether the code can deploy.
 
+## Discovery operator UX baseline ✅ production 2026-09-08
+
+The first production readback showed that the discovery architecture was sound but the page exposed too much internal machinery to a new User. The operator layer was therefore simplified without changing the underlying Research/Overture/URL model.
+
+Current interaction contract:
+
+```text
+Bedrijven zoeken
+→ one task
+→ one search card
+→ one visible mode at a time
+
+Gericht zoeken    # default/recommended
+Breed zoeken
+Bekend bedrijf
+```
+
+Decision surface:
+
+```text
+KANSRIJK             # expanded
+NOG BEOORDELEN       # expanded
+LAGE PRIORITEIT      # collapsed
+AFGEWEZEN             # collapsed
+
+candidate
+→ status + one short reason
+→ Toevoegen           # one primary normal action
+→ Waarom?             # evidence on demand
+→ Website
+→ overflow for rare/destructive actions
+```
+
+Additional production UX rules:
+
+- research is presented as two explicit operator steps: copy assignment, import result;
+- optional research direction is collapsed by default;
+- broad search exposes only place + sector; result limit is an internal default of 10;
+- Sectoronderzoek remains its own top-level capability and is not duplicated inside Bedrijven zoeken;
+- successful normal basis checks are not repeated as permanent badges;
+- recent searches are collapsed by default, limited to five and labelled in operator language;
+- existing-domain research enrichment is explicitly reported after import;
+- technical provenance and detailed scores remain available behind evidence/detail surfaces rather than dominating each row.
+
+Canonical detailed UX/current-state documentation is `docs/DISCOVERY.md`.
+
+Verified implementation evidence:
+
+```text
+PR #49 exact head c6f32c2f59ddc24228ffdf4bdb9133fc31a47ea0
+→ PR CI #522 green
+→ isolated Pages preview #207 green
+→ deployed UX smoke green
+→ no review-thread findings
+
+main ea02742eaf44b47475d03696d9728abb6ec70c4c
+→ main CI #523 green
+→ production Pages deploy #208 green
+→ production discovery UX smoke green
+→ legacy preview alias green
+
+stale-current-truth sweep
+→ Zoek nieuwe prospects: absent
+→ Controleer een website: absent
+→ Voeg toe aan Prospects: absent
+→ Bekijk beoordeling: absent
+→ Basischeck OK: absent
+→ Open sectoronderzoek shortcut: absent
+→ triage-score UI: absent
+→ AANBEVOLEN discovery label: absent
+```
+
+This refinement added no new service, table, role, workflow state, provider abstraction or scoring system.
+
 ## Operator acceptance
 
 Exercise the already-implemented boundaries with real signed-in roles:
