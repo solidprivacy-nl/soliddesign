@@ -46,7 +46,8 @@ class PromptLibraryResearchDiscoveryTests(unittest.TestCase):
     def test_research_csv_uses_one_machine_contract_and_existing_candidate_ingest(self):
         research = self.read("operator/research-discovery.js")
         contract = json.loads(self.read("prompts/contracts/prospect-research-import-v1.json"))
-        migration = self.read("supabase/migrations/20260908_research_discovery_import_v01.sql")
+        run_type_migration = self.read("supabase/migrations/20260908_research_discovery_import_v01.sql")
+        merge_migration = self.read("supabase/migrations/20260908_research_discovery_evidence_merge_v02.sql")
 
         expected_columns = [
             "rank", "business_name", "location", "website", "triage_decision",
@@ -64,8 +65,14 @@ class PromptLibraryResearchDiscoveryTests(unittest.TestCase):
         self.assertIn("run_type: 'IMPORT'", research)
         self.assertIn("discovery_source: 'research'", research)
         self.assertIn("research: {", research)
-        self.assertIn("'AREA','URL','IMPORT'", migration)
-        self.assertNotIn("create table", migration.lower())
+        self.assertIn("'AREA','URL','IMPORT'", run_type_migration)
+        self.assertNotIn("create table", run_type_migration.lower())
+
+        self.assertIn("jsonb_build_object('research'", merge_migration)
+        self.assertIn("p.discovery_run_id is distinct from p_run_id", merge_migration)
+        self.assertIn("enriched_count", merge_migration)
+        self.assertIn("input ->> 'canonical_sector_key'", merge_migration)
+        self.assertNotIn("create table", merge_migration.lower())
 
     def test_research_and_deterministic_triage_are_merge_safe_in_one_inbox(self):
         triage = self.read("operator/discovery-triage.js")
