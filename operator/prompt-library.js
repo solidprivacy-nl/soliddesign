@@ -5,6 +5,14 @@
   const prompts = window.SOLIDDESIGN_PROMPTS;
   if (!CONFIG?.supabaseUrl || !window.supabase || !prompts) return;
 
+  if (!document.querySelector('link[data-prompt-library-style]')) {
+    const stylesheet = document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.href = './prompt-library.css';
+    stylesheet.dataset.promptLibraryStyle = 'true';
+    document.head.appendChild(stylesheet);
+  }
+
   const db = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabasePublishableKey);
   const appView = document.getElementById('appView');
   const nav = appView?.querySelector('.main-nav');
@@ -15,6 +23,12 @@
   let rows = [];
   let canManage = false;
   let editing = null;
+
+  function escapeAttr(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[char]));
+  }
 
   async function sessionOrThrow() {
     const { data: { session } } = await db.auth.getSession();
@@ -106,7 +120,6 @@
 
   function fieldControl(field) {
     const input = field.control === 'textarea' ? document.createElement('textarea') : document.createElement('input');
-    if (field.control === 'url') input.type = 'url';
     if (field.control !== 'textarea') input.type = field.control === 'url' ? 'url' : 'text';
     input.placeholder = field.placeholder || '';
     input.dataset.promptField = field.key;
@@ -147,8 +160,7 @@
         for (const field of row.invocation?.fields || []) {
           if (field.required && !String(values[field.key] || '').trim()) throw new Error(`Vul eerst “${field.label}” in.`);
         }
-        const text = prompts.render(row, values);
-        await prompts.writeClipboard(text);
+        await prompts.writeClipboard(prompts.render(row, values));
         setMessage(`“${row.title}” is gekopieerd voor ChatGPT.`);
       } catch (error) {
         setMessage(error.message || String(error), true);
@@ -192,10 +204,10 @@
     const row = document.createElement('div');
     row.className = 'prompt-field-editor';
     row.innerHTML = `
-      <label>Key<input data-field-key maxlength="40" value="${String(field.key || '').replaceAll('"', '&quot;')}"></label>
-      <label>Label<input data-field-label maxlength="80" value="${String(field.label || '').replaceAll('"', '&quot;')}"></label>
+      <label>Key<input data-field-key maxlength="40" value="${escapeAttr(field.key || '')}"></label>
+      <label>Label<input data-field-label maxlength="80" value="${escapeAttr(field.label || '')}"></label>
       <label>Type<select data-field-control><option value="text">Tekst</option><option value="url">URL</option><option value="textarea">Lange tekst</option></select></label>
-      <label class="field-wide">Placeholder<input data-field-placeholder maxlength="240" value="${String(field.placeholder || '').replaceAll('"', '&quot;')}"></label>
+      <label class="field-wide">Placeholder<input data-field-placeholder maxlength="240" value="${escapeAttr(field.placeholder || '')}"></label>
       <label>Verplicht<input data-field-required type="checkbox" ${field.required ? 'checked' : ''}></label>
       <button type="button" class="ghost" data-remove-field aria-label="Verwijder veld">×</button>`;
     row.querySelector('[data-field-control]').value = field.control || 'text';
