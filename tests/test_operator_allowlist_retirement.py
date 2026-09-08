@@ -40,9 +40,8 @@ class OperatorAllowlistRetirementTests(unittest.TestCase):
         endpoint = self.read("operator/functions/api/prepare-prospect.js")
         self.assertIn("operator_is_active_team_member", endpoint)
 
-    def test_sector_intelligence_uses_canonical_membership_predicate(self):
-        endpoint = self.read("operator/functions/api/sector-intelligence.js")
-        self.assertIn("operator_is_active_team_member", endpoint)
+    def test_retired_sector_intelligence_endpoint_is_absent(self):
+        self.assertFalse((ROOT / "operator/functions/api/sector-intelligence.js").exists())
         self.assertFalse((ROOT / "operator/functions/api/publish-sector-intelligence.js").exists())
 
     def test_team_edge_functions_use_team_members_only(self):
@@ -60,8 +59,7 @@ class OperatorAllowlistRetirementTests(unittest.TestCase):
             self.read("docs/OPERATIONS.md"),
             self.read("docs/INTEGRATED_OPERATING_ARCHITECTURE.md"),
             self.read("docs/ROADMAP.md"),
-            self.read("sector-intelligence/README.md"),
-            self.read("docs/SECTOR_INTELLIGENCE_LINKAGE.md"),
+            self.read("docs/PROSPECT_FIRST_DESIGN.md"),
         ]
         combined = "\n".join(current_docs).lower()
         forbidden = (
