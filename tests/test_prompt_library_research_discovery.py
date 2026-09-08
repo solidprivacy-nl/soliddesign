@@ -79,7 +79,6 @@ class PromptLibraryResearchDiscoveryTests(unittest.TestCase):
         html = self.read("operator/index.html")
         discovery_js = self.read("operator/discovery.js")
         research = self.read("operator/research-discovery.js")
-        sector_ui = self.read("operator/sector-intelligence-ui.js")
 
         self.assertIn("Vind bedrijven en voeg geschikte kandidaten toe aan Prospects", html)
         self.assertIn('data-discovery-mode="research"', html)
@@ -92,14 +91,14 @@ class PromptLibraryResearchDiscoveryTests(unittest.TestCase):
         self.assertNotIn("Max. resultaten", html)
         self.assertNotIn("Zoek nieuwe prospects", html)
         self.assertNotIn("Controleer een website", html)
+        self.assertNotIn("Sectoronderzoek", html)
         self.assertIn("setDiscoveryMode('research')", discovery_js)
         self.assertIn("Gericht zoeken", discovery_js)
         self.assertIn(".limit(5)", discovery_js)
         self.assertIn("1. Kopieer opdracht", research)
         self.assertIn("2. Importeer resultaat", research)
         self.assertIn("+ Extra instructie", research)
-        self.assertNotIn("Open sectoronderzoek", sector_ui)
-        self.assertNotIn("installDiscoveryShortcut", sector_ui)
+        self.assertFalse((ROOT / "operator/sector-intelligence-ui.js").exists())
 
     def test_research_and_deterministic_triage_are_merge_safe_in_one_inbox(self):
         triage = self.read("operator/discovery-triage.js")
