@@ -56,7 +56,7 @@ class CmsDesignLifecycleUiTests(unittest.TestCase):
         self.assertIn("Designinstructie", operator)
         self.assertIn("Projectinstellingen", operator)
         self.assertIn("Open designbrief", operator)
-        self.assertIn("Open ChatGPT-project ↗", process)
+        self.assertIn("Open ChatGPT-project ↗", operator)
         self.assertIn("✓ Designopdracht gekopieerd", process)
         self.assertNotIn("copySectorUpgrade", operator)
         self.assertNotIn("Sectoronderzoek", operator)
