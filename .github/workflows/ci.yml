@@ -46,13 +46,20 @@ jobs:
           node --check operator/sector-intelligence-ui.js
           node --check operator/discovery-triage.js
           node --check operator/discovery.js
+          node --check operator/prompt-invocation.js
+          node --check operator/prompt-library.js
+          node --check operator/research-discovery.js
+          node --check operator/qualification-display.js
           node --check 'operator/functions/[slug].js'
           node --check 'operator/functions/p/[[path]].js'
           node --check 'operator/functions/prospect/[[path]].js'
+          node --check operator/functions/_shared/github-repo.js
+          node --check operator/functions/api/_middleware.js
           node --check operator/functions/api/geocode.js
           node --check operator/functions/api/site-check.js
           node --check operator/functions/api/resolve-sector.js
           node --check operator/functions/api/sector-intelligence.js
+          node --check operator/functions/api/prompt-library.js
           node --check operator/functions/api/prepare-prospect.js
           python -m py_compile scripts/prepare_prospect.py src/soliddesign/preparation.py
           test -s operator/index.html
@@ -60,13 +67,17 @@ jobs:
           test -s operator/config.js
           test -s operator/team-work.css
           test -s operator/discovery.css
+          test -s operator/prompt-library.css
           test -s operator/wrangler.jsonc
           test -s docs/DECISIONS.md
           test -s docs/INTEGRATED_OPERATING_ARCHITECTURE.md
+          test -s docs/PROMPT_LIBRARY.md
+          test -s docs/DISCOVERY.md
+          test -s docs/DISCOVERY_OVERTURE.md
+          test ! -e docs/DISCOVERY_TRIAGE.md
           test -s docs/SECTOR_INTELLIGENCE_LINKAGE.md
           test -s docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md
           test -s docs/DISCOVERY_SECTOR_RESOLUTION.md
-          test -s docs/DISCOVERY_TRIAGE.md
           test -s docs/FIRST_CONCEPT_PREPARATION.md
           test -s sector-intelligence/README.md
           test -s supabase/functions/prospect-preparation/index.ts
@@ -80,6 +91,10 @@ jobs:
           test -s supabase/migrations/20260831_sector_linking_rpc_v01.sql
           test -s supabase/migrations/20260831_sector_identity_ingest_v02.sql
           test -s supabase/migrations/20260831_sector_linking_security_v03.sql
+          test -s supabase/migrations/20260908_research_discovery_import_v01.sql
+          test -s prompts/contracts/prospect-research-import-v1.json
+          test -s prompts/library/prospect-research.md
+          test -s prompts/library/website-design.md
           test -s .github/workflows/prepare-prospect.yml
           test -s prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'noindex,nofollow,noarchive' operator/index.html
@@ -88,6 +103,7 @@ jobs:
           grep -q 'publicProspectOrigin' operator/config.js
           grep -q 'publicProspectPathPrefix' operator/config.js
           grep -q '/prospect' operator/config.js
+          grep -q 'DOMContentLoaded' operator/config.js
           grep -q 'prospect_assignments' operator/team-work.js
           grep -q 'operator_set_assignment' operator/team-work.js
           grep -q 'team_members' supabase/migrations/20260829_integrated_multiuser_foundation_v01.sql
@@ -142,6 +158,7 @@ jobs:
           grep -q 'Technisch rapport en eerste mock-up worden voorbereid' operator/discovery-triage.js
           grep -q 'discovery-triage-v1' operator/functions/api/site-check.js
           grep -q 'Voeg toe aan Prospects' operator/discovery-triage.js
+          grep -q 'row.qualification?.research' operator/discovery-triage.js
           grep -q 'Verbeterkans' operator/discovery-triage.js
           grep -q 'Basischeck OK' operator/discovery-triage.js
           grep -q 'AANBEVOLEN' operator/discovery-triage.js
@@ -171,6 +188,18 @@ jobs:
           grep -q 'window.location.origin}/sector-intelligence' operator/design-process.js
           ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' operator/design-process.js
           grep -q 'sector-intelligence/<canonical_sector_key>.md' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          grep -q "const ROOT = 'prompts/library'" operator/functions/api/prompt-library.js
+          grep -q "member.role !== 'ADMIN'" operator/functions/api/prompt-library.js
+          grep -q "url.pathname === '/api/prompt-library'" operator/functions/api/_middleware.js
+          grep -q 'productie-CMS' operator/functions/api/_middleware.js
+          grep -q "prompts.copy('prospect-research'" operator/research-discovery.js
+          grep -q "run_type: 'IMPORT'" operator/research-discovery.js
+          grep -q "discovery_source: 'research'" operator/research-discovery.js
+          grep -q 'papaparse@5.7.0' operator/research-discovery.js
+          grep -q 'qualification.research' docs/DISCOVERY.md
+          grep -q 'qualification.triage' docs/DISCOVERY.md
+          grep -q "'AREA','URL','IMPORT'" supabase/migrations/20260908_research_discovery_import_v01.sql
+          grep -q 'Nog niet uitgevoerd' operator/qualification-display.js
           grep -q 'Stage canonical design resources' .github/workflows/deploy-operator.yml
           grep -q 'cp -R prompts operator/prompts' .github/workflows/deploy-operator.yml
           grep -q 'cp -R sector-intelligence operator/sector-intelligence' .github/workflows/deploy-operator.yml
@@ -178,6 +207,7 @@ jobs:
           grep -q 'canonical v0.5' sector-intelligence/README.md
           grep -q 'architecture v0.5' docs/SECTOR_INTELLIGENCE_LINKAGE.md
           grep -q 'Sectoronderzoek' docs/INTEGRATED_OPERATING_ARCHITECTURE.md
+          grep -q 'Prompt Library' docs/INTEGRATED_OPERATING_ARCHITECTURE.md
           ! grep -q 'operator_allowlist remains' README.md
           ! grep -q 'operator_allowlist remains' docs/ARCHITECTURE.md
           grep -q 'ADR-016' docs/DECISIONS.md

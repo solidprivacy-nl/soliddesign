@@ -1,0 +1,70 @@
+{
+  "contract": "prospect-research-import-v1",
+  "method": "prospect_research",
+  "description": "Canonical CSV transfer contract from SolidDesign prospect research to the CMS Discovery Inbox.",
+  "columns": [
+    "rank",
+    "business_name",
+    "location",
+    "website",
+    "triage_decision",
+    "provisional_priority",
+    "eligible_for_pdos",
+    "evidence_confidence",
+    "desktop_content_inspected",
+    "mobile_inspected",
+    "service_or_project_page_inspected",
+    "trust_evidence_checked",
+    "technical_measurement_run",
+    "commercial_signals",
+    "website_observations",
+    "structural_redesign_hypothesis",
+    "verification_needed",
+    "source_urls"
+  ],
+  "required_columns": [
+    "rank",
+    "business_name",
+    "location",
+    "website",
+    "triage_decision",
+    "provisional_priority",
+    "eligible_for_pdos",
+    "evidence_confidence",
+    "desktop_content_inspected",
+    "mobile_inspected",
+    "service_or_project_page_inspected",
+    "trust_evidence_checked",
+    "technical_measurement_run",
+    "commercial_signals",
+    "website_observations",
+    "structural_redesign_hypothesis",
+    "verification_needed",
+    "source_urls"
+  ],
+  "enums": {
+    "triage_decision": ["DEEP_AUDIT", "VERIFY_FIRST", "LOWER_PRIORITY", "REJECT"],
+    "provisional_priority": ["VERY_HIGH", "HIGH", "MEDIUM", "LOW"],
+    "evidence_confidence": ["HIGH", "MEDIUM", "LOW"]
+  },
+  "booleans": [
+    "eligible_for_pdos",
+    "desktop_content_inspected",
+    "mobile_inspected",
+    "service_or_project_page_inspected",
+    "trust_evidence_checked",
+    "technical_measurement_run"
+  ],
+  "limits": {
+    "max_rows": 100,
+    "max_text_length": 5000,
+    "max_source_urls_length": 12000
+  },
+  "source_urls_separator": " | ",
+  "rules": [
+    "One row represents one business website.",
+    "Do not invent missing evidence. Use explicit verification_needed text instead.",
+    "A triage row is not a full PDOS assessment unless the underlying skill requirements for deep scoring are satisfied.",
+    "CSV is transport only; the CMS normalizes accepted rows into the existing prospect candidate model."
+  ]
+}

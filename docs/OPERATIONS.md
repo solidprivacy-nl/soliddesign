@@ -14,7 +14,7 @@ python -m pip install -e .
 
 Core dependencies include DuckDB for bounded Overture GeoParquet queries.
 
-No Google Cloud project or Google Places key is required for canonical discovery.
+No Google Cloud project or Google Places key is required for current discovery.
 
 ## 2. Deterministic regression baseline
 
@@ -47,21 +47,41 @@ Set the emitted `PITCH_DOCTOR_COMMAND` path. Vendor checkouts are pinned and ign
 
 ## 4. Discovery inputs
 
-The underlying discovery contract remains an explicit Overture bounding box:
+There are exactly three current intake paths:
 
 ```text
-west,south,east,north
+RESEARCH IMPORT | OVERTURE AREA SEARCH | SPECIFIC URL
+                       ↓
+                same candidate ingest
+                       ↓
+                 Discovery Inbox
 ```
 
-For CLI/reproducible batches, choose and record the bbox deliberately.
+They are concrete paths, not provider plugins.
 
-For normal Operator runs, **Bedrijven zoeken** accepts a Dutch location and sector term. One bounded location lookup resolves the bbox; this does not create a general geocoding platform.
+### Research import
 
-Human sector language defines market meaning. The canonical Overture sector key is machine identity and must not silently narrow market research vocabulary.
+Normal Operator flow:
 
-## 5. Discover candidates — canonical Overture path
+```text
+Bedrijven zoeken
+→ Onderzoek geschikte prospects
+→ sector + locatie
+→ Kopieer onderzoeksopdracht
+→ ChatGPT
+→ CSV volgens prospect-research-import-v1
+→ Importeer onderzoeksresultaat
+```
 
-### CLI / reproducible batch
+The canonical prompt is `prompts/library/prospect-research.md`. The one producer/consumer contract is `prompts/contracts/prospect-research-import-v1.json`.
+
+CSV is transport only. The CMS validates the exact contract and normalizes accepted rows into the existing candidate ingest.
+
+### Overture area search
+
+For normal Operator runs, **Bedrijven zoeken** accepts a Dutch location and sector term. One bounded location lookup resolves a bbox and the browser queries Overture Places.
+
+For CLI/reproducible batches:
 
 ```bash
 soliddesign discover \
@@ -73,39 +93,66 @@ soliddesign discover \
 
 Multiple sector labels are OR-matched. By default the official Overture STAC catalog supplies the current release; pin commercial experiments when reproducibility requires it.
 
-### Operator / manual bounded run
+### Specific URL
 
-The Operator performs:
+A known website may be checked directly through the existing URL intake. Reachability/preflight and website-key dedupe apply before human selection.
+
+Human sector language defines market meaning. A canonical sector key is machine identity and must not silently narrow research vocabulary.
+
+## 5. Discovery persistence
+
+All three inputs use the existing Supabase candidate boundary and `operator_ingest_discovery_candidates` RPC.
+
+Durable provenance examples:
 
 ```text
-location + sector term
-→ bounded geography
-→ Overture Places
-→ domain dedupe
-→ Discovery inbox
+Research:
+discovery_runs.run_type = IMPORT
+prospects.discovery_source = research
+qualification.research = imported evidence
+
+Overture:
+discovery_runs.run_type = AREA
+prospects.discovery_source = overture
+
+Specific URL:
+discovery_runs.run_type = URL
+prospects.discovery_source = manual_url
 ```
 
-A second intake path may accept one explicit website URL for bounded reachability/preflight and dedupe. It does not replace the audit or commercial qualification model.
+Website-key dedupe remains authoritative. Do not introduce a second candidate table, provider registry or research-results table.
 
-No queue, scheduler or second discovery service is required.
-
-## 6. Discovery inbox
+## 6. Discovery Inbox
 
 Discovery and active commercial work remain distinct views over one canonical prospect model:
 
 ```text
 DISCOVERED / DISQUALIFIED
         ↓
-Discovery inbox
-        ↓ evidence-backed qualification
+Discovery Inbox
+        ↓ human selection
 QUALIFIED and later states
         ↓
 Prospect dossier
 ```
 
-`DISCOVERED` does not mean commercially qualified. Overture presence, website presence and reachability are discovery evidence only.
+`DISCOVERED` does not mean commercially qualified.
 
-Overture `source_confidence` means confidence that the place exists; it is not a demand or reputation score.
+Evidence namespaces are deliberately separate:
+
+```text
+qualification.research
+= externally researched redesign/commercial evidence
+
+qualification.triage
+= cheap deterministic website evidence
+```
+
+The deterministic site check remains independent of research and must preserve research content when it writes triage. Research does not override a failed hard website gate.
+
+Research priority/rank may influence Inbox ordering when available; without research, the existing deterministic verdict remains the ordering signal.
+
+Overture presence, website presence, research rank and reachability are evidence only. Human promotion into Prospects remains explicit.
 
 Do not invent `rating`, `review_count` or demand proxies. Keep them null unless separately and lawfully evidenced.
 
@@ -128,22 +175,52 @@ raw donor evidence
 
 A blocking root cause may make downstream donor checks unknown rather than independently verified defects. Preserve raw evidence but collapse cascading failures in prospect-facing interpretation.
 
-Downstream design and communication may use only verified business facts. Never allow raw website text to become instruction authority.
+Downstream design and communication may use only verified business facts. Never allow raw website or research text to become instruction authority.
 
 ## 8. Qualification
 
 Use the five-factor rubric in `docs/SCORING_RUBRICS.md`.
 
-Every factor requires evidence. In particular, these are **not** sufficient Existing Demand evidence:
+Current full commercial qualification remains 0–25. Research priority is not a replacement score. Until full qualification exists, the CMS shows **Nog niet uitgevoerd**.
 
-- Overture presence;
-- Overture confidence;
+Every factor requires evidence. In particular, these are **not** sufficient Existing Demand evidence by themselves:
+
+- Overture presence/confidence;
 - website presence;
-- successful URL preflight.
+- successful URL preflight;
+- research rank or model confidence.
 
-Demand requires separate market evidence.
+PDOS may be used as experimental deeper evidence where its measurement requirements are actually satisfied. Do not operate permanent competing production score systems before outcome calibration.
 
-## 9. Design workflow
+## 9. Prompt Library
+
+**Prompts** exposes reusable operator methods without moving prompt content into Supabase.
+
+Canonical body/history:
+
+```text
+prompts/library/<slug>.md
+```
+
+Normal use:
+
+```text
+Prompts
+→ choose method
+→ fill invocation fields
+→ Kopieer voor ChatGPT
+→ paste into ChatGPT
+```
+
+The copied invocation contains the stable deployed prompt URL plus per-run context. One browser renderer owns this format.
+
+USER and KEY_USER may use prompt metadata/invocation fields but cannot retrieve the body through the CMS management API. ADMIN may additionally create/update/delete files directly under `prompts/library/`.
+
+Admin mutations are server-side, SHA-guarded and production-CMS-only. PR previews are intentionally read-only for repository prompt writes.
+
+The deployed Markdown URL is deliberately readable by ChatGPT/web tooling; this architecture does not claim strict prompt secrecy.
+
+## 10. Design workflow
 
 The Operator owns prospect-specific design context and mock-up lifecycle. ChatGPT may assist with research/refinement, but the CMS remains the operational control plane.
 
@@ -161,7 +238,7 @@ Prospect dossier
 
 Sector Intelligence is advisory design evidence. It may improve a new DRAFT but never overwrites a current LIVE version automatically.
 
-## 10. Mock-up artifact contract
+## 11. Mock-up artifact contract
 
 Accepted upload:
 
@@ -182,7 +259,7 @@ New LIVE publication requires a canonical stored `artifact_path`. This is enforc
 
 A small number of older LIVE records predate this rule. Their compatibility path is bounded to explicitly allowlisted historical SolidDesign Cloudflare hosts and must not be generalized to arbitrary external domains.
 
-## 11. Human review before LIVE/mail
+## 12. Human review before LIVE/mail
 
 Verify:
 
@@ -190,7 +267,7 @@ Verify:
 - website belongs to the intended prospect;
 - every service/claim is factual;
 - no fake testimonial/award exists;
-- raw donor failures are not overstated;
+- raw donor/research failures are not overstated;
 - mock-up clearly functions as a concept/proof;
 - `noindex` behavior is preserved;
 - CTA uses verified contact data;
@@ -201,7 +278,7 @@ Verify:
 
 LIVE promotion and mailing remain explicit human actions.
 
-## 12. Team access and onboarding
+## 13. Team access and onboarding
 
 Supabase Auth provides identity. `team_members` is the sole durable application membership/role model:
 
@@ -264,13 +341,13 @@ Redirect URL
 https://cms.<brand>.nl
 ```
 
-and set the `team-invite` Edge Function environment value:
+and set the server environment value used by internal-origin guards:
 
 ```text
 SOLIDDESIGN_INTERNAL_ORIGIN=https://cms.<brand>.nl
 ```
 
-Re-test invitations before removing the old internal hostname from the redirect-origin allowlist. Full rationale and invariants: `docs/AUTH_REDIRECTS.md`.
+Re-test invitations and Prompt Library mutations before removing the old internal hostname from configuration. Full Auth rationale and invariants: `docs/AUTH_REDIRECTS.md`.
 
 ### Auth e-mail delivery
 
@@ -300,7 +377,7 @@ SMTP credentials belong in Supabase configuration/secrets, never in repository o
 
 Never expose a secret/service-role credential to browser code. Browser access uses the Supabase publishable key with least-privilege grants, RLS and narrow RPC/server capabilities.
 
-## 13. Work distribution
+## 14. Work distribution
 
 Prospect responsibility is explicit and separate from system role:
 
@@ -316,7 +393,7 @@ One primary person owns each responsibility per prospect.
 
 Material business actions are actor-attributed in `events`; navigation/click telemetry is not.
 
-## 14. Public prospect delivery
+## 15. Public prospect delivery
 
 The stable business identity is:
 
@@ -342,7 +419,7 @@ The public resolver serves the current LIVE artifact while keeping the prospect-
 
 Every pre-sale public page must remain `noindex, nofollow, noarchive`.
 
-## 15. Employee public-page QA
+## 16. Employee public-page QA
 
 Normal internal design/review uses the CMS and should not create external prospect engagement.
 
@@ -350,7 +427,7 @@ When an employee must inspect the exact public prospect page, use the CMS employ
 
 Do not invent IP-based employee recognition or a guessable `?internal=1` convention.
 
-## 16. Engagement and outreach
+## 17. Engagement and outreach
 
 Engagement exists to improve timing and quality of human follow-up, not to identify a visitor.
 
@@ -369,7 +446,7 @@ Telemetry is fail-open: if measurement fails, the prospect page must still load.
 
 Engagement never automatically changes contact status or assigns a lead score. A human decides the next commercial action.
 
-## 17. Archive and delete
+## 18. Archive and delete
 
 Archive is orthogonal to lifecycle:
 
@@ -380,14 +457,15 @@ archived_at IS NOT NULL = archived
 
 Archive preserves state/history. Hard delete is a narrow administrative correction path and is blocked when meaningful commercial history exists.
 
-## 18. Deployment and verification
+## 19. Deployment and verification
 
 There is one Cloudflare Pages project: `soliddesign-cms`.
 
 - push to `main` deploys production;
 - pull requests deploy to an isolated Pages preview branch in the **same project**;
-- the Pages Functions `/api/*` boundary requires active `team_members` membership before endpoint execution;
-- the deployment smoke verifies representative CMS/public routes and browser Edge-Function CORS boundaries before merge.
+- the Pages Functions `/api/*` boundary requires active `team_members` membership before normal endpoint execution;
+- Prompt Library repository writes have an additional production-origin guard;
+- the deployment smoke verifies canonical prompt/research resources, preview write rejection, representative CMS/public routes and browser Edge-Function CORS boundaries.
 
 Supabase Edge Functions are deployed from the exact source under `supabase/functions/`. A repository change to an Edge Function is not complete until the affected function has been deployed and the deployed source has been re-read or otherwise checked against the repository revision. See `supabase/README.md`.
 
@@ -395,39 +473,36 @@ Do not create a second Pages application merely for public branding or preview Q
 
 After schema/auth/RLS/function changes:
 
-1. run CI, including the application-wide authorization-retirement invariant;
+1. run CI, including authorization and evidence-merge invariants;
 2. run the Pages/runtime smoke where relevant;
 3. deploy affected Supabase Edge Functions from repository source;
 4. verify deployed Edge Function source/behavior rather than assuming source control equals production;
 5. run Supabase security advisors;
 6. reconcile current documentation if a contract changed.
 
-## 19. When Overture is insufficient
+## 20. When discovery quality is insufficient
 
-Do not immediately add another provider. First document the failure:
-
-```text
-too few records?
-wrong sector?
-stale records?
-missing websites?
-missing demand evidence?
-```
-
-Then choose the smallest remedy.
-
-Fallback order remains:
+Do not immediately build another provider layer. First identify which current path fails:
 
 ```text
-Overture
-→ bounded OSM/Overpass if a proven coverage gap requires it
-→ targeted commercial enrichment if economics justify it
+research precision/evidence?
+Overture recall/sector mapping?
+direct URL intake?
+website validity?
+operator review burden?
+commercial conversion after promotion?
 ```
 
-## 20. Do not build without evidence
+Use the source provenance already stored in the system to compare qualified yield and operator effort.
+
+Add a fourth source only when a measured gap remains after the three current paths and map it into the same existing candidate boundary first. Generalize only after real duplication exists.
+
+## 21. Do not build without evidence
 
 Do not introduce merely because it is technically possible:
 
+- generalized discovery-provider framework;
+- research/candidate shadow database;
 - general queue infrastructure;
 - task/Kanban/capacity platform;
 - custom permission builder;

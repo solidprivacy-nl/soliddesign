@@ -1,27 +1,32 @@
 # SolidDesign Integrated Operating Architecture
 
-**Status:** current production operating architecture  
-**Date:** 2026-08-31
+**Status:** current target production operating architecture  
+**Date:** 2026-09-08
 
 ## Objective
 
-Operate SolidDesign as a small multi-user commercial work system without changing its architectural character.
+Operate SolidDesign as one small multi-user commercial work system while continuously reducing duplicate method, state and workflow.
 
 The system remains:
 
 - one application;
 - one Cloudflare Pages project/deployment topology;
 - one Supabase operational state plane;
+- one prospect dossier/workflow;
+- one Discovery Inbox;
 - one canonical mock-up storage/LIVE lifecycle;
+- GitHub-governed reusable method/content;
 - explicit human control;
 - minimal state and dependencies.
 
-## Core model
+Core commercial loop:
 
 ```text
 TEAM
   ↓
 RESPONSIBILITY
+  ↓
+DISCOVERY
   ↓
 PROSPECT DOSSIER
   ↓
@@ -38,7 +43,48 @@ OUTCOME
 LEARNING
 ```
 
-Reusable Sector Intelligence is advisory input to DESIGN, not a second workflow/state plane.
+Reusable Sector Intelligence and research evidence are advisory inputs. They are not second workflow/state planes.
+
+## System boundaries
+
+### GitHub
+
+Canonical for:
+
+- source code;
+- engineering documentation;
+- reusable SolidDesign prompts/methods;
+- published Sector Intelligence content;
+- content history/diff/rollback.
+
+GitHub is not the operational CRM/state plane.
+
+### Cloudflare
+
+Owns:
+
+- the internal CMS runtime;
+- server-side repository capabilities;
+- stable prompt/design-method consumption URLs;
+- public prospect delivery.
+
+Repository paths, branches and tokens are implementation details and do not become normal operator concepts.
+
+### Supabase
+
+Remains the one operational business-state plane:
+
+- team membership;
+- responsibilities;
+- prospects/discovery runs;
+- qualification/evidence state;
+- audits;
+- demos;
+- mailings;
+- engagement;
+- events.
+
+Prompt bodies and Sector Intelligence content are not duplicated into Supabase content tables.
 
 ## Two audiences, one system
 
@@ -52,22 +98,13 @@ temporary: soliddesign-cms.pages.dev/prospect/<slug>
 later:     <brand>.nl/<slug>
 ```
 
-The brand/domain is delivery configuration. The business identity is `prospects.public_slug`.
+The brand/domain is delivery configuration. Prospect business identity is `prospects.public_slug`.
 
-Preferred final hostname shape:
-
-```text
-https://cms.<brand>.nl
-https://<brand>.nl/<public_slug>
-```
-
-See `docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md`.
-
-Authentication invitations/login flows belong to the **internal** origin, not the public prospect origin. Their hosted Supabase Site URL / Redirect URL contract is maintained in `docs/AUTH_REDIRECTS.md`. Application invite code uses an explicit validated `redirectTo`; a stale localhost Site URL is never intended runtime behavior.
+Authentication invitations/login flows belong to the internal origin. See `docs/AUTH_REDIRECTS.md`.
 
 ## Identity and governance
 
-Durable application membership is `team_members` and uses the stable Supabase Auth user UUID.
+Durable application membership is `team_members` using the stable Supabase Auth UUID.
 
 System roles:
 
@@ -77,39 +114,13 @@ KEY_USER
 USER
 ```
 
-- Admin: governance and Key-user/Admin management.
+- Admin: governance and Admin/Key-user management; additionally owns operator Prompt Library mutations.
 - Key user: operational coordination, normal User invitations and work distribution.
 - User: normal prospect work.
 
-There is no Owner/Eigenaar application role.
+There is no Owner application role and no separate Prompt Manager role.
 
-System role answers what a person may administer. It does not determine prospect responsibility.
-
-### Human identity
-
-`team_members.display_name` is the primary human-readable identity in SolidDesign. E-mail is secondary login/account metadata and is not used as the normal prospect-assignment or activity label.
-
-The UI derives a lightweight initials avatar from `display_name`; there is no avatar-upload/profile-storage subsystem in the current architecture.
-
-Admin may correct a display name without changing the stable Auth UUID that assignments and event attribution use.
-
-### Membership lifecycle
-
-```text
-INVITED
-→ ACTIVE
-→ INACTIVE
-```
-
-The visible status is derived from `active`, `joined_at` and `deactivated_at`; there is no second lifecycle state machine.
-
-Deactivation is normal offboarding and preserves history.
-
-Permanent deletion is a narrow Admin cleanup capability for mistaken/test accounts only. Server-side guards reject deletion when the target is the caller, has active assignments, has prospect-linked business history, or would remove the last active Admin. Accounts with business history are deactivated instead.
-
-### Membership authorization
-
-Authorization is derived from the authenticated Auth UUID and active `team_members` membership.
+Authorization remains:
 
 ```text
 auth.uid()
@@ -117,11 +128,23 @@ auth.uid()
 → role-aware RLS / RPC / server capability
 ```
 
-The Operator RLS policies and browser bootstrap use this model directly. The historical `operator_allowlist` was removed from production on 2026-08-30 by `20260830_operator_allowlist_retirement_v01.sql`; verified remaining RLS/function references are zero. Active `team_members` is the only durable application-membership authorization model.
+The historical `operator_allowlist` is retired. Active `team_members` is the sole durable membership authority.
+
+`team_members.display_name` is the primary human-readable work identity; email is account/login metadata.
+
+Membership lifecycle:
+
+```text
+INVITED
+→ ACTIVE
+→ INACTIVE
+```
+
+Deactivation preserves history. Permanent deletion remains a narrow guarded Admin cleanup path for history-free mistaken/test accounts.
 
 ## Prospect responsibility
 
-Current responsibility is explicit state in `prospect_assignments`:
+Current responsibility is explicit in `prospect_assignments`:
 
 ```text
 CASE_LEAD   → Dossierhouder
@@ -129,27 +152,194 @@ DESIGN      → Design
 OUTREACH    → Outreach & opvolging
 ```
 
-There is one primary accountable person per responsibility per prospect.
+One primary accountable person exists per responsibility/prospect. Assignment is current state; material history is in `events`. Assignment is not a read-security boundary in the current model.
 
-Assignments are not a read-security boundary in the first version. Active team members retain shared visibility for collaboration, handover and absence coverage.
+## Prompt Library
 
-Portfolio is derived from assignments; there is no portfolio table.
+SolidDesign centralizes reusable operator ChatGPT methods without creating a prompt-management platform.
 
-## Activity
+Canonical operator prompt content:
 
-`events.actor_user_id` records who initiated/performed material business actions.
+```text
+prompts/library/<slug>.md
+```
 
-Events record meaningful changes such as assignment changes, demo publication, printmailing version creation, physical mailing, contact changes, archive/restore and user-management actions.
+System/design architecture prompts remain engineering-governed under the existing Bootstrap/core/workflow structure and are outside CMS mutation capability.
 
-Events do not record UI clicks/navigation.
+A library prompt contains:
 
-Current responsibility is read from assignments; history is read from events.
+```text
+stable slug/filename
+metadata
+invocation contract
+Markdown prompt body
+```
+
+The invocation contract is intentionally small:
+
+```text
+key
+label
+control = text | url | textarea
+placeholder
+required
+```
+
+No form builder, conditions, formulas, prompt database, favorites, usage analytics or approval workflow exists.
+
+### Prompt roles
+
+USER and KEY_USER may:
+
+- see prompt title/category/description;
+- see/fill invocation fields;
+- copy a complete ChatGPT invocation.
+
+They do not receive prompt body through the CMS management API and cannot mutate prompts.
+
+ADMIN may additionally:
+
+- retrieve operator prompt body;
+- create/update/delete operator prompts.
+
+Writes are server-authorized and can address only a validated slug under `prompts/library/`. Existing prompt updates/deletes use GitHub SHA optimistic concurrency.
+
+Git is prompt version history; no second version model exists.
+
+The stable prompt consumption URL uses the already proven Cloudflare static resource pattern:
+
+```text
+https://soliddesign-cms.pages.dev/prompts/library/<slug>.md
+```
+
+There is deliberately no custom `/prompt/<slug>` resolver.
+
+### Prompt confidentiality truth
+
+The guaranteed current boundary is:
+
+> User/Key User cannot inspect prompt bodies through CMS management surfaces.
+
+URL-delivered prompts are not claimed to be cryptographically secret from those operators: anything ChatGPT can anonymously fetch from a copied URL can in principle be fetched outside the CMS. A later private GitHub repository protects repository access but does not change that URL fact.
+
+Strict prompt secrecy, if ever required, requires a future server-side AI execution boundary. It is not simulated with obscure URLs or user-agent checks.
+
+Canonical detail: `docs/PROMPT_LIBRARY.md`.
+
+## Discovery
+
+Discovery is source-agnostic at the business boundary without introducing a provider framework.
+
+Current concrete intake paths are exactly:
+
+```text
+RESEARCH IMPORT
+OVERTURE AREA SEARCH
+SPECIFIC URL
+```
+
+All three normalize into the existing candidate/prospect ingest and then the same Discovery Inbox.
+
+Canonical flow:
+
+```text
+Research | Overture | URL
+          ↓
+validated candidate
+          ↓
+existing Supabase ingest/dedupe
+          ↓
+deterministic website preflight
+          ↓
+Discovery Inbox
+          ↓
+human promote / reject
+```
+
+Do not introduce a ProviderRegistry, candidate table, research-results table or second Inbox.
+
+### Research discovery
+
+Research is the method; CSV is transport.
+
+```text
+CMS sector + location
+→ canonical prospect-research invocation
+→ ChatGPT evidence-backed research
+→ CSV
+→ contract validation
+→ Normalized candidate rows
+→ existing ingest
+```
+
+Durable provenance:
+
+```text
+discovery_runs.run_type = IMPORT
+input.format = csv
+input.method = prospect_research
+prospects.discovery_source = research
+```
+
+One machine-readable contract is authoritative for the producer/consumer handoff:
+
+```text
+prompts/contracts/prospect-research-import-v1.json
+```
+
+The research prompt and importer both use it; CSV headers are not maintained independently in multiple places.
+
+### Research versus deterministic evidence
+
+Research evidence is stored under:
+
+```text
+qualification.research
+```
+
+The existing cheap system preflight remains under:
+
+```text
+qualification.triage
+```
+
+Research asks whether a company appears commercially/design-wise worth deeper work. Triage independently checks cheap directly observable site/delivery signals.
+
+All qualification writers must preserve unrelated namespaces. Research, triage and full qualification may coexist without destructive overwrite.
+
+### Discovery Inbox
+
+One Inbox remains the human decision surface.
+
+Research priority/rank drives ordering when research exists; deterministic triage remains supporting independent evidence and hard basis failures remain visible. Without research evidence, the existing deterministic verdict drives the grouping.
+
+No persisted `candidate_priority` or combined triage score exists.
+
+Human promotion is mandatory. Research rank, Overture presence and site-check results are evidence, not commercial authority.
+
+Canonical detail: `docs/DISCOVERY.md`. Overture-specific query/source mechanics live only in `docs/DISCOVERY_OVERTURE.md`.
+
+## Qualification
+
+Workflow state and full commercial qualification remain distinct.
+
+`QUALIFIED` workflow state means a human selected a candidate into active prospect work. It does not imply the five-factor score has already been performed.
+
+Until full qualification exists, the CMS displays `Nog niet uitgevoerd` rather than an ambiguous `— / 25`.
+
+The current five-factor 0–25 commercial qualification remains current during the operational pilot:
+
+- Customer Economics;
+- Existing Demand;
+- Conversion Opportunity;
+- Execution Fit;
+- Competitive Context.
+
+Research priority is discovery evidence. PDOS/WES/RDS/CPF remain experimental deeper evidence until enough real outreach outcomes support calibration. Do not create permanent parallel scoring state before that evidence gate.
 
 ## Sector Intelligence
 
-Sector Intelligence is reusable, reviewed design research for one canonical business sector.
-
-The prospect relationship is intentionally small:
+Sector Intelligence is reusable reviewed design research for one canonical business sector.
 
 ```text
 prospect
@@ -157,37 +347,23 @@ prospect
 → current published Sector Intelligence
 ```
 
-Discovery provenance and sector identity are separate facts. A single-sector area discovery may assign a known sector automatically. Multi-sector discovery and direct-URL discovery do not guess a primary sector. An operator can explicitly assign or correct the sector for any relevant company/prospect.
+Discovery provenance and sector identity remain separate facts. A source may supply/resolve a known canonical sector; operators may explicitly correct it.
 
-Research uses the human market term and location. An optional free-text `Aanvullende onderzoeksrichting` lets an operator supply URLs, observations or other context without creating a reference-management subsystem. Such input is challengeable evidence and does not replace autonomous research.
+Sector Intelligence is advisory design evidence. Verified prospect facts and explicit prospect/operator direction outrank it. Missing Sector Intelligence never blocks design production.
 
-The CMS owns the operator workflow:
-
-```text
-research
-→ result validation
-→ Ter beoordeling
-→ CMS human review
-→ Beschikbaar
-```
-
-Normal CMS users see only business state/content. Repository URLs, review transport identifiers, branches, storage paths and engineering-provider details are never part of the operator-facing contract.
-
-The server-side Sector Intelligence capability uses the same active-team authorization predicate as the rest of the Operator. No parallel membership authority exists.
-
-Published Sector Intelligence is advisory design evidence only. Verified prospect facts and explicit prospect/operator design direction outrank it. Missing Sector Intelligence never blocks design production.
+The CMS owns research/review/linkage while repository mechanics remain hidden from normal operators.
 
 Canonical contracts: `sector-intelligence/README.md` and `docs/SECTOR_INTELLIGENCE_LINKAGE.md`.
 
 ## Public delivery
 
-The temporary public route is:
+Canonical temporary route:
 
 ```text
 /prospect/<public_slug>
 ```
 
-The canonical public mapping is:
+Canonical mapping:
 
 ```text
 slug
@@ -196,62 +372,36 @@ slug
 → stored immutable artifact
 ```
 
-The public URL keeps the slug visible and does not expose internal UUID routes.
+New LIVE publication requires `artifact_path`. External HTTPS preview links are DRAFT/review escape hatches and cannot become newly LIVE.
 
-New LIVE publication requires `artifact_path`. External HTTPS preview links are review/DRAFT escape hatches only and cannot become newly LIVE.
+The finite historical compatibility path for grandfathered LIVE records remains transition debt and must not expand into a generic proxy.
 
-A finite compatibility path exists for six grandfathered historical LIVE records that predate this invariant. It is restricted to explicitly allowlisted old SolidDesign Cloudflare preview hosts and is transition debt, not a general reverse-proxy capability.
-
-On the current internal Pages hostname, the old root `/<slug>` route is only a redirect alias to `/prospect/<slug>/`; it no longer performs its own prospect/LIVE resolution.
-
-When `<brand>.nl` is chosen, the same public resolver semantics move to `<brand>.nl/<slug>` through hostname/path routing rather than data migration. The branded public host must be a strict capability allowlist and never become an alias for internal CMS routes.
+A later domain cutover changes hostname/path routing, not prospect identity/data.
 
 ## Printmailing artifacts
 
-The physical prospect mailing is both designed output and an Outreach instrument, but those are different facts.
+Designed output and physical send remain separate facts:
 
 ```text
 DESIGN
-→ creates immutable printmailing versions
+→ immutable mailing_artifacts versions
 
 OUTREACH
-→ selects one exact version
-→ records that it was physically sent
+→ selects exact artifact
+→ records physical send in mailings
 ```
 
-`mailing_artifacts` stores the versioned design output. `mailings` remains the physical-send record and references the exact `artifact_id` that left the building. The same stored file is surfaced in both dossier phases; it is never copied between Design and Outreach.
+The same stored artifact may be surfaced in Design and Outreach but is never duplicated into separate phase state.
 
-Printmailing version numbers are derived from creation order rather than stored as mutable state. New designs create new versions; existing artifacts are never overwritten.
-
-The private `mailing-artifacts` Storage bucket accepts PDF, PNG and JPG up to 25 MB. PDF is the preferred final print format. No generic attachments table, document-management subsystem, approval state machine or print-vendor integration exists.
-
-Registering a physical send requires a current LIVE mock-up and snapshots that `demo_id` alongside the selected artifact. This preserves exactly which paper artifact and which website concept formed the prospect proposition at send time.
-
-Canonical decision: `docs/decisions/20260830_PRINT_MAILING_ARTIFACTS.md`.
+PDF is preferred final print format; PNG/JPG are supported. No generic document-management or print-vendor subsystem exists.
 
 ## Engagement
 
-`prospect_visits` measures response to the prospect link, not human identity.
+`prospect_visits` measures campaign response, not visitor identity.
 
-MVP fields/signals:
+Current signals remain bounded to prospect/demo, source, broad device, timestamps, active visible seconds and scroll depth.
 
-- prospect/demo;
-- external/internal;
-- QR/direct;
-- broad device class;
-- first/last telemetry timestamps;
-- active visible seconds;
-- max scroll.
-
-No raw IP, IP hash, fingerprint, persistent visitor identity, heatmap or session replay.
-
-A plain HTTP GET is not considered commercial engagement. Browser-visible first-party telemetry is required to reduce bot/scanner false positives.
-
-Telemetry failure must never block public delivery.
-
-Internal employee QA uses a short-lived server-signed token bound to the prospect slug. IP-based classification and guessable internal flags are deliberately avoided.
-
-Browser acceptance on 2026-08-30 proved persisted EXTERNAL and INTERNAL openings plus active-time/scroll updates. See `docs/evidence/INTEGRATED_CMS_BROWSER_ACCEPTANCE_20260830.md`.
+No raw IP, IP hash, fingerprint, persistent visitor identity, heatmap or replay exists. Telemetry failure never blocks public delivery. Internal QA traffic remains distinguishable via short-lived server-signed staff tokens.
 
 ## Internal information architecture
 
@@ -261,8 +411,9 @@ Top-level navigation:
 Mijn werk
 Prospects
 Bedrijven zoeken
+Prompts
 Sectoronderzoek
-Team        # Key user/Admin only
+Team        # Key user/Admin only where existing role policy applies
 ```
 
 Prospect dossier:
@@ -271,144 +422,114 @@ Prospect dossier:
 Overzicht | Design | Outreach | Activiteit
 ```
 
-### Mijn werk
-
-Default landing page. Derived from assignments and contextually opens the relevant dossier tab.
-
-### Prospects
-
-Shared active/archive register with status and simple work-distribution filters, including unassigned responsibilities.
-
 ### Bedrijven zoeken
 
-Owns prospect discovery and first-pass candidate handling. It may link to Sectoronderzoek but does not own Sectoronderzoek UI state or research execution.
+Owns:
+
+- research invocation + research CSV import;
+- Overture broad search;
+- direct URL intake;
+- the one Discovery Inbox;
+- recent discovery runs.
+
+It does not own reusable sector-research state.
+
+### Prompts
+
+Owns reusable operator prompt discovery/invocation and Admin-only operator prompt management. It never becomes a ChatGPT execution engine.
 
 ### Sectoronderzoek
 
-Owns reusable sector research, CMS review and explicit prospect-sector linkage. It shares the validated sector resolver with Discovery but has its own inputs and actions.
-
-### Team
-
-Combines membership lifecycle and current work-distribution visibility. It is not an HR system or capacity-planning platform.
+Owns reusable sector research, review and explicit prospect-sector linkage.
 
 ### Design
 
-Owns design outputs: the website concept plus versioned printmailing artifacts. Printmailing files are stored here because they are designed output; physical-send state is not.
-
-Design also shows the prospect's primary sector association because that determines which published Sector Intelligence may be consulted. The operator can correct that association explicitly.
+Owns website concepts and immutable printmailing design outputs. Reusable prompt invocation may prefill known prospect context but does not create parallel prompt state in the prospect record.
 
 ### Outreach
 
-Owns the commercial feedback loop:
-
-```text
-selected printmailing version
-→ physical send
-→ prospect URL
-→ engagement
-→ next action
-→ contact/outcome
-```
-
-Outreach reads the same printmailing artifacts created in Design and records which exact version was sent. Engagement never automatically changes contact status or produces a lead score without later outcome evidence.
-
-## Implemented data expansion
-
-The integrated operating model uses only the state needed by the current commercial loop:
-
-```text
-team_members
-prospect_assignments
-events.actor_user_id
-prospect_visits
-mailing_artifacts
-prospects.canonical_sector_key
-```
-
-Sector Intelligence content itself is not duplicated into a Supabase research table. Existing prospects, demos, mailings, audits, discovery and Storage remain authoritative. `mailings` is extended only with the required reference to the exact print artifact sent.
-
-No task table, portfolio table, generic attachments table, research-content table or analytics database was introduced.
+Owns mailing send, engagement interpretation, next action/contact and outcome.
 
 ## Database evolution
 
-Current database state is defined by:
+Current database state is:
 
 ```text
-supabase/schema.sql       # original bootstrap baseline
+supabase/schema.sql       # historical/bootstrap baseline
         ↓
 supabase/migrations/*     # ordered canonical evolution
         ↓
-current production schema
+production database
 ```
 
-Do not maintain a second manually synchronized current schema file. See `supabase/README.md`.
+Do not manually maintain a second synchronized current-schema specification.
+
+Research discovery adds only the `IMPORT` value to the existing discovery-run type constraint. No new discovery/prompt table is justified.
 
 ## Deployment topology
 
-There is one Pages project:
+One Cloudflare Pages project remains:
 
 ```text
-main            → production
-pr-<number>     → isolated pre-merge QA preview
+main        → production
+pr-<n>      → isolated verification preview
 ```
 
-PR preview branches are verification environments in the same application/project, not separate architecture.
+The deploy workflow stages `prompts/` and `sector-intelligence/` into the same Operator artifact and smoke-tests the deployed runtime.
 
-PR preview prospect links remain on their PR origin so browser acceptance runs the code being reviewed rather than silently leaving for production.
-
-The same post-deploy HTTP smoke applies to PR previews and production: CMS root, team-membership bootstrap, telemetry client, canonical public routing, bounded legacy compatibility and Edge Function CORS must all pass.
+Prompt Library server writes use server-side repository credentials; credentials never reach browser code.
 
 ## Explicit non-goals
 
 Do not add without observed need:
 
-- task engine;
-- Kanban/Gantt;
-- capacity planner;
-- time tracking;
-- workflow builder;
-- separate portfolio data model;
-- generic attachments/document-management subsystem;
+- task engine / Kanban / capacity planner;
+- second CRM/state plane;
+- generic attachment system;
 - custom permission builder;
-- per-dossier ACLs;
-- separate public application;
-- second analytics datastore;
+- separate analytics datastore;
 - visitor fingerprinting;
 - automated lead scoring;
 - marketing automation;
-- separate BI platform;
-- generalized external-preview/reverse-proxy platform;
-- user-profile/avatar image subsystem;
-- print-vendor integration or print-order automation;
-- Sector Intelligence reference library, research database or many-to-many sector taxonomy.
+- generalized reverse proxy;
+- prompt database/version database;
+- prompt marketplace/favorites/usage analytics;
+- Prompt Manager role;
+- generic prompt/form builder;
+- strict prompt-secrecy facade over publicly readable URLs;
+- generalized discovery provider framework;
+- candidate/research-results tables;
+- discovery agent/background crawler;
+- autonomous promotion;
+- PDOS columns/parallel permanent score model;
+- AI job queue/server-side AI execution before measured need.
 
 ## Architecture invariants
 
 1. One prospect is one dossier.
-2. One canonical operational state plane.
-3. One canonical stored-artifact LIVE state for new publication.
-4. System role and prospect responsibility are independent.
-5. One primary assignee per responsibility.
-6. Assignment is current state; event log is history.
-7. Material user actions are attributable.
-8. Human work identity is stable Auth UUID + `display_name`; e-mail is account metadata.
-9. Deactivation preserves history; permanent deletion is only for history-free correction/test accounts.
-10. Portfolio is derived, not stored separately.
-11. Domain/brand names are delivery configuration.
-12. Preferred final hosts are `cms.<brand>.nl` and `<brand>.nl/<slug>`.
-13. Auth redirects follow the configured internal origin and never a stale localhost fallback or arbitrary browser origin.
-14. Public slug is an address, not an authorization secret.
-15. Public delivery never exposes internal CMS capability.
-16. Engagement measures campaign response, not personal identity.
-17. Telemetry failure never blocks the prospect page.
-18. Routine onboarding does not require manual SQL/admin-console work; hosted Auth URL configuration remains normal platform deployment configuration.
-19. Active `team_members` is the sole durable application-membership authorization model.
-20. Historical external LIVE compatibility is finite and must not expand into a general proxy.
-21. Database changes after bootstrap are expressed as ordered migrations.
-22. Production deploy success includes runtime smoke, not upload success alone.
-23. A printmailing file is immutable Design output; a physical send references one exact stored version.
-24. Design and Outreach may surface the same print artifact but never duplicate it into separate state.
-25. A prospect has one primary sector identity for reusable design intelligence; operator correction is explicit.
-26. Sector Intelligence transport/storage mechanics never become operator-facing CMS concepts.
-27. Sector research operator guidance is challengeable input, not verified truth.
-28. No new subsystem is added without an observed problem that justifies it.
+2. One Supabase operational state plane.
+3. GitHub is canonical for reusable prompt/design-research content.
+4. One canonical stored-artifact LIVE state for new publication.
+5. System role and prospect responsibility are independent.
+6. Active `team_members` is the sole durable membership authorization model.
+7. Assignment is current responsibility; events are material history.
+8. Material user actions are attributable.
+9. Prompt system methods and Admin-managed operator prompts have separate governance.
+10. User/Key User receive no prompt body through CMS management APIs.
+11. Prompt Admin writes can address only `prompts/library/`.
+12. Git history is prompt version history; no duplicate version state exists.
+13. Static Cloudflare Markdown URLs are sufficient for current prompt consumption.
+14. URL-based invocation does not claim strict prompt secrecy.
+15. Discovery has concrete research, Overture and URL inputs without a provider platform.
+16. CSV is transport; the candidate object/ingest is the domain boundary.
+17. One research-import contract serves producer and consumer.
+18. One Discovery Inbox remains the human selection surface.
+19. Research and deterministic triage remain distinguishable evidence namespaces.
+20. Qualification writes preserve unrelated evidence namespaces.
+21. Human promotion remains mandatory.
+22. Workflow `QUALIFIED` is not equivalent to a completed 0–25 score.
+23. Existing commercial qualification remains canonical until outcome evidence justifies replacement.
+24. Transitional compatibility/configuration must shrink after verified cutover.
+25. Replaced code and documents are removed rather than kept as competing current truth.
+26. No subsystem is added without an observed problem that justifies it.
+27. Done means implementation + verification + cleanup + documentation alignment.
