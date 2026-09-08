@@ -16,9 +16,18 @@ import('./dossier-tabs.js').catch((error) => console.error('Dossierweergave kon 
 import('./mailing-artifacts.js').catch((error) => console.error('Printmailingversies konden niet laden.', error));
 import('./engagement-ui.js').catch((error) => console.error('Digitale respons kon niet laden.', error));
 import('./qualification-display.js').catch((error) => console.error('Kwalificatieweergave kon niet laden.', error));
-import('./prompt-invocation.js')
-  .then(() => Promise.all([
-    import('./prompt-library.js'),
-    import('./research-discovery.js')
-  ]))
-  .catch((error) => console.error('Promptbibliotheek of research-discovery kon niet laden.', error));
+
+function loadPromptFeatures() {
+  import('./prompt-invocation.js')
+    .then(() => Promise.all([
+      import('./prompt-library.js'),
+      import('./research-discovery.js')
+    ]))
+    .catch((error) => console.error('Promptbibliotheek of research-discovery kon niet laden.', error));
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', loadPromptFeatures, { once: true });
+} else {
+  loadPromptFeatures();
+}
