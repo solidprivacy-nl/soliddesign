@@ -4,13 +4,14 @@ Security is part of the operating design, not a later subsystem. The canonical s
 
 ## Primary trust boundaries
 
-SolidDesign processes third-party place data, public websites, AI output, authenticated team actions, private printmailing artifacts and public prospect-page engagement.
+SolidDesign processes third-party place data, public websites, AI/research output, authenticated team actions, private printmailing artifacts and public prospect-page engagement.
 
 ```text
-EXTERNAL DATA / WEBSITE
+EXTERNAL DATA / WEBSITE / RESEARCH OUTPUT
 → untrusted input
 → extraction + validation
-→ VERIFIED FACTS
+→ VERIFIED / BOUNDED EVIDENCE
+→ human decision
 → design / communication
 ```
 
@@ -128,6 +129,47 @@ Every prospect page remains `noindex, nofollow, noarchive` during the pre-sale w
 PR previews are isolated verification environments. Their prospect links deliberately stay on the same `pr-<number>` origin so browser acceptance executes the code under test rather than production code.
 
 The deployment workflow smoke-tests both preview and production delivery, including the active-team membership bootstrap, public resolver, telemetry asset and Edge Function CORS.
+
+## Prompt Library boundary
+
+Operator prompt content is Git-backed repository content under exactly:
+
+```text
+prompts/library/<validated-slug>.md
+```
+
+The Prompt Library does not create a second prompt database or arbitrary repository editor.
+
+Normal authenticated USER/KEY_USER/ADMIN reads may retrieve prompt metadata and invocation fields. Prompt body retrieval through the CMS management API is restricted to `ADMIN`. Prompt create/update/delete is also `ADMIN`-only and is checked server-side; UI visibility is not authority.
+
+Repository mutation safety is intentionally narrow:
+
+- slug must match the bounded prompt-slug contract;
+- server derives the full path and never accepts an arbitrary repository path;
+- update/delete requires the current GitHub content SHA to prevent stale overwrite;
+- GitHub repository credentials remain in server-side Pages Function environment only;
+- PR-preview origins are read-only for this capability: `POST /api/prompt-library` is rejected before any repository mutation;
+- the production CMS origin is the only current prompt-write origin, with `SOLIDDESIGN_INTERNAL_ORIGIN` as the explicit future custom-domain configuration hook.
+
+Static prompt Markdown is intentionally served through the CMS origin so ChatGPT/web tooling can read it. Therefore the current URL-consumption design is **not** a strict prompt-secrecy boundary. If strict secrecy becomes a real requirement, move execution server-side; do not rely on hidden URLs, user-agent checks or obfuscation.
+
+## Research-import boundary
+
+ChatGPT research output and imported CSV are untrusted external input.
+
+The CMS accepts research data only after validation against the one versioned contract:
+
+```text
+prompts/contracts/prospect-research-import-v1.json
+```
+
+The importer enforces exact headers/order, bounded file/row/text sizes, explicit booleans/enums, positive integer rank and HTTP(S) URLs before persistence. It does not evaluate formulas, execute embedded content, infer missing columns or accept arbitrary schema.
+
+Accepted rows are normalized into the existing candidate ingest path. Research evidence is stored under `qualification.research`; deterministic system observation remains under `qualification.triage`. Updating one namespace must preserve the other.
+
+Research output never automatically promotes a candidate, publishes a design or sends outreach. Human promotion remains the authority boundary, and imported websites still receive the existing independent website preflight where applicable.
+
+Do not treat AI-generated research prose as verified prospect-facing facts merely because it has been imported.
 
 ## LIVE artifact and legacy-delivery boundary
 
