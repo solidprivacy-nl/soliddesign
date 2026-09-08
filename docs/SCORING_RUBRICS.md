@@ -1,24 +1,44 @@
 # Qualification and Scoring Rubrics v0
 
-The score is intentionally simple and explainable. No machine learning and no arbitrary weighted model until real outcome data exists.
+The current commercial qualification remains intentionally simple and explainable. No machine learning and no replacement weighted model becomes canonical until real outcome data supports it.
 
 ## Discovery versus qualification
 
-The canonical discovery source is Overture Maps Places.
+Canonical discovery architecture is defined in `docs/DISCOVERY.md`.
 
-Critical semantic separation:
+Current candidate sources are:
+
+```text
+research
+Overture
+manual URL
+```
+
+Source presence or research rank is not the same thing as commercial qualification.
+
+Critical semantic separations include:
 
 ```text
 Overture presence
 ≠
 existing demand
+
+research priority
+≠
+completed commercial qualification
+
+workflow state QUALIFIED
+≠
+completed 0–25 factor score
 ```
 
 Overture `confidence` indicates confidence that a place exists. `operating_status` helps with place activity/state. Neither is a commercial-demand score.
 
+Research evidence may contribute useful facts/signals to later qualification, but only when the underlying observation actually supports the factor being scored.
+
 ## Hard gates
 
-A prospect must pass all relevant gates before ranking:
+A prospect must pass all relevant gates before final commercial ranking:
 
 - existing website exists;
 - website/business identity appears to match;
@@ -32,9 +52,11 @@ A prospect must pass all relevant gates before ranking:
 
 A failed hard gate can produce `DISQUALIFIED` without a numerical score.
 
+Discovery triage may apply narrower technical/intake gates before full commercial qualification. Do not treat those cheap preflight checks as proof that all commercial gates have passed.
+
 ## Five factors
 
-Each factor scores 0–5. Initial total is unweighted, maximum 25.
+Each factor scores 0–5. Current total is unweighted, maximum 25.
 
 ### 1. Customer Economics
 
@@ -49,7 +71,7 @@ Each factor scores 0–5. Initial total is unweighted, maximum 25.
 
 ### 2. Existing Demand
 
-This factor must be evidenced separately from Overture discovery.
+This factor must be evidenced separately from discovery-source presence.
 
 Possible evidence:
 
@@ -79,14 +101,15 @@ Do not score Existing Demand highly solely because:
 - Overture contains the business;
 - Overture confidence is high;
 - `operating_status` is open;
+- research ranked the candidate highly;
 - a website exists;
 - the website looks professional.
 
-For Phase 1, manual demand research is acceptable. Do not build automated Google scraping.
+Research may supply evidence of demand only where concrete public signals are actually observed and recorded.
 
 ### 3. Conversion Opportunity
 
-Based on audit evidence, not visual taste alone.
+Based on audit/research evidence, not visual taste alone.
 
 | Score | Rubric |
 |---|---|
@@ -96,6 +119,8 @@ Based on audit evidence, not visual taste alone.
 | 3 | Multiple meaningful UX/trust/CTA issues |
 | 4 | Strong evidence of conversion leakage |
 | 5 | Large mismatch between business quality and website experience |
+
+A research triage observation may inform this later score, but the cheap deterministic Discovery check is not a substitute for deeper audit evidence.
 
 ### 4. Execution Fit
 
@@ -119,22 +144,56 @@ Based on audit evidence, not visual taste alone.
 | 4 | Large local digital gap |
 | 5 | Prospect visibly loses credibility/conversion potential to direct peers |
 
+## Discovery/research evidence namespaces
+
+The operational JSON qualification record may contain several evidence layers without making them separate canonical scores:
+
+```text
+qualification.research
+qualification.triage
+qualification.factors / total_score
+```
+
+Writers must preserve unrelated namespaces.
+
+- `research` = externally researched discovery evidence;
+- `triage` = cheap deterministic site/intake evidence;
+- full factors/total = current commercial qualification.
+
+Missing full qualification is displayed as `Nog niet uitgevoerd`, not as a zero or an implied partial `/25` score.
+
 ## Discovery quality metadata
 
-Keep source metadata separate from score factors:
+Keep source metadata separate from score factors.
+
+Overture example:
 
 ```yaml
 discovery_source: overture
-discovery_version: 2026-07-22.0
+discovery_version: 2026-08-19.0
 source_confidence: 0.87
 operating_status: open
 ```
 
-These fields help audit source quality over time but are not automatically converted into scoring points.
+Research example:
+
+```yaml
+discovery_source: research
+discovery_version: 2026-09-08
+qualification:
+  research:
+    decision: DEEP_AUDIT
+    priority: VERY_HIGH
+    confidence: MEDIUM
+```
+
+These fields support provenance/selection review. They are not automatically converted into commercial points.
 
 ## Score record
 
-Every factor must store:
+Every full factor must store evidence, not only a number.
+
+Conceptually:
 
 ```yaml
 factor:
@@ -144,20 +203,42 @@ reviewer:
 timestamp:
 ```
 
-Never store only the number. A score without evidence cannot later improve the model.
+A score without evidence cannot later improve the model.
+
+## PDOS / richer research model
+
+The Evidence-Weighted 2026 prospect research method introduces WES, RDS, CPF, Evidence Confidence and PDOS for deeper analysis.
+
+That method is currently **experimental acquisition evidence**, not a replacement production qualification authority.
+
+Do not:
+
+- add permanent PDOS columns merely because the research model exists;
+- map a shallow triage row to a fabricated PDOS;
+- maintain two permanent competing canonical qualification systems.
+
+When a full PDOS is genuinely measured, preserve its method/version/evidence so it can later be compared with real outcomes.
 
 ## Future calibration
 
-After 100+ prospects, compare factors against:
+After sufficient contacted prospects (initially evaluate at approximately 50–100 and continue as volume grows), compare:
 
-- demo visits;
+- discovery source;
+- research priority/signals;
+- current five factors;
+- full PDOS where valid;
+
+against:
+
+- demo/public-link visits;
 - responses;
+- positive responses;
 - meetings;
 - proposals;
 - wins;
 - delivery hours;
-- gross margin.
+- gross margin/support burden.
 
-Also compare source/release metadata against invalid/stale rates.
+Only when a material repeatable relationship exists should weights, thresholds or the canonical qualification model change.
 
-Only then consider weights, source-specific adjustments or predictive modeling.
+When a replacement is adopted, migrate and remove superseded current scoring logic rather than normalizing indefinite parallel scoring models.
