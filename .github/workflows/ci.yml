@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, "build/**", "design/**", "chore/**"]
+    branches: [main, "build/**", "design/**", "chore/**", "ux/**"]
   pull_request:
 
 permissions:
@@ -37,13 +37,14 @@ jobs:
           ! grep -Eqi 'linear-gradient|radial-gradient' /tmp/soliddesign-golden/preview.html
       - name: Operator static safety
         run: |
+          set -euo pipefail
           node --check operator/app.js
           node --check operator/prospect-link.js
           node --check operator/team-work.js
           node --check operator/prospect-preparation.js
           node --check operator/design-process.js
+          node --check operator/design-detail-ui.js
           node --check operator/discovery-sectors.js
-          node --check operator/sector-intelligence-ui.js
           node --check operator/discovery-triage.js
           node --check operator/discovery.js
           node --check operator/prompt-invocation.js
@@ -58,10 +59,10 @@ jobs:
           node --check operator/functions/api/geocode.js
           node --check operator/functions/api/site-check.js
           node --check operator/functions/api/resolve-sector.js
-          node --check operator/functions/api/sector-intelligence.js
           node --check operator/functions/api/prompt-library.js
           node --check operator/functions/api/prepare-prospect.js
           python -m py_compile scripts/prepare_prospect.py src/soliddesign/preparation.py
+
           test -s operator/index.html
           test -s operator/start-design.html
           test -s operator/config.js
@@ -74,12 +75,19 @@ jobs:
           test -s docs/PROMPT_LIBRARY.md
           test -s docs/DISCOVERY.md
           test -s docs/DISCOVERY_OVERTURE.md
-          test ! -e docs/DISCOVERY_TRIAGE.md
-          test -s docs/SECTOR_INTELLIGENCE_LINKAGE.md
-          test -s docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md
           test -s docs/DISCOVERY_SECTOR_RESOLUTION.md
+          test -s docs/PROSPECT_FIRST_DESIGN.md
+          test -s docs/DESIGN_BRIEF.md
+          test ! -e docs/DISCOVERY_TRIAGE.md
+          test ! -e docs/SECTOR_INTELLIGENCE_LINKAGE.md
+          test ! -e operator/sector-intelligence-ui.js
+          test ! -e operator/sector-link-suggestions.js
+          test ! -e operator/functions/api/sector-intelligence.js
+          test ! -e sector-intelligence/README.md
+          test ! -e prompts/sectors/README.md
+
+          test -s docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md
           test -s docs/FIRST_CONCEPT_PREPARATION.md
-          test -s sector-intelligence/README.md
           test -s supabase/functions/prospect-preparation/index.ts
           test -s supabase/migrations/20260826_discovery_archive_v01.sql
           test -s supabase/migrations/20260827_discovery_triage_v01.sql
@@ -92,11 +100,13 @@ jobs:
           test -s supabase/migrations/20260831_sector_identity_ingest_v02.sql
           test -s supabase/migrations/20260831_sector_linking_security_v03.sql
           test -s supabase/migrations/20260908_research_discovery_import_v01.sql
+          test -s supabase/migrations/20260909_retire_sector_linking_v01.sql
           test -s prompts/contracts/prospect-research-import-v1.json
           test -s prompts/library/prospect-research.md
           test -s prompts/library/website-design.md
           test -s .github/workflows/prepare-prospect.yml
           test -s prompts/SOLIDDESIGN_BOOTSTRAP.md
+
           grep -q 'noindex,nofollow,noarchive' operator/index.html
           grep -q 'noindex,nofollow,noarchive' operator/start-design.html
           grep -q 'supabasePublishableKey' operator/config.js
@@ -111,17 +121,34 @@ jobs:
           grep -q 'operator_set_assignment' supabase/migrations/20260829_assignment_workflow_v01.sql
           grep -q 'cms.<brand>.nl' docs/INTEGRATED_OPERATING_ARCHITECTURE.md
           grep -q '<brand>.nl/<public_slug>' docs/decisions/20260829_DOMAIN_AGNOSTIC_PUBLIC_AND_CMS_ORIGINS.md
-          grep -q 'prompts/SOLIDDESIGN_BOOTSTRAP.md' operator/start-design.html
-          grep -q 'Prompt architecture version: 0.3' operator/start-design.html
-          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' operator/start-design.html
-          grep -q 'Prompt architecture version.*0.3' prompts/SOLIDDESIGN_BOOTSTRAP.md
-          grep -q 'soliddesign-cms.pages.dev/prompts/' prompts/SOLIDDESIGN_BOOTSTRAP.md
-          grep -q 'soliddesign-cms.pages.dev/sector-intelligence/' prompts/SOLIDDESIGN_BOOTSTRAP.md
-          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' prompts/SOLIDDESIGN_BOOTSTRAP.md
-          grep -q 'operator_ingest_discovery_candidates' supabase/migrations/20260826_discovery_archive_v01.sql
-          grep -q 'operator_promote_discovery_candidate' supabase/migrations/20260827_discovery_triage_v01.sql
-          grep -q 'operator_set_discovery_triage' supabase/migrations/20260827_discovery_triage_v01.sql
-          grep -q 'operator_queue_first_concept' supabase/migrations/20260828_first_concept_preparation_v01.sql
+
+          # Prospect-first Design boundary.
+          grep -q 'Kopieer designopdracht' operator/index.html
+          grep -q 'Designinstructie' operator/index.html
+          grep -q 'Projectinstellingen' operator/index.html
+          grep -q 'Upload concept' operator/index.html
+          grep -q 'Gebruik externe conceptlink' operator/index.html
+          ! grep -q 'Sectoronderzoek' operator/index.html
+          ! grep -q 'copySectorUpgrade' operator/index.html
+          ! grep -q 'sector-intelligence-ui.js' operator/index.html
+          ! grep -q 'sector-link-suggestions.js' operator/index.html
+          ! grep -q 'canonical_sector_key' operator/design-process.js
+          ! grep -qi 'sector-intelligence' operator/design-process.js
+          ! grep -q 'operator_set_prospect_sector' operator/design-detail-ui.js
+          ! grep -q 'canonical_sector_key' operator/design-detail-ui.js
+          grep -q 'Brief format version:.*0.4' operator/design-process.js
+          grep -q 'Prompt architecture version.*0.4' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          grep -q 'Design the actual prospect' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          ! grep -qi 'sector-intelligence' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          ! grep -q 'prompts/sectors' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          grep -q 'Prompt architecture version: 0.4' operator/start-design.html
+          ! grep -qi 'Sector Intelligence' operator/start-design.html
+          grep -q 'drop function if exists public.operator_set_prospect_sector' supabase/migrations/20260909_retire_sector_linking_v01.sql
+          grep -q 'drop function if exists public.operator_list_sector_link_targets' supabase/migrations/20260909_retire_sector_linking_v01.sql
+          grep -q 'Sector may participate in Discovery but never determines prospect Design' docs/INTEGRATED_OPERATING_ARCHITECTURE.md
+          grep -q 'Design the actual prospect, not an abstract sector' docs/PROSPECT_FIRST_DESIGN.md
+
+          # Discovery remains sector-aware where required.
           grep -q "stukadoor: \['plasterer'\]" operator/discovery-sectors.js
           grep -q "bakker: \['bakery'\]" operator/discovery-sectors.js
           grep -q "kapper: \['barber'\]" operator/discovery-sectors.js
@@ -129,48 +156,12 @@ jobs:
           grep -q 'SOLIDDESIGN_RESOLVE_SINGLE_SECTOR' operator/discovery-sectors.js
           grep -q 'discovery-triage.js' operator/discovery-sectors.js
           ! grep -q 'sectorIntelligencePrompt' operator/discovery-sectors.js
-          ! grep -q 'startSectorIntelligence' operator/discovery-sectors.js
-          grep -q 'sector-intelligence-ui.js' operator/index.html
-          grep -q 'sectorResearchGuidance' operator/sector-intelligence-ui.js
-          grep -q 'Start sectoronderzoek in ChatGPT' operator/sector-intelligence-ui.js
-          grep -q 'Verwerk onderzoeksresultaat' operator/sector-intelligence-ui.js
-          grep -q 'human_sector_term' operator/sector-intelligence-ui.js
-          grep -q 'sectorIntelligencePrompt' operator/sector-intelligence-ui.js
-          grep -q '/api/sector-intelligence' operator/sector-intelligence-ui.js
-          grep -q 'operator_set_prospect_sector' operator/sector-intelligence-ui.js
-          grep -q 'Beoordelen' operator/sector-intelligence-ui.js
-          grep -q 'Publiceer' operator/sector-intelligence-ui.js
-          grep -q 'Afwijzen' operator/sector-intelligence-ui.js
-          ! grep -q 'Open sectoronderzoek' operator/sector-intelligence-ui.js
-          ! grep -q 'installDiscoveryShortcut' operator/sector-intelligence-ui.js
-          ! grep -Eqi 'source_url|review_url|github\.com|api\.github\.com' operator/sector-intelligence-ui.js
-          test ! -e operator/functions/api/publish-sector-intelligence.js
-          grep -q 'GITHUB_SECTOR_INTELLIGENCE_TOKEN' operator/functions/api/sector-intelligence.js
-          grep -q 'operator_is_active_team_member' operator/functions/api/sector-intelligence.js
-          ! grep -q 'operator_allowlist' operator/functions/api/sector-intelligence.js
-          grep -q 'REQUIRED_HEADINGS' operator/functions/api/sector-intelligence.js
-          grep -q "action === 'approve'" operator/functions/api/sector-intelligence.js
-          grep -q "action === 'reject'" operator/functions/api/sector-intelligence.js
-          ! grep -q 'source_url' operator/functions/api/sector-intelligence.js
-          ! grep -q 'review_url' operator/functions/api/sector-intelligence.js
-          grep -q 'LINKHUB_HOSTS' operator/functions/api/site-check.js
-          grep -q "site_kind: 'LINKHUB'" operator/functions/api/site-check.js
-          grep -q 'Alleen een linkhub aangetroffen' operator/functions/api/site-check.js
-          grep -q '/api/prepare-prospect' operator/discovery-triage.js
-          grep -q 'discovery-triage-v1' operator/functions/api/site-check.js
-          grep -q 'Toevoegen' operator/discovery-triage.js
-          grep -q 'Waarom?' operator/discovery-triage.js
-          grep -q 'row.qualification?.research' operator/discovery-triage.js
-          grep -q 'Verbeterkans' operator/discovery-triage.js
-          grep -q 'KANSRIJK' operator/discovery-triage.js
-          grep -q 'NOG BEOORDELEN' operator/discovery-triage.js
-          grep -q 'LAGE PRIORITEIT' operator/discovery-triage.js
-          grep -q 'collapsed: true' operator/discovery-triage.js
-          ! grep -q 'Voeg toe aan Prospects' operator/discovery-triage.js
-          ! grep -q 'Bekijk beoordeling' operator/discovery-triage.js
-          ! grep -q 'Basischeck OK' operator/discovery-triage.js
-          ! grep -q 'triage-score' operator/discovery.css
-          grep -q 'candidate-more-panel' operator/discovery.css
+          grep -q 'canonical_sector_key: context.canonicalKey' operator/research-discovery.js
+          grep -q 'overture_categories.csv' operator/functions/api/resolve-sector.js
+          grep -q 'workers_ai_validated' operator/functions/api/resolve-sector.js
+          grep -q '"binding": "AI"' operator/wrangler.jsonc
+
+          # Discovery UX baseline.
           grep -q 'data-discovery-mode="research"' operator/index.html
           grep -q 'data-discovery-mode="area"' operator/index.html
           grep -q 'data-discovery-mode="url"' operator/index.html
@@ -183,6 +174,22 @@ jobs:
           grep -q '1. Kopieer opdracht' operator/research-discovery.js
           grep -q '2. Importeer resultaat' operator/research-discovery.js
           grep -q 'enriched_count' operator/research-discovery.js
+          grep -q '/api/prepare-prospect' operator/discovery-triage.js
+          grep -q 'discovery-triage-v1' operator/functions/api/site-check.js
+          grep -q 'Toevoegen' operator/discovery-triage.js
+          grep -q 'Waarom?' operator/discovery-triage.js
+          grep -q 'row.qualification?.research' operator/discovery-triage.js
+          grep -q 'KANSRIJK' operator/discovery-triage.js
+          grep -q 'NOG BEOORDELEN' operator/discovery-triage.js
+          grep -q 'LAGE PRIORITEIT' operator/discovery-triage.js
+          grep -q 'collapsed: true' operator/discovery-triage.js
+          ! grep -q 'Voeg toe aan Prospects' operator/discovery-triage.js
+          ! grep -q 'Bekijk beoordeling' operator/discovery-triage.js
+          ! grep -q 'Basischeck OK' operator/discovery-triage.js
+          ! grep -q 'triage-score' operator/discovery.css
+          grep -q 'candidate-more-panel' operator/discovery.css
+
+          # Existing operational boundaries.
           grep -q 'prospectDecisionSignals' operator/app.js
           grep -q 'Basischeck probleem' operator/app.js
           grep -q 'prospect-signal' operator/styles.css
@@ -195,17 +202,9 @@ jobs:
           grep -q 'prospect-preparation' scripts/prepare_prospect.py
           grep -q 'linkhub-presence' src/soliddesign/preparation.py
           grep -q 'No `preparation_jobs` table' docs/FIRST_CONCEPT_PREPARATION.md
-          grep -q 'overture_categories.csv' operator/functions/api/resolve-sector.js
-          grep -q 'workers_ai_validated' operator/functions/api/resolve-sector.js
-          grep -q '"binding": "AI"' operator/wrangler.jsonc
-          grep -q 'Kopieer verbeteropdracht met sectorinzichten' operator/index.html
-          grep -q 'Kopieer startinstructie voor ChatGPT' operator/index.html
-          grep -q 'copySectorUpgrade' operator/index.html
-          grep -q 'sectorUpgradeStart' operator/design-process.js
-          grep -q 'Canonical sector key' operator/design-process.js
-          grep -q 'window.location.origin}/sector-intelligence' operator/design-process.js
-          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' operator/design-process.js
-          grep -q 'sector-intelligence/<canonical_sector_key>.md' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          grep -q 'Nog niet uitgevoerd' operator/qualification-display.js
+
+          # Prompt Library / research boundaries.
           grep -q "const ROOT = 'prompts/library'" operator/functions/api/prompt-library.js
           grep -q "member.role !== 'ADMIN'" operator/functions/api/prompt-library.js
           grep -q "url.pathname === '/api/prompt-library'" operator/functions/api/_middleware.js
@@ -218,19 +217,12 @@ jobs:
           grep -q 'qualification.triage' docs/DISCOVERY.md
           grep -q 'Show the decision; hide the machinery' docs/DISCOVERY.md
           grep -q "'AREA','URL','IMPORT'" supabase/migrations/20260908_research_discovery_import_v01.sql
-          grep -q 'Nog niet uitgevoerd' operator/qualification-display.js
-          grep -q 'Stage canonical design resources' .github/workflows/deploy-operator.yml
-          grep -q 'cp -R prompts operator/prompts' .github/workflows/deploy-operator.yml
-          grep -q 'cp -R sector-intelligence operator/sector-intelligence' .github/workflows/deploy-operator.yml
-          grep -q 'Ontology identifies; market language guides research' sector-intelligence/README.md
-          grep -q 'canonical v0.5' sector-intelligence/README.md
-          grep -q 'architecture v0.5' docs/SECTOR_INTELLIGENCE_LINKAGE.md
-          grep -q 'Sectoronderzoek' docs/INTEGRATED_OPERATING_ARCHITECTURE.md
-          grep -q 'Prompt Library' docs/INTEGRATED_OPERATING_ARCHITECTURE.md
+
+          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' operator/start-design.html
+          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' prompts/SOLIDDESIGN_BOOTSTRAP.md
+          ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' operator/design-process.js
           ! grep -q 'operator_allowlist remains' README.md
           ! grep -q 'operator_allowlist remains' docs/ARCHITECTURE.md
-          grep -q 'ADR-016' docs/DECISIONS.md
-          ! grep -q 'Copy SI-verbeterstart' operator/index.html
           ! grep -R -E 'SUPABASE_(SERVICE_ROLE|SECRET)_KEY|service_role' operator/ --exclude=README.md
       - name: Operator Pages Function
         working-directory: operator
