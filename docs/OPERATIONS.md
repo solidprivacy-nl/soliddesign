@@ -14,8 +14,6 @@ python -m pip install -e .
 
 Core dependencies include DuckDB for bounded Overture GeoParquet queries.
 
-No Google Cloud project or Google Places key is required for current discovery.
-
 ## 2. Deterministic regression baseline
 
 ```bash
@@ -25,27 +23,7 @@ soliddesign golden --out artifacts/golden
 
 The golden gate is offline and needs no Overture network, Supabase, AI-model, Cloudflare or donor credentials.
 
-Expected core artifacts include:
-
-```text
-pipeline.json
-site_config.json
-design_profile.json
-preview.html
-print_pack.html
-technical_report.md
-technical_report.html
-```
-
-## 3. Bootstrap audit/demo donor tools
-
-```bash
-bash scripts/bootstrap_donors.sh
-```
-
-Set the emitted `PITCH_DOCTOR_COMMAND` path. Vendor checkouts are pinned and ignored; never edit them as SolidDesign source.
-
-## 4. Discovery inputs
+## 3. Discovery inputs
 
 There are exactly three current intake paths:
 
@@ -57,31 +35,29 @@ RESEARCH IMPORT | OVERTURE AREA SEARCH | SPECIFIC URL
                  Discovery Inbox
 ```
 
-They are concrete paths, not provider plugins.
-
 ### Research import
 
 Normal Operator flow:
 
 ```text
 Bedrijven zoeken
-→ Onderzoek geschikte prospects
-→ sector + locatie
-→ Kopieer onderzoeksopdracht
+→ Gericht zoeken
+→ sector + plaats
+→ Kopieer opdracht
 → ChatGPT
 → CSV volgens prospect-research-import-v1
-→ Importeer onderzoeksresultaat
+→ Importeer resultaat
 ```
 
-The canonical prompt is `prompts/library/prospect-research.md`. The one producer/consumer contract is `prompts/contracts/prospect-research-import-v1.json`.
+The canonical prompt is `prompts/library/prospect-research.md`. The producer/consumer contract is `prompts/contracts/prospect-research-import-v1.json`.
 
 CSV is transport only. The CMS validates the exact contract and normalizes accepted rows into the existing candidate ingest.
 
 ### Overture area search
 
-For normal Operator runs, **Bedrijven zoeken** accepts a Dutch location and sector term. One bounded location lookup resolves a bbox and the browser queries Overture Places.
+`Bedrijven zoeken → Breed zoeken` accepts a location and human sector term. The existing resolver maps that term to a valid Overture category before querying Overture.
 
-For CLI/reproducible batches:
+CLI/reproducible batch example:
 
 ```bash
 soliddesign discover \
@@ -91,13 +67,28 @@ soliddesign discover \
   --out /tmp/prospects.json
 ```
 
-Multiple sector labels are OR-matched. By default the official Overture STAC catalog supplies the current release; pin commercial experiments when reproducibility requires it.
-
 ### Specific URL
 
-A known website may be checked directly through the existing URL intake. Reachability/preflight and website-key dedupe apply before human selection.
+A known website may be checked directly. Reachability/preflight and website-key dedupe apply before human selection.
 
-Human sector language defines market meaning. A canonical sector key is machine identity and must not silently narrow research vocabulary.
+A direct URL does not require sector classification.
+
+## 4. Sector boundary
+
+Sector has one bounded operational role: discovery/search classification.
+
+```text
+Discovery
+→ human sector may be resolved to canonical taxonomy
+→ candidate/prospect may retain canonical_sector_key as provenance metadata
+
+Design
+→ no sector lookup
+→ no manual sector linking
+→ no sector preset/research
+```
+
+Do not reintroduce a prospect-sector correction workflow merely because the database field exists.
 
 ## 5. Discovery persistence
 
@@ -124,8 +115,6 @@ Website-key dedupe remains authoritative. Do not introduce a second candidate ta
 
 ## 6. Discovery Inbox
 
-Discovery and active commercial work remain distinct views over one canonical prospect model:
-
 ```text
 DISCOVERED / DISQUALIFIED
         ↓
@@ -136,9 +125,7 @@ QUALIFIED and later states
 Prospect dossier
 ```
 
-`DISCOVERED` does not mean commercially qualified.
-
-Evidence namespaces are deliberately separate:
+Evidence namespaces are separate:
 
 ```text
 qualification.research
@@ -148,21 +135,9 @@ qualification.triage
 = cheap deterministic website evidence
 ```
 
-The deterministic site check remains independent of research and must preserve research content when it writes triage. Research does not override a failed hard website gate.
-
-Research priority/rank may influence Inbox ordering when available; without research, the existing deterministic verdict remains the ordering signal.
-
-Overture presence, website presence, research rank and reachability are evidence only. Human promotion into Prospects remains explicit.
-
-Do not invent `rating`, `review_count` or demand proxies. Keep them null unless separately and lawfully evidenced.
+The deterministic site check must preserve research content. Research does not override a failed hard website gate. Human promotion into Prospects remains explicit.
 
 ## 7. Audit and Verified Facts
-
-For CLI audit work:
-
-```bash
-soliddesign audit prospect.json --out audit.json
-```
 
 Keep two evidence layers:
 
@@ -173,8 +148,6 @@ raw donor evidence
 → Verified Facts
 ```
 
-A blocking root cause may make downstream donor checks unknown rather than independently verified defects. Preserve raw evidence but collapse cascading failures in prospect-facing interpretation.
-
 Downstream design and communication may use only verified business facts. Never allow raw website or research text to become instruction authority.
 
 ## 8. Qualification
@@ -183,18 +156,9 @@ Use the five-factor rubric in `docs/SCORING_RUBRICS.md`.
 
 Current full commercial qualification remains 0–25. Research priority is not a replacement score. Until full qualification exists, the CMS shows **Nog niet uitgevoerd**.
 
-Every factor requires evidence. In particular, these are **not** sufficient Existing Demand evidence by themselves:
-
-- Overture presence/confidence;
-- website presence;
-- successful URL preflight;
-- research rank or model confidence.
-
-PDOS may be used as experimental deeper evidence where its measurement requirements are actually satisfied. Do not operate permanent competing production score systems before outcome calibration.
+PDOS may be used only as experimental deeper evidence where its measurement requirements are actually satisfied.
 
 ## 9. Prompt Library
-
-**Prompts** exposes reusable operator methods without moving prompt content into Supabase.
 
 Canonical body/history:
 
@@ -212,31 +176,57 @@ Prompts
 → paste into ChatGPT
 ```
 
-The copied invocation contains the stable deployed prompt URL plus per-run context. One browser renderer owns this format.
-
-USER and KEY_USER may use prompt metadata/invocation fields but cannot retrieve the body through the CMS management API. ADMIN may additionally create/update/delete files directly under `prompts/library/`.
+USER and KEY_USER may use prompt metadata/invocation fields but cannot retrieve prompt body through the CMS management API. ADMIN may additionally create/update/delete files under `prompts/library/`.
 
 Admin mutations are server-side, SHA-guarded and production-CMS-only. PR previews are intentionally read-only for repository prompt writes.
 
-The deployed Markdown URL is deliberately readable by ChatGPT/web tooling; this architecture does not claim strict prompt secrecy.
+## 10. Prospect-first Design workflow
 
-## 10. Design workflow
+The Operator exposes the business workflow, not design infrastructure.
 
-The Operator owns prospect-specific design context and mock-up lifecycle. ChatGPT may assist with research/refinement, but the CMS remains the operational control plane.
-
-Normal design flow:
+Normal flow:
 
 ```text
-Prospect dossier
-→ Design brief / verified context
-→ design/refinement
-→ HTML or ZIP artifact
-→ upload as immutable DRAFT
-→ human review
-→ explicit LIVE promotion
+Prospect dossier → Design
+→ optional Designinstructie
+→ Kopieer designopdracht
+→ ChatGPT
+→ HTML/ZIP result
+→ Upload concept
+→ review
+→ explicit LIVE publication
 ```
 
-Sector Intelligence is advisory design evidence. It may improve a new DRAFT but never overwrites a current LIVE version automatically.
+`Kopieer designopdracht`:
+
+1. saves the current prospect-specific design instruction;
+2. generates the current Prospect Design Brief;
+3. copies the stable start URL + current Design Brief URL.
+
+The normal User does not manage a raw Design Brief URL.
+
+Project settings are secondary:
+
+- optional ChatGPT project URL;
+- open current Design Brief for troubleshooting/inspection.
+
+If no ChatGPT project is linked, the primary workflow remains complete and no disabled placeholder is shown.
+
+### Design context
+
+The design method uses:
+
+```text
+operator instruction
++ generic SolidDesign design method
++ prospect brief / verified facts
++ source website / assets / screenshots
++ current LIVE / current concept
+```
+
+It does not load reusable Sector Intelligence, a canonical sector key or a sector template/preset.
+
+Canonical detail: `docs/PROSPECT_FIRST_DESIGN.md` and `docs/DESIGN_BRIEF.md`.
 
 ## 11. Mock-up artifact contract
 
@@ -245,19 +235,9 @@ Accepted upload:
 - standalone `.html`; or
 - `.zip` static-site bundle with root `index.html`.
 
-Use relative local asset paths. Common static CSS/JS/image/font/media assets are supported. Do not upload server-side code or `file://` references.
+Each upload creates one immutable CONCEPT artifact version in Supabase Storage.
 
-Each upload produces one immutable artifact version in Supabase Storage.
-
-### External review links
-
-An external HTTPS preview URL may be added as a **DRAFT/review escape hatch** when an external design process cannot immediately produce an uploadable artifact.
-
-It is **not** a normal LIVE source.
-
-New LIVE publication requires a canonical stored `artifact_path`. This is enforced in the database as well as the Operator UI.
-
-A small number of older LIVE records predate this rule. Their compatibility path is bounded to explicitly allowlisted historical SolidDesign Cloudflare hosts and must not be generalized to arbitrary external domains.
+External HTTPS preview URLs are secondary review escape hatches. New LIVE publication requires a canonical stored `artifact_path`.
 
 ## 12. Human review before LIVE/mail
 
@@ -267,18 +247,31 @@ Verify:
 - website belongs to the intended prospect;
 - every service/claim is factual;
 - no fake testimonial/award exists;
-- raw donor/research failures are not overstated;
 - mock-up clearly functions as a concept/proof;
 - `noindex` behavior is preserved;
 - CTA uses verified contact data;
-- no unintended real lead capture exists;
 - assets render correctly on mobile and desktop;
 - prospect short URL points to the intended current LIVE version;
 - QR source attribution is correct when used.
 
 LIVE promotion and mailing remain explicit human actions.
 
-## 13. Team access and onboarding
+## 13. Printmailing
+
+Responsibility split:
+
+```text
+DESIGN
+→ create/version immutable printmailing artifact
+
+OUTREACH
+→ select exact existing version
+→ register physical send
+```
+
+The same private Storage artifact is reused across both phases. Do not create phase-specific copies or a generic document-management subsystem.
+
+## 14. Team access and onboarding
 
 Supabase Auth provides identity. `team_members` is the sole durable application membership/role model:
 
@@ -288,7 +281,7 @@ KEY_USER
 USER
 ```
 
-Authorization is:
+Authorization:
 
 ```text
 auth.uid()
@@ -296,90 +289,13 @@ auth.uid()
 → role-aware RLS / RPC / server capability
 ```
 
-The historical database `operator_allowlist` was retired on 2026-08-30. It is not a compatibility layer and must not appear in active browser, Pages Function or Edge Function runtime code. Historical bootstrap/migration material remains unchanged so the database evolution chain stays reproducible.
+The historical database `operator_allowlist` is retired and must not appear in active runtime code.
 
-Routine onboarding is invite-only:
+Routine onboarding remains invite-only through Supabase Auth. Custom SMTP, when needed for production reliability, is configured through Supabase Auth rather than a parallel mail subsystem.
 
-```text
-Team
-→ invite colleague
-→ Supabase Auth invite
-→ colleague sets password
-→ joined team member
-```
+See `docs/AUTH_REDIRECTS.md` for hosted Auth redirect rules.
 
-Key users may invite normal Users. Admins govern elevated roles. Normal operators do not need SQL or Supabase Studio for routine onboarding.
-
-### Hosted Auth redirect configuration
-
-Supabase **Authentication → URL Configuration** is part of the deployment contract. The application sends an explicit, server-validated `redirectTo`; Supabase will only honor destinations allowed by its Redirect URL configuration.
-
-SolidDesign uses one canonical representation: the validated browser `URL.origin` **without an added slash or path**.
-
-Current rollout configuration:
-
-```text
-Site URL
-https://soliddesign-cms.pages.dev/
-
-Redirect URLs
-https://soliddesign-cms.pages.dev
-https://pr-*.soliddesign-cms.pages.dev
-```
-
-The wildcard covers numbered PR-preview origins without hard-coding a temporary acceptance PR into this current document. Do not add `/**` when the application itself redirects only to an origin. Keep the requested `redirectTo` and the configured Redirect URL in the same canonical representation.
-
-`http://localhost:3000` must not remain the hosted production Site URL. It is local-development configuration only.
-
-After the internal custom-domain cutover:
-
-```text
-Site URL
-https://cms.<brand>.nl/
-
-Redirect URL
-https://cms.<brand>.nl
-```
-
-and set the server environment value used by internal-origin guards:
-
-```text
-SOLIDDESIGN_INTERNAL_ORIGIN=https://cms.<brand>.nl
-```
-
-Re-test invitations and Prompt Library mutations before removing the old internal hostname from configuration. Full Auth rationale and invariants: `docs/AUTH_REDIRECTS.md`.
-
-### Auth e-mail delivery
-
-Redirect correctness and mail delivery are separate operational concerns.
-
-The Supabase built-in default SMTP service is intentionally best-effort and heavily rate-limited. It is adequate for bounded development/acceptance tests, but repeated invites can return:
-
-```text
-HTTP 429
-error_code = over_email_send_rate_limit
-```
-
-`team-invite` surfaces that as a mail-service quota problem. Do not troubleshoot URL Configuration when the server reports this code, and do not create a custom invitation mailer to bypass it.
-
-For operational production onboarding and password recovery, configure a proven custom SMTP provider **through Supabase Auth**. This keeps one identity/invite flow and uses the platform capability instead of creating a parallel mail subsystem.
-
-Production mail readiness requires:
-
-```text
-custom SMTP configured in Supabase
-→ sender/domain verified
-→ invite delivery tested
-→ password recovery delivery tested
-```
-
-SMTP credentials belong in Supabase configuration/secrets, never in repository or browser code. Provider selection can remain independent of SolidDesign architecture.
-
-Never expose a secret/service-role credential to browser code. Browser access uses the Supabase publishable key with least-privilege grants, RLS and narrow RPC/server capabilities.
-
-## 14. Work distribution
-
-Prospect responsibility is explicit and separate from system role:
+## 15. Work distribution
 
 ```text
 CASE_LEAD   = dossierhouder
@@ -387,51 +303,33 @@ DESIGN      = design
 OUTREACH    = outreach & opvolging
 ```
 
-One primary person owns each responsibility per prospect.
+`Mijn werk` and work-distribution filters are derived from assignments. Do not create task, portfolio or capacity state merely to reproduce the same information.
 
-`Mijn werk` and Prospect work-distribution filters are derived from assignments. Do not create task, portfolio or capacity state merely to reproduce the same information.
+## 16. Public prospect delivery
 
-Material business actions are actor-attributed in `events`; navigation/click telemetry is not.
-
-## 15. Public prospect delivery
-
-The stable business identity is:
+Stable business identity:
 
 ```text
 prospects.public_slug
 ```
 
-Current temporary public route:
+Current temporary route:
 
 ```text
 https://soliddesign-cms.pages.dev/prospect/<slug>
 ```
 
-Preferred final route after brand/domain selection:
+Every pre-sale public page remains `noindex, nofollow, noarchive`.
 
-```text
-https://<brand>.nl/<slug>
-```
-
-Both are delivery configurations over the same prospect/LIVE state. Do not store the full hostname as prospect identity.
-
-The public resolver serves the current LIVE artifact while keeping the prospect-facing slug visible. UUID `/p/...` routes are technical/internal compatibility paths, not the communication URL.
-
-Every pre-sale public page must remain `noindex, nofollow, noarchive`.
-
-## 16. Employee public-page QA
+## 17. Employee public-page QA
 
 Normal internal design/review uses the CMS and should not create external prospect engagement.
 
-When an employee must inspect the exact public prospect page, use the CMS employee-test action. It obtains a short-lived server-signed token bound to the prospect slug. Only a valid token classifies that opening as `INTERNAL`.
+When an employee must inspect the exact public prospect page, use the CMS employee-test action with the existing short-lived server-signed token. Do not invent IP-based recognition or guessable query flags.
 
-Do not invent IP-based employee recognition or a guessable `?internal=1` convention.
+## 18. Engagement and outreach
 
-## 17. Engagement and outreach
-
-Engagement exists to improve timing and quality of human follow-up, not to identify a visitor.
-
-MVP response signals:
+MVP signals remain:
 
 - first/last external opening;
 - opening count;
@@ -442,11 +340,9 @@ MVP response signals:
 
 No raw IP, IP hash, fingerprint, persistent visitor identifier, heatmap or session replay.
 
-Telemetry is fail-open: if measurement fails, the prospect page must still load.
-
 Engagement never automatically changes contact status or assigns a lead score. A human decides the next commercial action.
 
-## 18. Archive and delete
+## 19. Archive and delete
 
 Archive is orthogonal to lifecycle:
 
@@ -455,34 +351,32 @@ archived_at IS NULL     = active
 archived_at IS NOT NULL = archived
 ```
 
-Archive preserves state/history. Hard delete is a narrow administrative correction path and is blocked when meaningful commercial history exists.
+Archive preserves state/history. Hard delete remains a narrow administrative correction path.
 
-## 19. Deployment and verification
+## 20. Deployment and verification
 
 There is one Cloudflare Pages project: `soliddesign-cms`.
 
 - push to `main` deploys production;
-- pull requests deploy to an isolated Pages preview branch in the **same project**;
-- the Pages Functions `/api/*` boundary requires active `team_members` membership before normal endpoint execution;
-- Prompt Library repository writes have an additional production-origin guard;
-- the deployment smoke verifies canonical prompt/research resources, preview write rejection, representative CMS/public routes and browser Edge-Function CORS boundaries.
+- pull requests deploy to an isolated Pages preview branch in the same project;
+- Pages Functions `/api/*` require active team membership where applicable;
+- Prompt Library writes have an additional production-origin guard;
+- deployment smoke verifies discovery, prospect-first Design, canonical prompt/research resources, public delivery and browser Edge-Function boundaries.
 
-Supabase Edge Functions are deployed from the exact source under `supabase/functions/`. A repository change to an Edge Function is not complete until the affected function has been deployed and the deployed source has been re-read or otherwise checked against the repository revision. See `supabase/README.md`.
-
-Do not create a second Pages application merely for public branding or preview QA.
+The deploy artifact stages `prompts/`. The retired `sector-intelligence/` content root is not staged.
 
 After schema/auth/RLS/function changes:
 
-1. run CI, including authorization and evidence-merge invariants;
-2. run the Pages/runtime smoke where relevant;
-3. deploy affected Supabase Edge Functions from repository source;
-4. verify deployed Edge Function source/behavior rather than assuming source control equals production;
-5. run Supabase security advisors;
-6. reconcile current documentation if a contract changed.
+1. run CI;
+2. run Pages/runtime smoke where relevant;
+3. apply required Supabase migrations/functions from repository source;
+4. verify deployed behavior/state;
+5. run relevant Supabase security advisors;
+6. reconcile current documentation.
 
-## 20. When discovery quality is insufficient
+## 21. When quality is insufficient
 
-Do not immediately build another provider layer. First identify which current path fails:
+Identify the actual failing boundary before adding architecture:
 
 ```text
 research precision/evidence?
@@ -490,14 +384,13 @@ Overture recall/sector mapping?
 direct URL intake?
 website validity?
 operator review burden?
+prospect-specific Design quality?
 commercial conversion after promotion?
 ```
 
-Use the source provenance already stored in the system to compare qualified yield and operator effort.
+Add architecture only when measured evidence shows the existing path cannot meet the business goal.
 
-Add a fourth source only when a measured gap remains after the three current paths and map it into the same existing candidate boundary first. Generalize only after real duplication exists.
-
-## 21. Do not build without evidence
+## 22. Do not build without evidence
 
 Do not introduce merely because it is technically possible:
 
@@ -511,6 +404,6 @@ Do not introduce merely because it is technically possible:
 - second analytics datastore;
 - second public application;
 - production-site factory;
+- reusable Sector Intelligence subsystem;
+- sector template/preset architecture;
 - custom Auth invitation mailer when Supabase custom SMTP solves mail transport.
-
-Only an observed customer/operator bottleneck may promote these ideas into the roadmap.
