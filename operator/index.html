@@ -85,69 +85,76 @@
     </main>
 
     <main id="discoveryView" class="discovery-layout hidden">
-      <section class="discovery-grid">
-        <div class="card discovery-card">
-          <div class="eyebrow">Zoeken op gebied</div>
-          <h2>Zoek nieuwe prospects</h2>
-          <p class="subtle">Zoek bedrijven binnen een plaats en sector. Nederlandse sectornamen worden automatisch gekoppeld aan de juiste Overture-categorie.</p>
-          <div class="discovery-form">
-            <label>Locatie
-              <input id="discoveryLocation" type="text" maxlength="120" placeholder="Bijv. Utrecht" />
-            </label>
-            <label>Sector(en)
-              <input id="discoveryKeywords" type="text" maxlength="240" placeholder="Bijv. stukadoor, loodgieter" />
-            </label>
-            <label>Max. resultaten
-              <select id="discoveryLimit">
-                <option value="10">10</option>
-                <option value="25" selected>25</option>
-                <option value="50">50</option>
-              </select>
-            </label>
-          </div>
-          <div class="discovery-action">
-            <span class="subtle">SolidDesign bepaalt automatisch het zoekgebied en controleert de gekozen sector vóór het zoeken.</span>
-            <button id="runAreaDiscovery" type="button" class="primary">Zoek bedrijven</button>
-          </div>
-          <p class="source-note">Locatie: © OpenStreetMap contributors · Prospectdata: Overture Maps.</p>
+      <section class="discovery-page-head">
+        <h1>Bedrijven zoeken</h1>
+        <p>Vind bedrijven en voeg geschikte kandidaten toe aan Prospects.</p>
+      </section>
+
+      <section class="card discovery-search-card">
+        <div class="discovery-mode-tabs" role="tablist" aria-label="Manier van zoeken">
+          <button type="button" class="discovery-mode-tab active" data-discovery-mode="research" role="tab" aria-selected="true">
+            Gericht zoeken <span>Aanbevolen</span>
+          </button>
+          <button type="button" class="discovery-mode-tab" data-discovery-mode="area" role="tab" aria-selected="false">Breed zoeken</button>
+          <button type="button" class="discovery-mode-tab" data-discovery-mode="url" role="tab" aria-selected="false">Bekend bedrijf</button>
         </div>
 
-        <div class="card discovery-card">
-          <div class="eyebrow">Specifieke website</div>
-          <h2>Controleer een website</h2>
-          <p class="subtle">Controleert of de website bereikbaar is en voorkomt dubbele prospects. Dit is een snelle eerste check, geen volledige websitebeoordeling.</p>
+        <div class="discovery-mode-panel" data-discovery-panel="research"></div>
+
+        <div class="discovery-mode-panel hidden" data-discovery-panel="area">
+          <div class="discovery-mode-intro">
+            <h2>Breed zoeken</h2>
+            <p>Zoek snel bedrijven in een plaats en sector.</p>
+          </div>
+          <div class="discovery-form discovery-form-simple">
+            <label>Plaats
+              <input id="discoveryLocation" type="text" maxlength="120" placeholder="Bijv. Utrecht" />
+            </label>
+            <label>Sector
+              <input id="discoveryKeywords" type="text" maxlength="240" placeholder="Bijv. loodgieter" />
+            </label>
+            <input id="discoveryLimit" type="hidden" value="10" />
+          </div>
+          <div class="discovery-mode-actions">
+            <button id="runAreaDiscovery" type="button" class="primary">Zoek bedrijven</button>
+          </div>
+          <p class="source-note">Bronnen: OpenStreetMap en Overture Maps.</p>
+        </div>
+
+        <div class="discovery-mode-panel hidden" data-discovery-panel="url">
+          <div class="discovery-mode-intro">
+            <h2>Bekend bedrijf</h2>
+            <p>Heb je al een bedrijf op het oog? Controleer de website en voorkom duplicaten.</p>
+          </div>
           <label>Website
             <input id="discoveryUrl" type="url" inputmode="url" placeholder="https://bedrijf.nl" />
           </label>
-          <div class="discovery-action">
-            <span class="subtle">Onbereikbare websites kunnen direct worden afgewezen; bereikbare websites worden toegevoegd aan de beoordelingslijst.</span>
-            <button id="runUrlDiscovery" type="button" class="primary">Controleer website</button>
+          <div class="discovery-mode-actions">
+            <button id="runUrlDiscovery" type="button" class="primary">Controleer bedrijf</button>
           </div>
         </div>
       </section>
 
       <p id="discoveryMessage" class="message discovery-message" aria-live="polite"></p>
 
-      <section class="card">
+      <section class="card discovery-results-card">
         <div class="section-heading">
           <div>
-            <h3>Gevonden bedrijven</h3>
-            <p class="subtle">Beoordeel gevonden bedrijven en voeg geschikte kandidaten toe aan Prospects.</p>
+            <h3>Kandidaten</h3>
+            <p class="subtle">Bekijk eerst de kansrijke kandidaten. Details zijn beschikbaar wanneer je ze nodig hebt.</p>
           </div>
           <button id="refreshDiscoveryBtn" type="button" class="ghost">Vernieuwen</button>
         </div>
         <div id="discoveryCandidates" class="candidate-list"></div>
       </section>
 
-      <section class="card">
-        <div class="section-heading">
-          <div>
-            <h3>Recente zoekopdrachten</h3>
-            <p class="subtle">Overzicht van recent uitgevoerde zoekopdrachten.</p>
-          </div>
-        </div>
+      <details class="card discovery-history">
+        <summary>
+          <span>Recente zoekopdrachten</span>
+          <span id="discoveryHistoryCount" class="subtle"></span>
+        </summary>
         <div id="discoveryRuns" class="run-list"></div>
-      </section>
+      </details>
     </main>
   </div>
 
