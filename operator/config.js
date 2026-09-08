@@ -15,7 +15,6 @@ import('./mockup-policy.js').catch((error) => console.error('Mock-up publicatieb
 import('./dossier-tabs.js').catch((error) => console.error('Dossierweergave kon niet laden.', error));
 import('./mailing-artifacts.js').catch((error) => console.error('Printmailingversies konden niet laden.', error));
 import('./engagement-ui.js').catch((error) => console.error('Digitale respons kon niet laden.', error));
-import('./discovery-triage.js').catch((error) => console.error('Discovery-triage kon niet laden.', error));
 import('./qualification-display.js').catch((error) => console.error('Kwalificatieweergave kon niet laden.', error));
 import('./prompt-invocation.js')
   .then(() => Promise.all([
