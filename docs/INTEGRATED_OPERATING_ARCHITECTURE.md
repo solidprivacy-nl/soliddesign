@@ -85,6 +85,30 @@ Remains the one operational business-state plane:
 
 Prompt bodies are not duplicated into Supabase content tables.
 
+## Delivery origins
+
+Current rollout:
+
+```text
+INTERNAL
+https://soliddesign-cms.pages.dev
+
+PUBLIC
+https://soliddesign-cms.pages.dev/prospect/<public_slug>
+```
+
+Preferred final host shape remains configuration, not business identity:
+
+```text
+INTERNAL
+https://cms.<brand>.nl
+
+PUBLIC
+https://<brand>.nl/<public_slug>
+```
+
+`prospects.public_slug` remains the durable prospect-facing identity. A later hostname cutover must not create a second prospect or delivery-state model.
+
 ## Identity and governance
 
 Durable application membership is `team_members` using the stable Supabase Auth UUID.
@@ -302,16 +326,10 @@ External concept links are review escape hatches, not a second production path.
 
 ## Public delivery
 
-Canonical temporary route:
-
-```text
-/prospect/<public_slug>
-```
-
 Canonical mapping:
 
 ```text
-slug
+public_slug
 → prospect
 → current LIVE demo
 → stored immutable artifact
