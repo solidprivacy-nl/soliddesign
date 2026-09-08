@@ -61,6 +61,19 @@
     return data;
   }
 
+  function setDiscoveryMode(mode) {
+    const target = ['research', 'area', 'url'].includes(mode) ? mode : 'research';
+    discoveryView?.querySelectorAll('[data-discovery-mode]').forEach((button) => {
+      const active = button.dataset.discoveryMode === target;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-selected', String(active));
+    });
+    discoveryView?.querySelectorAll('[data-discovery-panel]').forEach((panel) => {
+      panel.classList.toggle('hidden', panel.dataset.discoveryPanel !== target);
+    });
+    setMessage('');
+  }
+
   function showProspects() {
     prospectsView.classList.remove('hidden');
     discoveryView.classList.add('hidden');
@@ -198,28 +211,39 @@
     }
   }
 
+  function runLabel(run) {
+    if (run.run_type === 'IMPORT') return 'Gericht zoeken';
+    if (run.run_type === 'AREA') return 'Breed zoeken';
+    return 'Bekend bedrijf';
+  }
+
+  function runInput(run) {
+    if (run.run_type === 'AREA') return `${run.input?.location || '—'} · ${(run.input?.keywords || []).join(', ')}`;
+    if (run.run_type === 'IMPORT') return `${run.input?.location || '—'} · ${run.input?.sector || '—'}`;
+    return run.input?.url || '—';
+  }
+
   async function loadRuns() {
     const list = el('discoveryRuns');
+    const countNode = el('discoveryHistoryCount');
     const { data, error } = await db.from('discovery_runs')
       .select('id,run_type,input,status,found_count,new_count,qualified_count,disqualified_count,result,error,started_at,completed_at,created_at')
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(5);
     if (error) throw error;
+    if (countNode) countNode.textContent = data?.length ? String(data.length) : '';
     if (!data?.length) {
-      list.innerHTML = '<div class="list-empty">Nog geen discovery-runs.</div>';
+      list.innerHTML = '<div class="list-empty">Nog geen zoekopdrachten.</div>';
       return;
     }
     list.innerHTML = data.map((run) => {
-      const input = run.run_type === 'AREA'
-        ? `${run.input?.location || '—'} · ${(run.input?.keywords || []).join(', ')}`
-        : run.input?.url || '—';
       const counts = run.status === 'COMPLETED'
         ? `${run.found_count} gevonden · ${run.new_count} nieuw`
         : run.status;
       return `<div class="run-row">
         <div>
-          <strong>${escapeHtml(input)}</strong>
-          <span>${escapeHtml(run.run_type)} · ${escapeHtml(formatDate(run.created_at))}</span>
+          <strong>${escapeHtml(runInput(run))}</strong>
+          <span>${escapeHtml(runLabel(run))} · ${escapeHtml(formatDate(run.created_at))}</span>
           ${run.error ? `<small class="error-text">${escapeHtml(run.error)}</small>` : ''}
         </div>
         <span class="run-status ${escapeHtml(run.status.toLowerCase())}">${escapeHtml(counts)}</span>
@@ -231,7 +255,7 @@
     const list = el('discoveryCandidates');
     const rows = await rpc('operator_list_discovery_candidates') || [];
     if (!rows.length) {
-      list.innerHTML = '<div class="list-empty">Geen kandidaten in de Discovery-inbox.</div>';
+      list.innerHTML = '<div class="list-empty">Nog geen kandidaten.</div>';
       return;
     }
     list.replaceChildren(...rows.map(buildCandidateRow));
@@ -240,18 +264,15 @@
   function buildCandidateRow(row) {
     const wrap = document.createElement('div');
     wrap.className = 'candidate-row';
-    const score = Number.isFinite(Number(row.qualification?.total_score))
-      ? `${Number(row.qualification.total_score)}/25`
-      : 'nog niet gescoord';
     wrap.innerHTML = `
       <div class="candidate-main">
         <div><strong>${escapeHtml(row.name)}</strong><span>${escapeHtml(row.city || row.category || '')}</span></div>
-        <small>${escapeHtml(row.state)} · ${escapeHtml(row.discovery_source || '—')} · ${escapeHtml(score)}</small>
+        <small>${escapeHtml(row.discovery_source || '—')}</small>
       </div>
       <div class="compact-actions">
         <a href="${escapeHtml(row.website_url)}" target="_blank" rel="noopener">Website ↗</a>
         ${row.state === 'DISCOVERED'
-          ? '<button type="button" class="secondary" data-action="reject">Diskwalificeer</button>'
+          ? '<button type="button" class="secondary" data-action="reject">Afwijzen</button>'
           : '<button type="button" class="secondary" data-action="reopen">Heropen</button>'}
         <button type="button" class="danger" data-action="delete">Verwijder</button>
       </div>`;
@@ -403,7 +424,7 @@
           AND length(websites) > 0
           AND (operating_status IS NULL OR operating_status <> 'permanently_closed')
           ${filters ? `AND (${filters})` : ''}
-        LIMIT ${Math.min(Math.max(Number(limit) || 25, 1), 50)}
+        LIMIT ${Math.min(Math.max(Number(limit) || 10, 1), 50)}
       `;
       const table = await conn.query(sql);
       return table.toArray().map((row) => row.toJSON());
@@ -451,20 +472,17 @@
     const button = el('runAreaDiscovery');
     const location = el('discoveryLocation').value.trim();
     const keywords = parseKeywords(el('discoveryKeywords').value);
-    const limit = Number(el('discoveryLimit').value || 25);
-    if (!location) return setMessage('Vul een locatie in.', true);
-    if (!keywords.length) return setMessage('Vul minimaal één keyword in.', true);
+    const limit = Number(el('discoveryLimit')?.value || 10);
+    if (!location) return setMessage('Vul een plaats in.', true);
+    if (!keywords.length) return setMessage('Vul een sector in.', true);
 
     button.disabled = true;
-    setMessage('Discovery-run starten…');
+    setMessage('Bedrijven zoeken…');
     let runId = null;
     try {
       runId = await createRun('AREA', { location, keywords, limit });
-      setMessage('Locatie bepalen…');
       const bbox = await geocode(location);
-      setMessage('Overture-release bepalen…');
       const release = await latestOvertureRelease();
-      setMessage('Overture doorzoeken in de browser…');
       const rows = await searchOverture(bbox, keywords, limit, release);
       const candidates = overtureCandidates(rows, release);
       const ingest = await rpc('operator_ingest_discovery_candidates', {
@@ -486,7 +504,7 @@
         },
         error: null
       });
-      setMessage(`${ingest.found_count || 0} gevonden · ${ingest.new_count || 0} nieuw. Nieuwe kandidaten staan in de Discovery-inbox.`);
+      setMessage(`✓ ${ingest.found_count || 0} gevonden · ${ingest.new_count || 0} nieuw. Bekijk de kandidaten hieronder.`);
       await refreshDiscovery();
     } catch (error) {
       if (runId) await failRun(runId, error);
@@ -518,7 +536,7 @@
     if (!value) return setMessage('Vul een website-URL in.', true);
 
     button.disabled = true;
-    setMessage('Website onderzoeken…');
+    setMessage('Bedrijf controleren…');
     let runId = null;
     try {
       runId = await createRun('URL', { url: value });
@@ -568,8 +586,9 @@
         result: { site_check: check, existing_count: ingest.existing_count || 0 },
         error: null
       });
-      const verdict = state === 'DISQUALIFIED' ? 'objectief gediskwalificeerd op bereikbaarheid' : 'toegevoegd als DISCOVERED voor verdere evidence-gated kwalificatie';
-      setMessage(ingest.new_count ? `Website ${verdict}.` : 'Dit domein bestond al; er is geen duplicaat aangemaakt.');
+      if (!ingest.new_count) setMessage('Dit bedrijf stond al in SolidDesign; er is geen duplicaat gemaakt.');
+      else if (state === 'DISQUALIFIED') setMessage('Website niet bereikbaar. Het bedrijf staat onder Afgewezen.');
+      else setMessage('✓ Bedrijf gecontroleerd en toegevoegd aan Kandidaten.');
       await refreshDiscovery();
     } catch (error) {
       if (runId) await failRun(runId, error);
@@ -579,6 +598,11 @@
       button.disabled = false;
     }
   }
+
+  discoveryView?.querySelectorAll('[data-discovery-mode]').forEach((button) => {
+    button.addEventListener('click', () => setDiscoveryMode(button.dataset.discoveryMode));
+  });
+  setDiscoveryMode('research');
 
   el('prospectsNav')?.addEventListener('click', showProspects);
   el('discoveryNav')?.addEventListener('click', () => showDiscovery().catch((error) => setMessage(error.message, true)));

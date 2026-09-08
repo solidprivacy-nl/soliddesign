@@ -114,6 +114,27 @@ jobs:
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/" -o /tmp/operator.html
           grep -q 'SolidDesign' /tmp/operator.html
 
+          # Bedrijven zoeken is one operator task with three progressive modes.
+          grep -q 'data-discovery-mode="research"' /tmp/operator.html
+          grep -q 'data-discovery-mode="area"' /tmp/operator.html
+          grep -q 'data-discovery-mode="url"' /tmp/operator.html
+          grep -q 'Gericht zoeken' /tmp/operator.html
+          grep -q 'Breed zoeken' /tmp/operator.html
+          grep -q 'Bekend bedrijf' /tmp/operator.html
+          ! grep -q 'Max. resultaten' /tmp/operator.html
+
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/research-discovery.js" -o /tmp/research-discovery.js
+          grep -q '1. Kopieer opdracht' /tmp/research-discovery.js
+          grep -q '2. Importeer resultaat' /tmp/research-discovery.js
+          grep -q 'enriched_count' /tmp/research-discovery.js
+
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/discovery-triage.js" -o /tmp/discovery-triage.js
+          grep -q 'KANSRIJK' /tmp/discovery-triage.js
+          grep -q 'NOG BEOORDELEN' /tmp/discovery-triage.js
+          grep -q 'Waarom?' /tmp/discovery-triage.js
+          grep -q 'Toevoegen' /tmp/discovery-triage.js
+          ! grep -q 'Basischeck OK' /tmp/discovery-triage.js
+
           # Production and previews must bootstrap access from active team membership only.
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/app.js" -o /tmp/app.js
           grep -q "from('team_members')" /tmp/app.js
