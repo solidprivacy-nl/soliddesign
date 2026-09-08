@@ -269,29 +269,6 @@
   prospectsNav.addEventListener('click', leaveSectorView, true);
   discoveryNav.addEventListener('click', leaveSectorView, true);
 
-  function installDiscoveryShortcut() {
-    if (document.querySelector('[data-open-sector-intelligence]')) return;
-    const discoveryButton = document.getElementById('runAreaDiscovery');
-    const action = discoveryButton?.closest('.discovery-action');
-    if (!action) return;
-    const shortcut = document.createElement('div');
-    shortcut.className = 'discovery-action';
-    shortcut.innerHTML = '<span class="subtle"><strong>Sectorinzichten:</strong> onderzoek of beheer herbruikbare designkennis los van deze zoekopdracht.</span>';
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'secondary';
-    button.dataset.openSectorIntelligence = 'true';
-    button.textContent = 'Open sectoronderzoek';
-    shortcut.appendChild(button);
-    action.insertAdjacentElement('afterend', shortcut);
-    button.addEventListener('click', () => {
-      showSectorView({
-        sectorTerm: document.getElementById('discoveryKeywords')?.value || '',
-        location: document.getElementById('discoveryLocation')?.value || ''
-      }).catch((error) => window.alert(error.message || String(error)));
-    });
-  }
-
   async function resolveResearchContext() {
     const location = researchLocation.value.trim();
     if (!location) throw new Error('Vul eerst een startlocatie in voor het sectoronderzoek.');
@@ -580,6 +557,4 @@
     await loadSectorRows();
     await loadLinkTargets();
   }
-
-  installDiscoveryShortcut();
 })();
