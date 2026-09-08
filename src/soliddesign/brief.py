@@ -44,15 +44,14 @@ def build_conversion_brief(facts: VerifiedFacts, audit: AuditResult) -> Conversi
 
 def _customer_headline(facts: VerifiedFacts) -> str:
     services = [_headline_service_label(s) for s in facts.services if s.strip()]
-    if not services:
-        services = [_headline_service_label(facts.category)]
-
-    if len(services) >= 2:
-        subject = f"{services[0]} en {services[1]}"
+    if services:
+        subject = f"{services[0]} en {services[1]}" if len(services) >= 2 else services[0]
+        subject = _sentence_case(subject)
     else:
-        subject = services[0]
+        # Source/discovery category is not approved customer-facing copy. When no
+        # verified service exists, fall back to the verified company identity.
+        subject = facts.company_name.strip()
 
-    subject = _sentence_case(subject)
     return f"{subject} in {facts.city}." if facts.city else f"{subject}."
 
 
