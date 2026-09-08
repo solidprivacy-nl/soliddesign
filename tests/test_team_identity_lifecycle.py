@@ -23,7 +23,7 @@ class TeamIdentityLifecycleTests(unittest.TestCase):
         self.assertIn("team-avatar", team_work)
         self.assertIn("display_name", team_work)
         self.assertIn("team_members.display_name", architecture)
-        self.assertIn("primary human-readable identity", architecture)
+        self.assertIn("primary human-readable work identity", architecture)
         self.assertNotIn("avatar_url", team_work)
 
     def test_display_name_change_is_admin_only_and_actor_aware(self):
