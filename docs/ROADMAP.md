@@ -8,9 +8,10 @@ Current architecture is governed by `ENGINEERING_CONSTITUTION.md`, `docs/ARCHITE
 
 - **Gate 0 — Documentation baseline:** ✅ closed.
 - **Gate 1 — Offline component spike:** ✅ closed with CI safety invariants.
-- **Gate 2 — Live single-prospect technical test:** ✅ closed on 2026-08-25. Overture remains the canonical Phase-1 discovery source.
+- **Gate 2 — Live single-prospect technical test:** ✅ closed on 2026-08-25. Overture proved a viable discovery source; it is no longer defined as the only canonical discovery path.
+- **Gate 3 — Five-prospect operational feasibility:** ✅ technical pipeline passed. The current system can repeatedly produce safe prospect concepts without additional execution architecture.
 
-## Integrated operating model — ✅ PRODUCTION CUTOVER COMPLETE
+## Integrated operating model — ✅ production foundation complete
 
 Canonical model:
 
@@ -29,24 +30,15 @@ https://cms.<brand>.nl
 https://<brand>.nl/<public_slug>
 ```
 
-Domain names are delivery configuration; `prospects.public_slug` is prospect identity.
-
 ### M0 — Architecture & truth reconciliation ✅
 
-One application, one Cloudflare Pages project, one Supabase state plane and one stored-artifact LIVE lifecycle. Membership, responsibility and history are separate concepts. No parallel CRM/task/analytics platform was introduced.
+One application, one Cloudflare Pages project, one Supabase state plane and one stored-artifact LIVE lifecycle. Membership, responsibility and history are separate concepts.
 
 ### M1 — Team identity & invite-only access ✅ browser verified
 
-- stable Auth UUID + `team_members.display_name`;
-- `ADMIN / KEY_USER / USER`;
-- invite → activation → mandatory first password → joined member;
-- Admin/Key-user governance rules;
-- deactivate/reactivate;
-- guarded permanent deletion only for history-free/test accounts;
-- last-Admin, active-assignment and business-history safeguards;
-- role-dependent Team visibility.
+Stable Auth UUID + `team_members.display_name`, `ADMIN / KEY_USER / USER`, guarded invites/activation, deactivate/reactivate and safe deletion rules are live.
 
-Authorization truth is now only:
+Authorization truth remains:
 
 ```text
 auth.uid()
@@ -54,108 +46,236 @@ auth.uid()
 → role-aware RLS / RPC / server capability
 ```
 
-The historical `operator_allowlist` was retired on 2026-08-30 by `20260830_operator_allowlist_retirement_v01.sql`. Verified post-cutover state: table absent, RLS references `0`, function references `0`.
+The historical `operator_allowlist` is retired.
 
 ### M2 — Responsibility & actor-aware history ✅ browser verified
 
-One primary `CASE_LEAD`, `DESIGN` and `OUTREACH` per prospect; guarded reassignment; `events.actor_user_id`; human-readable Activity; `Mijn werk` derived from assignments. No task engine/co-assignee/capacity planner.
+One primary `CASE_LEAD`, `DESIGN` and `OUTREACH` per prospect; guarded reassignment; actor-aware events; `Mijn werk` derived from assignments. No task engine/capacity planner.
 
 ### M3 — Multi-user information architecture ✅ core browser verified
 
+The CMS remains one application/workspace. Current target navigation after the M7 operator-efficiency cutover is:
+
 ```text
-Mijn werk | Prospects | Bedrijven zoeken | Sectoronderzoek | Team
+Mijn werk | Prospects | Bedrijven zoeken | Prompts | Sectoronderzoek | Team
+```
+
+Prospect dossier:
+
+```text
 Overzicht | Design | Outreach | Activiteit
 ```
 
-Role-specific navigation, contextual work opening, work-distribution filters and narrow/mobile behavior are browser-verified for the integrated operating model. `Sectoronderzoek` is a supporting design-knowledge workspace added without a second application or state plane; its v0.5 release is governed by `docs/decisions/20260831_SECTOR_INTELLIGENCE_V05_CMS_BOUNDARY.md`.
-
 ### M4 — Brand-agnostic public delivery ✅ production deployed
 
-- slug → prospect → current LIVE → stored artifact;
-- new LIVE publication requires `artifact_path`;
-- public communication hides UUID routes;
-- canonical redirects preserve attribution queries;
-- `noindex, nofollow, noarchive`;
-- PR previews stay on their own origin;
-- deployment workflow smoke-tests the actual deployed CMS, membership bootstrap, public resolver, telemetry asset, CORS and bounded legacy compatibility.
+Slug → prospect → current LIVE → stored artifact, noindex public delivery, PR-preview fidelity and bounded historical compatibility remain current.
 
-Six grandfathered historical LIVE records remain behind a finite known-host compatibility path. Do not add legacy hosts. Remove that path when the count reaches zero.
-
-Final brand/domain cutover is separate: prove root `/<slug>`, nested assets and strict public-host capability boundaries on the selected hostname without copying a second resolver.
+Six grandfathered historical LIVE records remain finite transition debt. Do not add legacy hosts; remove compatibility when the count reaches zero.
 
 ### M5 — Prospect engagement MVP ✅ browser + persistence verified
 
-Authoritative 2026-08-30 acceptance evidence:
-
-```text
-EXTERNAL openings = 3
-active time total = 32 s
-max scroll = 78%
-
-INTERNAL openings = 1
-active time total = 9 s
-max scroll = 95%
-```
-
-Successful browser start/update POSTs were observed in Supabase Edge Function logs. Staff-test traffic remains separate from external prospect response. No raw IP, IP hash, fingerprint, persistent visitor identity, replay or clickstream is stored.
-
-Evidence: `docs/evidence/INTEGRATED_CMS_BROWSER_ACCEPTANCE_20260830.md`.
+External/internal openings, active time and scroll depth are persisted without raw IP, fingerprinting, visitor identity or replay. Telemetry failure never blocks the public prospect page.
 
 ### M6 — Commercial-loop integration ✅ browser verified
 
-Outreach combines physical mailing → prospect link → measured response → human next action/contact. First/last opening, count, mailing latency, active time, scroll, device/source and internal/external details are available without an analytics subsystem. Engagement never automatically changes contact status or creates a lead score.
-
-The physical mailing itself is now preserved as business evidence without adding a document-management system:
-
 ```text
 Design
-→ immutable printmailing versions
+→ immutable printmailing version
 
 Outreach
-→ select exact version
-→ register physical send
-→ mailings.artifact_id + current LIVE demo_id
+→ exact artifact + LIVE concept at send time
+→ physical mailing
+→ measured public response
+→ human next action/outcome
 ```
 
-PDF/PNG/JPG artifacts live in one private Storage bucket. The same file is shown in Design and Outreach; it is never duplicated into phase-specific state. Canonical decision: `docs/decisions/20260830_PRINT_MAILING_ARTIFACTS.md`.
+No analytics/document-management subsystem was introduced.
 
-### Sector Intelligence v0.5 — release reconciliation
+### Sector Intelligence v0.5 ✅ integrated supporting capability
 
-Sector Intelligence is supporting design evidence, not a separate product or operational state plane. The v0.5 release reconciles the earlier reusable-sector implementation around these invariants:
+Sector Intelligence remains advisory design evidence linked through one primary `canonical_sector_key`. Repository mechanics remain hidden from normal operator workflow.
+
+---
+
+# M7 — Operator efficiency + commercial-learning cutover ← ACTIVE
+
+M7 must improve the real operator path without changing SolidDesign into an orchestration platform.
+
+The two related problems are:
+
+1. reusable ChatGPT method is duplicated across operator workflows;
+2. prospect discovery needs richer evidence without replacing the proven Overture/URL paths or creating another candidate workflow.
+
+The implementation is intentionally three coherent cutovers rather than many speculative subprojects.
+
+## Cutover A — Prompt Library
+
+### Build
 
 ```text
-prospect → one primary sector → current published Sector Intelligence
+GitHub prompts/library/
+→ authenticated Prompt Library metadata API
+→ one invocation renderer
+→ CMS Prompts page
 ```
 
-- operator can explicitly assign/correct the sector, including for direct-URL prospects;
-- human market term and canonical machine identity stay separate;
-- optional `Aanvullende onderzoeksrichting` is challengeable research input;
-- research/review/linkage are CMS-native;
-- browser/CMS contracts expose no repository host, branch, PR or technical review URL;
-- one server façade owns Sector Intelligence transport;
-- authorization uses active `team_members`, never the retired allowlist;
-- no research table, reference library, many-to-many taxonomy or background job system is introduced;
-- canonical prompts/research are served to design workflows through the existing CMS deployment origin.
+Rules:
 
-Runtime/preview verification remains part of the release gate; code completion alone is not acceptance.
+- GitHub is canonical for prompt body/history;
+- no prompt table/version table in Supabase;
+- User/Key User see metadata/invocation fields, not body through CMS APIs;
+- Admin may read/create/update/delete operator prompts;
+- server derives path from validated slug and can write only `prompts/library/`;
+- existing system design prompts remain engineering-governed;
+- static Cloudflare Markdown URLs remain the ChatGPT consumption boundary;
+- current URL model does not claim strict prompt secrecy.
 
-### Production cutover evidence — 2026-08-30 ✅
+Initial authoritative entries:
 
-- accepted integrated release candidate passed PR CI/Pages smoke;
-- release PR #29 merged to `main` as `4493ec443d9b3b928914dc3d45bc0c0d06038c97`;
-- production CI #417 passed;
-- production Pages deploy #133 passed on that exact SHA;
-- `operator_allowlist` retirement migration applied successfully;
-- table absent;
-- database allowlist references = `0`;
-- three active joined team members remained intact (Admin / Key user / User);
-- printmailing artifact extension PR #31 merged as `f1e50d1a57c0cde892c93fac44ae0ed632fe0637`;
-- production CI #427 and Pages deploy #137 passed for the printmailing extension;
-- private `mailing-artifacts` bucket and required `mailings.artifact_id` are live.
+- `prospect-research`;
+- `website-design` wrapper delegating to the existing canonical Bootstrap.
 
-## M7 — Integrated operational pilot ← NEXT BUSINESS GATE
+Do not invent Logo/Flyer methodology merely to populate the library; add those through Admin when their authoritative prompt bodies are adopted.
 
-Before sending the pilot into routine production use, finish platform Auth readiness:
+### Exit evidence
+
+```text
+[ ] USER can list/fill/copy a prompt invocation
+[ ] KEY_USER can list/fill/copy a prompt invocation
+[ ] USER/KEY_USER body request is server-rejected
+[ ] ADMIN can read/create/update/delete operator prompt
+[ ] Admin write cannot escape prompts/library/
+[ ] stale SHA update/delete is rejected
+[ ] static deployed prompt URL is readable
+[ ] no prompt content exists in Supabase
+```
+
+## Cutover B — Research Discovery
+
+### Build
+
+Exactly three current intake paths remain:
+
+```text
+RESEARCH IMPORT | OVERTURE AREA SEARCH | SPECIFIC URL
+                       ↓
+                same candidate ingest
+                       ↓
+                 Discovery Inbox
+```
+
+Research flow:
+
+```text
+sector + location
+→ Prompt Library prospect-research invocation
+→ ChatGPT research
+→ canonical CSV contract
+→ validated import
+→ discovery run IMPORT
+→ discovery_source=research
+→ qualification.research
+→ existing deterministic triage
+→ same Inbox
+```
+
+One machine-readable contract serves producer and importer:
+
+```text
+prompts/contracts/prospect-research-import-v1.json
+```
+
+CSV is transport, not domain architecture.
+
+Rules:
+
+- no provider framework;
+- no candidate/research-results table;
+- existing website-key dedupe remains authoritative;
+- research and deterministic triage are separate evidence namespaces;
+- all qualification writers must preserve unrelated namespaces;
+- human promotion remains mandatory;
+- current five-factor 0–25 commercial qualification remains canonical during the pilot;
+- PDOS remains experimental/calibration evidence.
+
+### Exit evidence
+
+```text
+[ ] real research CSV imports without manual SQL
+[ ] malformed/contract-mismatched CSV fails clearly
+[ ] duplicate website is not duplicated
+[ ] research provenance/evidence persists
+[ ] deterministic triage runs on imported candidates
+[ ] triage does not erase research
+[ ] subsequent qualification does not erase research
+[ ] research evidence is usable in the one Discovery Inbox
+[ ] Overture still works
+[ ] direct URL still works
+[ ] missing full qualification displays “Nog niet uitgevoerd”
+```
+
+## Cutover C — Truth reconciliation + production proof
+
+This cutover closes implementation rather than adding features.
+
+### Code cleanup
+
+Search/remove any superseded current paths within this scope:
+
+- obsolete Overture-as-only-canonical assumptions;
+- old unused Discovery-triage loading gaps;
+- duplicate research CSV contracts;
+- prompt strings superseded by an adopted Prompt Library entry;
+- stale references to deleted discovery documentation;
+- dead imports/CSS/DOM from this change.
+
+Do not delete unrelated existing workflows merely to make the diff look cleaner.
+
+### Documentation cleanup
+
+Canonical discovery becomes:
+
+```text
+docs/DISCOVERY.md
+```
+
+`docs/DISCOVERY_OVERTURE.md` owns only Overture-source mechanics.
+
+The old standalone `docs/DISCOVERY_TRIAGE.md` is merged into `DISCOVERY.md` and removed.
+
+Prompt architecture is canonical in:
+
+```text
+docs/PROMPT_LIBRARY.md
+```
+
+Integrated architecture, security/operations and scoring documentation must match final runtime state.
+
+### Production proof
+
+Done requires:
+
+```text
+[ ] unit/static/regression suite green
+[ ] PR Pages preview smoke green
+[ ] database migration applied and verified
+[ ] production merge/deploy green
+[ ] production prompt resources smoke-tested
+[ ] role boundary tested
+[ ] one real research batch completes:
+    Prompt Library → ChatGPT → CSV → Import → Inbox
+[ ] Overture regression verified
+[ ] URL regression verified
+[ ] no stale superseded docs/code knowingly remain
+```
+
+---
+
+# M8 — Integrated operational/commercial pilot
+
+After M7 production proof, run the system with real operators and real acquisition batches.
+
+Auth readiness that still applies before routine multi-user production use:
 
 ```text
 custom SMTP through Supabase Auth
@@ -163,36 +283,106 @@ custom SMTP through Supabase Auth
 → invite delivery tested
 → password recovery tested
 → practical built-in password policy confirmed
-→ Leaked Password Protection enabled if the selected plan supports it
+→ Leaked Password Protection enabled if supported by selected plan
 ```
 
-Then pilot with multiple real operators and approximately 10–20 real prospect mailings. Validate onboarding/role clarity, handover, My Work, actor history, correct printmailing version selection, public-link/QR usability, engagement false positives/internal traffic, Outreach usefulness and maintenance burden.
+Pilot with multiple real operators and approximately 10–20 real mailings initially, then expand into Gate 4 volume.
 
-**Exit:** commercial/operational clarity must demonstrably exceed added complexity.
+Measure:
 
-## M8 — Evidence-gated extensions only
+```text
+raw candidates
+→ valid websites
+→ human review minutes
+→ promoted
+→ mailed
+→ viewed
+→ responded
+→ meeting
+→ proposal
+→ win/loss
+```
 
-Only after M7 evidence may we consider simple funnel reporting, engagement sorting, `tel:`/`mailto:` telemetry, first-view notifications, photo avatars, separate public runtime, per-dossier authorization or task management. Each requires an observed problem; roadmap presence is not authorization to build it.
+For discovery, preserve source provenance so the pilot can compare:
+
+```text
+research
+vs Overture
+vs manually known URL
+```
+
+The objective is qualified/commercial yield per real operator effort, not selecting a preferred technology in advance.
+
+**Exit:** commercial/operational clarity demonstrably exceeds added complexity.
+
+# M9 — Qualification calibration
+
+Only after sufficient real outcomes compare:
+
+```text
+existing 0–25 qualification
+research priority/signals
+full PDOS where valid
+```
+
+against:
+
+- reply;
+- positive reply;
+- meeting;
+- proposal;
+- win;
+- gross margin/support burden where known.
+
+Choose a future canonical qualification model only when evidence is material/repeatable. Then migrate and remove superseded competing logic.
+
+Do not normalize permanent multi-score architecture by default.
+
+# M10 — Evidence-gated automation only
+
+Automation is authorized only for a measured bottleneck.
+
+Possible later boundary:
+
+```text
+CMS
+→ server-side AI research
+→ structured result
+→ same candidate intake
+```
+
+Potential justifications:
+
+- clipboard/CSV handoff becomes a dominant source of operator time/errors;
+- research volume materially increases;
+- strict prompt secrecy becomes a real requirement;
+- structured automated research demonstrably reduces cost/error without weakening evidence quality.
+
+Until then, manual ChatGPT invocation + validated CSV import is the canonical smallest solution.
+
+No queues, generalized agents, production-site factory, richer orchestration or server-side AI execution merely because they are technically possible.
+
+---
 
 # Business evidence gates
 
-- **Gate 3 — Five-prospect operational feasibility:** prove real prospect packs can be produced safely and consistently with measured effort/cost.
-- **Gate 4 — 30–50 physical-mail offer validation:** measure `raw → valid → audited → qualified → mailed → viewed → responded`, response/meeting rates, cost and human minutes.
+- **Gate 4 — 30–50 physical-mail offer validation:** measure `raw → valid → promoted → mailed → viewed → responded`, meeting rate, cost and human minutes, including discovery-source provenance.
 - **Gate 5 — Pricing / first customer:** validate accepted price, sales/delivery effort, corrections, external cost, gross margin and support burden.
-- **Gate 6 — 100+ prospect learning:** only at sufficient outcome volume compare qualification/engagement with responses, meetings, proposals, wins and gross margin.
-- **Gate 7 — Automate proven bottlenecks:** no queues, richer orchestration, agentic workflows or production-site factory until observed friction earns them.
+- **Gate 6 — 100+ prospect learning:** compare discovery/qualification evidence with responses, meetings, proposals, wins and gross margin.
+- **Gate 7 — Automate proven bottlenecks:** only observed friction may earn queues, API-based research or other orchestration.
 
-## Roadmap rules
+# Roadmap rules
 
 1. Customer value and commercial learning lead; technology follows.
-2. Prefer derived views over new state and proven platform capability over new services.
-3. Prefer explicit human actions over hidden automation until evidence justifies automation.
-4. Domain names are delivery configuration, not business identity.
-5. Auth redirects use validated internal origins; Auth mail transport remains a Supabase platform concern.
-6. Human workflow identity is Auth UUID + display name; e-mail is account metadata.
-7. Deactivation preserves history; permanent deletion is only for history-free cleanup accounts.
-8. Active `team_members` is the sole durable membership-authorization truth.
-9. Transitional compatibility must shrink and have an explicit removal condition.
-10. Browser appearance is not persistence evidence; verify authoritative state for stateful features.
-11. Designed artifacts and operational events remain separate facts unless one exact reference connects them.
+2. One application and one operational state plane remain default.
+3. GitHub is reusable method/content history; Supabase is business state.
+4. Prefer derived views over new state.
+5. Prefer explicit human decisions over hidden automation until outcomes justify change.
+6. Discovery source is provenance, not workflow identity.
+7. CSV is current transport; the validated candidate boundary is the durable domain contract.
+8. Workflow `QUALIFIED` is not evidence that full qualification was completed.
+9. Current qualification is not replaced merely because a richer model exists.
+10. Transitional compatibility must shrink after verified cutover.
+11. Browser appearance is not persistence/authorization evidence; verify authoritative state.
 12. No subsystem is added merely because it appears on this roadmap.
+13. A milestone is not Done while replaced code or contradictory documentation remains current in the repository.
