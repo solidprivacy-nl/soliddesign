@@ -27,6 +27,22 @@
   margin: 0 auto;
   padding: clamp(22px, 4vw, 48px);
 }
+/* Shared by the dedicated Sectoronderzoek view; Bedrijven zoeken itself uses one search card. */
+.discovery-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr);
+  gap: 14px;
+}
+.discovery-card { margin: 0; }
+.discovery-card h2 { margin: 7px 0 8px; font-size: 24px; }
+.discovery-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+}
+.discovery-action .subtle { max-width: 540px; font-size: 12px; }
 .discovery-page-head { margin-bottom: 18px; }
 .discovery-page-head h1 { margin: 0 0 5px; font-size: clamp(26px, 3vw, 34px); }
 .discovery-page-head p { margin: 0; color: var(--muted); font-size: 14px; }
@@ -343,6 +359,7 @@ summary.triage-group-heading::after {
 @media (max-width: 900px) {
   .topbar { flex-wrap: wrap; }
   .main-nav { order: 3; width: 100%; margin-left: 0; }
+  .discovery-grid { grid-template-columns: 1fr; }
   .triage-assessment { grid-template-columns: 1fr; }
   .research-import-step { grid-template-columns: 1fr; align-items: stretch; }
 }
@@ -350,7 +367,7 @@ summary.triage-group-heading::after {
   .discovery-mode-tabs { display: grid; grid-template-columns: 1fr; }
   .discovery-mode-tab { justify-content: space-between; }
   .discovery-form, .discovery-form-simple { grid-template-columns: 1fr; }
-  .research-step, .run-row, .candidate-row, .archive-row {
+  .discovery-action, .research-step, .run-row, .candidate-row, .archive-row {
     align-items: stretch;
     grid-template-columns: 1fr;
     flex-direction: column;
