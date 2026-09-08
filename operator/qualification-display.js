@@ -11,13 +11,13 @@
     const text = String(value.textContent || '').trim();
     const hasFullScore = /^\d+(?:\.\d+)?$/.test(text);
     if (!hasFullScore) {
-      value.textContent = 'Nog niet uitgevoerd';
-      if (scale) scale.hidden = true;
+      if (text !== 'Nog niet uitgevoerd') value.textContent = 'Nog niet uitgevoerd';
+      if (scale && !scale.hidden) scale.hidden = true;
       return;
     }
     if (scale) {
-      scale.textContent = '/ 25';
-      scale.hidden = false;
+      if (scale.textContent !== '/ 25') scale.textContent = '/ 25';
+      if (scale.hidden) scale.hidden = false;
     }
   }
 
