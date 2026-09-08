@@ -141,6 +141,8 @@ jobs:
           grep -q 'Beoordelen' operator/sector-intelligence-ui.js
           grep -q 'Publiceer' operator/sector-intelligence-ui.js
           grep -q 'Afwijzen' operator/sector-intelligence-ui.js
+          ! grep -q 'Open sectoronderzoek' operator/sector-intelligence-ui.js
+          ! grep -q 'installDiscoveryShortcut' operator/sector-intelligence-ui.js
           ! grep -Eqi 'source_url|review_url|github\.com|api\.github\.com' operator/sector-intelligence-ui.js
           test ! -e operator/functions/api/publish-sector-intelligence.js
           grep -q 'GITHUB_SECTOR_INTELLIGENCE_TOKEN' operator/functions/api/sector-intelligence.js
@@ -155,16 +157,32 @@ jobs:
           grep -q "site_kind: 'LINKHUB'" operator/functions/api/site-check.js
           grep -q 'Alleen een linkhub aangetroffen' operator/functions/api/site-check.js
           grep -q '/api/prepare-prospect' operator/discovery-triage.js
-          grep -q 'Technisch rapport en eerste mock-up worden voorbereid' operator/discovery-triage.js
           grep -q 'discovery-triage-v1' operator/functions/api/site-check.js
-          grep -q 'Voeg toe aan Prospects' operator/discovery-triage.js
+          grep -q 'Toevoegen' operator/discovery-triage.js
+          grep -q 'Waarom?' operator/discovery-triage.js
           grep -q 'row.qualification?.research' operator/discovery-triage.js
           grep -q 'Verbeterkans' operator/discovery-triage.js
-          grep -q 'Basischeck OK' operator/discovery-triage.js
-          grep -q 'AANBEVOLEN' operator/discovery-triage.js
+          grep -q 'KANSRIJK' operator/discovery-triage.js
+          grep -q 'NOG BEOORDELEN' operator/discovery-triage.js
           grep -q 'LAGE PRIORITEIT' operator/discovery-triage.js
-          grep -q 'triage-score' operator/discovery.css
+          grep -q 'collapsed: true' operator/discovery-triage.js
+          ! grep -q 'Voeg toe aan Prospects' operator/discovery-triage.js
+          ! grep -q 'Bekijk beoordeling' operator/discovery-triage.js
+          ! grep -q 'Basischeck OK' operator/discovery-triage.js
+          ! grep -q 'triage-score' operator/discovery.css
           grep -q 'candidate-more-panel' operator/discovery.css
+          grep -q 'data-discovery-mode="research"' operator/index.html
+          grep -q 'data-discovery-mode="area"' operator/index.html
+          grep -q 'data-discovery-mode="url"' operator/index.html
+          grep -q 'Gericht zoeken' operator/index.html
+          grep -q 'Breed zoeken' operator/index.html
+          grep -q 'Bekend bedrijf' operator/index.html
+          ! grep -q 'Max. resultaten' operator/index.html
+          ! grep -q 'Zoek nieuwe prospects' operator/index.html
+          ! grep -q 'Controleer een website' operator/index.html
+          grep -q '1. Kopieer opdracht' operator/research-discovery.js
+          grep -q '2. Importeer resultaat' operator/research-discovery.js
+          grep -q 'enriched_count' operator/research-discovery.js
           grep -q 'prospectDecisionSignals' operator/app.js
           grep -q 'Basischeck probleem' operator/app.js
           grep -q 'prospect-signal' operator/styles.css
@@ -198,6 +216,7 @@ jobs:
           grep -q 'papaparse@5.7.0' operator/research-discovery.js
           grep -q 'qualification.research' docs/DISCOVERY.md
           grep -q 'qualification.triage' docs/DISCOVERY.md
+          grep -q 'Show the decision; hide the machinery' docs/DISCOVERY.md
           grep -q "'AREA','URL','IMPORT'" supabase/migrations/20260908_research_discovery_import_v01.sql
           grep -q 'Nog niet uitgevoerd' operator/qualification-display.js
           grep -q 'Stage canonical design resources' .github/workflows/deploy-operator.yml
