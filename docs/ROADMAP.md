@@ -1,6 +1,6 @@
 # Roadmap
 
-SolidDesign is evidence-gated: code completion is not success; runtime/business evidence closes a milestone.
+SolidDesign is evidence-gated: code completion is not business validation. Technical cutovers close on implementation + verification + cleanup; operator/commercial assumptions close only on real operating evidence.
 
 Current architecture is governed by `ENGINEERING_CONSTITUTION.md`, `docs/ARCHITECTURE.md`, `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`, `docs/SECURITY.md`, `docs/OPERATIONS.md`, this roadmap and the latest accepted ADR for the subject. Historical plans/evidence explain decisions but do not override current state.
 
@@ -8,8 +8,8 @@ Current architecture is governed by `ENGINEERING_CONSTITUTION.md`, `docs/ARCHITE
 
 - **Gate 0 — Documentation baseline:** ✅ closed.
 - **Gate 1 — Offline component spike:** ✅ closed with CI safety invariants.
-- **Gate 2 — Live single-prospect technical test:** ✅ closed on 2026-08-25. Overture proved a viable discovery source; it is no longer defined as the only canonical discovery path.
-- **Gate 3 — Five-prospect operational feasibility:** ✅ technical pipeline passed. The current system can repeatedly produce safe prospect concepts without additional execution architecture.
+- **Gate 2 — Live single-prospect technical test:** ✅ closed on 2026-08-25. Overture proved a viable discovery source; it is not the only discovery path.
+- **Gate 3 — Five-prospect operational feasibility:** ✅ technical pipeline passed. The system can repeatedly produce safe prospect concepts without additional execution architecture.
 
 ## Integrated operating model — ✅ production foundation complete
 
@@ -54,7 +54,7 @@ One primary `CASE_LEAD`, `DESIGN` and `OUTREACH` per prospect; guarded reassignm
 
 ### M3 — Multi-user information architecture ✅ core browser verified
 
-The CMS remains one application/workspace. Current target navigation after the M7 operator-efficiency cutover is:
+Current navigation:
 
 ```text
 Mijn werk | Prospects | Bedrijven zoeken | Prompts | Sectoronderzoek | Team
@@ -97,62 +97,42 @@ Sector Intelligence remains advisory design evidence linked through one primary 
 
 ---
 
-# M7 — Operator efficiency + commercial-learning cutover ← ACTIVE
+# M7 — Operator efficiency + research-discovery cutover ✅ production complete 2026-09-08
 
-M7 must improve the real operator path without changing SolidDesign into an orchestration platform.
+M7 improved the real operator path without turning SolidDesign into an orchestration platform.
 
-The two related problems are:
+## A. Prompt Library ✅
 
-1. reusable ChatGPT method is duplicated across operator workflows;
-2. prospect discovery needs richer evidence without replacing the proven Overture/URL paths or creating another candidate workflow.
-
-The implementation is intentionally three coherent cutovers rather than many speculative subprojects.
-
-## Cutover A — Prompt Library
-
-### Build
+Implemented production boundary:
 
 ```text
 GitHub prompts/library/
-→ authenticated Prompt Library metadata API
+→ authenticated metadata/body API
 → one invocation renderer
 → CMS Prompts page
 ```
 
-Rules:
+Current rules:
 
-- GitHub is canonical for prompt body/history;
-- no prompt table/version table in Supabase;
-- User/Key User see metadata/invocation fields, not body through CMS APIs;
+- GitHub is canonical for operator prompt body/history;
+- no prompt/version table exists in Supabase;
+- User/Key User receive metadata + invocation fields, not prompt body through the management API;
 - Admin may read/create/update/delete operator prompts;
-- server derives path from validated slug and can write only `prompts/library/`;
-- existing system design prompts remain engineering-governed;
-- static Cloudflare Markdown URLs remain the ChatGPT consumption boundary;
-- current URL model does not claim strict prompt secrecy.
+- write paths are derived from a validated slug and confined to `prompts/library/`;
+- update/delete uses current GitHub content SHA;
+- PR previews are read-only for Prompt Library repository writes;
+- system design prompts remain engineering-governed outside this CMS mutation boundary;
+- static Cloudflare Markdown URLs are the current ChatGPT consumption boundary;
+- URL invocation deliberately does not claim cryptographic prompt secrecy.
 
-Initial authoritative entries:
+Initial adopted entries:
 
 - `prospect-research`;
-- `website-design` wrapper delegating to the existing canonical Bootstrap.
+- `website-design`, delegating to the existing canonical design Bootstrap rather than duplicating it.
 
-Do not invent Logo/Flyer methodology merely to populate the library; add those through Admin when their authoritative prompt bodies are adopted.
+No Prompt Manager role, prompt DB, form builder, usage analytics, approval engine or second version model was introduced.
 
-### Exit evidence
-
-```text
-[ ] USER can list/fill/copy a prompt invocation
-[ ] KEY_USER can list/fill/copy a prompt invocation
-[ ] USER/KEY_USER body request is server-rejected
-[ ] ADMIN can read/create/update/delete operator prompt
-[ ] Admin write cannot escape prompts/library/
-[ ] stale SHA update/delete is rejected
-[ ] static deployed prompt URL is readable
-[ ] no prompt content exists in Supabase
-```
-
-## Cutover B — Research Discovery
-
-### Build
+## B. Research Discovery ✅
 
 Exactly three current intake paths remain:
 
@@ -170,112 +150,127 @@ Research flow:
 sector + location
 → Prompt Library prospect-research invocation
 → ChatGPT research
-→ canonical CSV contract
+→ prospect-research-import-v1 CSV contract
 → validated import
 → discovery run IMPORT
 → discovery_source=research
 → qualification.research
-→ existing deterministic triage
-→ same Inbox
+→ deterministic qualification.triage
+→ same Discovery Inbox
+→ explicit human promote / reject
 ```
 
-One machine-readable contract serves producer and importer:
+Production invariants:
 
-```text
-prompts/contracts/prospect-research-import-v1.json
-```
-
-CSV is transport, not domain architecture.
-
-Rules:
-
-- no provider framework;
-- no candidate/research-results table;
-- existing website-key dedupe remains authoritative;
-- research and deterministic triage are separate evidence namespaces;
-- all qualification writers must preserve unrelated namespaces;
-- human promotion remains mandatory;
+- CSV is transport, not domain architecture;
+- `prompts/contracts/prospect-research-import-v1.json` is the one producer/consumer contract;
+- website-key dedupe remains authoritative;
+- research imported for an already-known website enriches that existing record instead of creating a duplicate or discarding the research;
+- original discovery provenance remains intact during enrichment;
+- research-run ID is retained inside `qualification.research`;
+- `qualification.research`, `qualification.triage` and full qualification are merge-safe namespaces;
+- a hard deterministic website failure outranks research priority;
+- research/Overture/URL never auto-promote a prospect;
 - current five-factor 0–25 commercial qualification remains canonical during the pilot;
-- PDOS remains experimental/calibration evidence.
+- missing full qualification displays `Nog niet uitgevoerd`;
+- PDOS/WES/RDS/CPF remain experimental/calibration evidence, not parallel permanent production scoring.
 
-### Exit evidence
+No provider framework, candidate/research-results table, crawler/agent, job queue or server-side AI execution was introduced.
 
-```text
-[ ] real research CSV imports without manual SQL
-[ ] malformed/contract-mismatched CSV fails clearly
-[ ] duplicate website is not duplicated
-[ ] research provenance/evidence persists
-[ ] deterministic triage runs on imported candidates
-[ ] triage does not erase research
-[ ] subsequent qualification does not erase research
-[ ] research evidence is usable in the one Discovery Inbox
-[ ] Overture still works
-[ ] direct URL still works
-[ ] missing full qualification displays “Nog niet uitgevoerd”
-```
+## C. Truth reconciliation + production proof ✅
 
-## Cutover C — Truth reconciliation + production proof
+Current truth was consolidated rather than layered:
 
-This cutover closes implementation rather than adding features.
+- `docs/DISCOVERY.md` is canonical end-to-end discovery documentation;
+- `docs/DISCOVERY_OVERTURE.md` contains only Overture-source mechanics;
+- old `docs/DISCOVERY_TRIAGE.md` was merged into `DISCOVERY.md` and removed;
+- `docs/PROMPT_LIBRARY.md` is canonical Prompt Library documentation;
+- architecture, security, operations, scoring and Operator docs match the runtime;
+- duplicate triage loading was removed;
+- CI rejects resurrection of the deleted discovery doc and guards the new prompt/research invariants.
 
-### Code cleanup
-
-Search/remove any superseded current paths within this scope:
-
-- obsolete Overture-as-only-canonical assumptions;
-- old unused Discovery-triage loading gaps;
-- duplicate research CSV contracts;
-- prompt strings superseded by an adopted Prompt Library entry;
-- stale references to deleted discovery documentation;
-- dead imports/CSS/DOM from this change.
-
-Do not delete unrelated existing workflows merely to make the diff look cleaner.
-
-### Documentation cleanup
-
-Canonical discovery becomes:
+Verified technical evidence on 2026-09-08:
 
 ```text
-docs/DISCOVERY.md
+PR #48 exact head f834ec114abe74d55ef15aeda9c7871dc8016b5f
+→ 70 unit tests green
+→ golden/artifact safety green
+→ JS/static safety green
+→ Pages Functions build green
+→ Impeccable deterministic design gate green
+→ isolated PR Pages deployment green
+→ deployed prompt + research-contract smoke green
+→ PR-preview Prompt Library mutation rejection green
+
+Supabase
+→ discovery_runs accepts AREA | URL | IMPORT
+→ research_discovery_import_v01 applied/read back
+→ research_discovery_evidence_merge_v02 applied/read back
+→ transactional duplicate-domain merge test passed and rolled back
+→ existing source, triage and full qualification preserved while research was added
+
+main
+→ squash merge 265a147c479a1389a658ff2e73e7e760f703c92c
+→ main CI green
+→ production Pages deployment green
+→ production runtime smoke green
+→ legacy preview alias deployment green
 ```
 
-`docs/DISCOVERY_OVERTURE.md` owns only Overture-source mechanics.
-
-The old standalone `docs/DISCOVERY_TRIAGE.md` is merged into `DISCOVERY.md` and removed.
-
-Prompt architecture is canonical in:
-
-```text
-docs/PROMPT_LIBRARY.md
-```
-
-Integrated architecture, security/operations and scoring documentation must match final runtime state.
-
-### Production proof
-
-Done requires:
-
-```text
-[ ] unit/static/regression suite green
-[ ] PR Pages preview smoke green
-[ ] database migration applied and verified
-[ ] production merge/deploy green
-[ ] production prompt resources smoke-tested
-[ ] role boundary tested
-[ ] one real research batch completes:
-    Prompt Library → ChatGPT → CSV → Import → Inbox
-[ ] Overture regression verified
-[ ] URL regression verified
-[ ] no stale superseded docs/code knowingly remain
-```
+M7 is therefore technically complete. Role-by-role authenticated browser acceptance and a real operator research batch are operating evidence, not reasons to add more architecture; they move into M8.
 
 ---
 
-# M8 — Integrated operational/commercial pilot
+# M8 — Integrated operational/commercial pilot ← ACTIVE
 
-After M7 production proof, run the system with real operators and real acquisition batches.
+Run the production system with real operators and real acquisition batches. The objective is to validate operator effort and qualified/commercial yield, not to validate whether the code can deploy.
 
-Auth readiness that still applies before routine multi-user production use:
+## Operator acceptance
+
+Exercise the already-implemented boundaries with real signed-in roles:
+
+```text
+USER
+→ list/fill/copy Prompt Library invocation
+→ no management body access
+
+KEY_USER
+→ same invocation path
+→ no management body access
+
+ADMIN
+→ read/create/update/delete operator prompt
+→ stale SHA conflict behaves correctly
+→ cannot escape prompts/library/
+```
+
+This is acceptance of the implemented authorization model, not a new feature milestone.
+
+## Real research batch
+
+Run at least one complete real batch through the normal UI:
+
+```text
+Prompt Library
+→ ChatGPT research
+→ CSV
+→ Import
+→ Discovery Inbox
+→ deterministic triage
+→ human decision
+```
+
+Confirm in normal operator use:
+
+- malformed contract is rejected clearly;
+- existing-domain enrichment is understandable to the operator;
+- research evidence remains visible after deterministic triage;
+- Overture and direct URL paths remain practical alternatives;
+- no manual SQL is needed.
+
+## Auth readiness
+
+Before routine multi-user production use:
 
 ```text
 custom SMTP through Supabase Auth
@@ -286,7 +281,9 @@ custom SMTP through Supabase Auth
 → Leaked Password Protection enabled if supported by selected plan
 ```
 
-Pilot with multiple real operators and approximately 10–20 real mailings initially, then expand into Gate 4 volume.
+## Commercial pilot
+
+Start with approximately 10–20 real mailings, then expand into Gate 4 volume.
 
 Measure:
 
@@ -303,7 +300,7 @@ raw candidates
 → win/loss
 ```
 
-For discovery, preserve source provenance so the pilot can compare:
+Preserve discovery provenance so the pilot can compare:
 
 ```text
 research
@@ -311,9 +308,9 @@ vs Overture
 vs manually known URL
 ```
 
-The objective is qualified/commercial yield per real operator effort, not selecting a preferred technology in advance.
+Success criterion: qualified/commercial yield per real operator effort improves enough to justify the added research step.
 
-**Exit:** commercial/operational clarity demonstrably exceeds added complexity.
+---
 
 # M9 — Qualification calibration
 
@@ -379,10 +376,11 @@ No queues, generalized agents, production-site factory, richer orchestration or 
 4. Prefer derived views over new state.
 5. Prefer explicit human decisions over hidden automation until outcomes justify change.
 6. Discovery source is provenance, not workflow identity.
-7. CSV is current transport; the validated candidate boundary is the durable domain contract.
+7. CSV is transport; the validated candidate boundary is the durable domain contract.
 8. Workflow `QUALIFIED` is not evidence that full qualification was completed.
 9. Current qualification is not replaced merely because a richer model exists.
 10. Transitional compatibility must shrink after verified cutover.
 11. Browser appearance is not persistence/authorization evidence; verify authoritative state.
-12. No subsystem is added merely because it appears on this roadmap.
-13. A milestone is not Done while replaced code or contradictory documentation remains current in the repository.
+12. Technical implementation evidence and real operator/commercial evidence are separate gates.
+13. No subsystem is added merely because it appears on this roadmap.
+14. A milestone is not Done while replaced code or contradictory documentation remains current in the repository.
