@@ -2,9 +2,9 @@
 
 ## Objective
 
-Upgrade the pre-sale concept from a technically improved page to a materially more attractive, credible and commercially sharper local-service concept **without broadening the architecture**.
+Upgrade the pre-sale concept from a technically improved page to a materially more attractive, credible and commercially sharper concept **without broadening the architecture**.
 
-The design layer improves sales proof quality. It is not a general website-builder platform.
+The design layer improves sales-proof quality. It is not a general website-builder platform.
 
 ## Non-negotiable ground rule
 
@@ -36,14 +36,30 @@ Only one owned design contract exists: `DesignProfile`.
 
 Only one executable design donor exists in CI: `impeccable@3.6.0`.
 
+## Prospect-first design boundary
+
+Design must be grounded in the actual prospect, not in a sector/classification preset.
+
+Allowed visual inputs include:
+
+- verified brand colors;
+- verified company imagery;
+- prospect-specific website/content evidence;
+- current design state;
+- explicit operator direction.
+
+Discovery/category metadata may not choose colors, composition, imagery, trust hierarchy or CTA structure.
+
+When no verified brand color exists, the deterministic renderer uses one neutral fallback accent. It does not infer a palette from sector/category terms.
+
 ## Why premium v2 was required
 
-Gate 3 proved that premium-v1 was technically repeatable, but a full-size visual review exposed defects that deterministic QA did not catch:
+Gate 3 proved that premium-v1 was technically repeatable, but full-size visual review exposed defects deterministic QA did not catch:
 
 - long hero copy could overlap the adjacent panel;
 - the dark decorative hero panel dominated the page without adding useful information;
 - generated headlines and service copy still felt database-like;
-- location/direct-contact filler was being presented as if it were proof;
+- location/direct-contact filler was being presented as proof;
 - the final dark CTA repeated the same heavy visual mass;
 - a scanner-clean page was therefore not automatically outreach-ready.
 
@@ -90,7 +106,7 @@ Premium v2 changes craft, not architecture:
 - fake proof fillers removed;
 - muted text contrast strengthened;
 - final CTA is light and restrained;
-- small sector-aware accent routing is allowed when no verified brand color exists.
+- verified brand color may supply the accent; otherwise one neutral fallback is used.
 
 Source facts remain unchanged; only their customer-facing presentation is normalized.
 
@@ -106,7 +122,9 @@ CONCEPT WEBSITE
 = demonstrate how the business can communicate to its customer
 ```
 
-Do not publish database-like concatenations, audit language or claims about the redesign process as customer copy.
+Do not publish database-like concatenations, discovery category labels, audit language or claims about the redesign process as customer copy.
+
+If verified services are missing, use verified company identity rather than turning source taxonomy into an offer claim.
 
 ## Proof discipline
 
@@ -123,7 +141,7 @@ Never invent:
 - service areas;
 - awards.
 
-Only proof explicitly allowed by `VerifiedFacts` / reviewed enrichment may appear. If verified proof is absent, omit the proof block rather than filling it with weak facts such as city or the existence of a telephone number.
+Only proof explicitly allowed by `VerifiedFacts` / reviewed enrichment may appear. If verified proof is absent, omit the proof block rather than filling it with weak facts.
 
 ## Media strategy
 
@@ -134,8 +152,6 @@ verified_company_image_else_editorial_no_photo
 ```
 
 A clean photo-free composition is preferable to invented employees, projects, vans, offices or customer work.
-
-Verified company imagery may be added later only through a small proven input path; lack of imagery is not justification for an image-generation subsystem.
 
 ## Deterministic QA
 
@@ -164,20 +180,20 @@ Before any concept is used for outreach, review both desktop and mobile.
 A concept passes only when all five statements are true:
 
 1. **Attractiveness:** within five seconds it is visibly more attractive and composed than the weak experience it is intended to replace.
-2. **Credibility:** it looks plausible and professional for the actual business/sector.
+2. **Credibility:** it looks plausible and professional for the actual business.
 3. **Commercial clarity:** the customer proposition is understandable above the fold.
 4. **Action:** the primary CTA is obvious without hunting.
 5. **Craft:** there is no overlap, clipping, ugly word break, template filler, fake proof or obvious AI-slop pattern.
 
 A scanner pass does not override a human failure.
 
-When the failure is one-off, fix the content/case. When the same failure recurs across real cases, fix the smallest deterministic renderer rule. Do not create a framework in anticipation of variation.
+When the failure is one-off, fix the prospect/case. When the same failure recurs across real cases, fix the smallest generic design rule. Do not create a category framework in anticipation of variation.
 
 ## Current visual decision
 
-The five Gate-3 prospects were rebuilt with premium-v2 at desktop and mobile widths. The first v2 review still failed because long technical words were hyphenated awkwardly and raw service labels looked database-like. One small correction normalized hero terminology, service casing and sector accents.
+The five Gate-3 prospects were rebuilt with premium-v2 at desktop and mobile widths. Their historical test results remain evidence for renderer robustness, not a justification for category-driven styling.
 
-The second review passed the five-second gate across all five cases. This is sufficient for the first commercial experiment; it is not evidence that the renderer is a finished production-site design system.
+The current renderer therefore uses verified prospect brand information where available and a single neutral fallback where it is not.
 
 ## Explicitly rejected architecture
 
@@ -190,12 +206,13 @@ Do not add without later outcome evidence:
 - design database/server;
 - image-to-code pipeline;
 - autonomous critique loop;
-- generated React/HTML;
+- generated React/HTML framework;
 - multi-agent design team;
-- large visual-variation framework.
+- large visual-variation framework;
+- sector/category design preset system.
 
 ## Rule for future changes
 
 Commercial evidence outranks aesthetic speculation.
 
-If real outreach later shows that one composition is insufficient, the maximum first extension is **one additional deterministic composition variant** tied to a recurring business context. Do not build a template system before that evidence exists.
+If real outreach later shows that one composition is insufficient, the maximum first extension is **one additional deterministic composition variant tied to a recurring prospect need**, not a category label. Do not build a template system before evidence exists.
