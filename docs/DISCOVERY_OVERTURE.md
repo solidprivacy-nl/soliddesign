@@ -1,129 +1,65 @@
-# Overture Discovery Model — Phase 1
+# Overture Discovery Adapter
 
-**Status:** canonical Phase-1 discovery contract  
-**Primary source:** Overture Maps Places  
-**Fallback/enrichment:** optional, evidence-gated  
-**Principle:** solid but simple; no overengineering
+**Status:** supported discovery-source adapter  
+**Canonical discovery contract:** `docs/DISCOVERY.md`  
+**Principle:** broad inexpensive recall; not commercial qualification.
 
-## 1. Decision
+## 1. Role
 
-SolidDesign uses **Overture Maps Places as the canonical Phase-1 business discovery source**.
+Overture Maps Places is one current SolidDesign candidate source.
 
-Google Places is no longer required for prospect enumeration. It may be used later as optional enrichment if real experiments prove that a Google-specific signal such as rating/review volume materially improves selection quality enough to justify cost and account complexity.
-
-The resulting model is:
+Its job is deliberately narrow:
 
 ```text
-OVERTURE PLACES
-      ↓
 bounded geography
-      ↓
-sector/taxonomy filter
-      ↓
-existing website required
-      ↓
-operating-status / data-quality screening
-      ↓
-website reachability + Pitch Doctor audit
-      ↓
-human qualification
-      ↓
-selected prospects
-      ↓
-optional manual / paid enrichment only if useful
++ sector/taxonomy filter
+→ businesses with websites
+→ existing candidate intake
+→ deterministic triage
+→ Discovery Inbox
 ```
 
-This is deliberately not a multi-source discovery platform.
+Overture is no longer the definition of SolidDesign discovery. Research import and direct URL intake are equally valid entry points into the same Inbox.
 
-## 2. Why Overture
+The empirical Gate-2/Gate-3 evidence supporting continued Overture use remains valid: it can supply a sufficiently large Dutch candidate universe at negligible source cost and the existing human layer can reject poor commercial candidates.
 
-Phase 1 does not need a perfect census of every Dutch company. It needs enough valid businesses in one sector and geography to produce 5, then 30–50, credible commercial tests.
+## 2. What Overture evidence means
 
-Overture is a strong fit because:
+Overture place presence can support that a business/place record exists in the source dataset.
 
-- the Places theme contains 75M+ global real-world place records;
-- it is openly accessible without a Google Cloud project, API key or per-request billing;
-- Overture publishes cloud-hosted GeoParquet on Amazon S3 and Microsoft Azure;
-- official tooling and DuckDB can query only a bounded area;
-- place records can contain name, category/taxonomy, website, phone, address, operating status and source confidence;
-- Overture uses stable GERS IDs that can help deduplicate and track entities across releases;
-- the data is compiled from multiple providers instead of being tied to one commercial discovery API.
+It does **not** prove:
 
-Primary documentation:
+- demand;
+- reputation;
+- commercial attractiveness;
+- website redesign need;
+- Google review volume/rating;
+- complete Dutch company coverage.
 
-- https://docs.overturemaps.org/guides/places/
-- https://docs.overturemaps.org/getting-data/
-- https://docs.overturemaps.org/getting-data/cloud-sources/
-- https://docs.overturemaps.org/attribution/
+`source_confidence`, when present, is existence confidence and must never be converted into demand evidence.
 
-## 3. What Overture is not
+`operating_status` is an activity/existence signal, not a sales qualification score.
 
-Overture is **not**:
+## 3. Current query contract
 
-- the Dutch Chamber of Commerce / KvK register;
-- a guarantee that every Dutch company is present;
-- a guarantee that every record is current;
-- a demand or reputation database;
-- a substitute for website audit evidence;
-- a source of Google ratings/review counts.
-
-A record appearing in Overture means only that it is part of Overture's place data. It does not prove commercial attractiveness.
-
-## 4. Netherlands assumption
-
-We do not hard-code a claim that Overture has complete Dutch business coverage.
-
-The Phase-1 hypothesis is narrower:
-
-> For a selected Dutch sector and local geography, Overture can return enough current businesses with working websites to supply the commercial experiment at acceptable human-cleanup cost.
-
-This is measured empirically.
-
-### Netherlands coverage test
-
-For each new market/sector sample, record:
+The current Operator implements the smallest proven pattern:
 
 ```text
-raw places returned
-businesses with website
-website reachable
-correct sector
-correct geography
-apparently active
-duplicates
-stale/incorrect records
-qualified after audit
-human cleanup minutes
+place name entered by operator
+→ existing geocode boundary
+→ bounded Overture query
+→ taxonomy match
+→ website required
+→ normalized candidate rows
 ```
 
-Suggested quality ratios:
+The browser currently uses DuckDB WASM against the Overture cloud GeoParquet release discovered through the official STAC catalog.
 
-```text
-website_yield        = with_website / raw_places
-valid_record_rate    = real_current_correct / sampled_records
-audit_eligible_rate  = audit_eligible / with_website
-qualified_rate       = qualified / audited
-```
+Do not introduce a national mirror, search service or discovery backend merely to replace this proven bounded query.
 
-No arbitrary minimum is treated as universal truth. Gate 2 records the actual values and determines whether Overture alone is sufficient.
+## 4. Current taxonomy
 
-## 5. Current Overture taxonomy
-
-Overture is migrating the Places schema away from the legacy `categories` property.
-
-As of the July 22, 2026 release:
-
-- `categories` is deprecated;
-- `basic_category` is the simplified category label;
-- `taxonomy.primary` is the most specific current taxonomy label;
-- `taxonomy.hierarchy` contains the general-to-specific hierarchy;
-- `taxonomy.alternates` contains additional categories.
-
-The legacy `categories` field is announced for removal in September 2026.
-
-**SolidDesign therefore does not build new logic on `categories`.**
-
-Canonical category matching uses:
+New logic must use current Overture taxonomy fields rather than the deprecated legacy `categories` field:
 
 ```text
 basic_category
@@ -132,376 +68,102 @@ taxonomy.hierarchy
 taxonomy.alternates
 ```
 
-This is a deliberate forward-compatibility decision, not an abstraction layer.
+Sector identity in SolidDesign is separate from Overture taxonomy. Overture taxonomy is source query vocabulary; `prospects.canonical_sector_key` is the SolidDesign primary sector identity used by reusable sector intelligence/design context.
 
-Reference:
+## 5. Candidate fields
 
-- https://docs.overturemaps.org/blog/2026/07/22/release-notes/
-- https://docs.overturemaps.org/guides/places/taxonomy/
-- https://docs.overturemaps.org/schema/reference/places/types/taxonomy/
-
-## 6. Geography contract
-
-Overture queries are bounded by a rectangle:
+The adapter may provide:
 
 ```text
-west,south,east,north
-```
-
-Example shape:
-
-```text
-4.90,52.00,5.20,52.20
-```
-
-The values above illustrate format only; the operator must select a bounding box appropriate to the actual experiment.
-
-Why explicit bbox in Phase 1:
-
-- deterministic;
-- no geocoder dependency;
-- no hidden API/account;
-- easy to reproduce;
-- easy to record alongside experiment results.
-
-Do not build a geocoding service merely to make this input prettier. Add market-name resolution only if repeated operator friction proves it useful.
-
-The official Overture Python-client docs also use `west,south,east,north` bbox order.
-
-## 7. Sector contract
-
-Sector filters should use Overture taxonomy labels, not arbitrary Dutch marketing phrases.
-
-Example:
-
-```bash
-soliddesign discover \
-  --bbox "4.90,52.00,5.20,52.20" \
-  --category electrician \
-  --limit 50
-```
-
-`--category` can be repeated and is OR-matched.
-
-Example:
-
-```bash
---category electrician \
---category plumber
-```
-
-If the desired sector does not map cleanly to a taxonomy label, first inspect Overture Explorer/taxonomy. Do not solve ambiguity by introducing an LLM into discovery.
-
-## 8. Candidate fields
-
-Phase-1 `Prospect` captures:
-
-```text
-id                     SolidDesign ID
-name                   business/place name
-category               normalized Overture basic/taxonomy category
-city                   locality when available
-address                freeform address when available
-website_url            required
-phone                   optional
-place_id                Overture GERS/place ID
-discovery_source        overture
-discovery_version       Overture release ID
-source_confidence       Overture existence confidence, when present
-operating_status        Overture operating status, when present
-rating                  normally null at discovery
-review_count            normally null at discovery
-```
-
-### Important semantic rule
-
-`source_confidence` is **not a demand score**.
-
-Overture defines `confidence` as confidence that the place exists. A high value cannot be converted into evidence that the business has many customers, strong reviews or high purchase intent.
-
-Similarly, `operating_status` is an activity/existence signal, not proof of demand.
-
-## 9. Discovery filters
-
-Phase 1 applies only the filters required by the business model:
-
-### Required
-
-- bounded geography;
-- name exists;
-- website exists;
-- not marked `permanently_closed`;
-- sector/category filter when the experiment defines one.
-
-### Not required by default
-
-- phone;
-- email;
-- social profile;
-- minimum source-confidence threshold;
-- review count;
-- rating.
-
-Why no arbitrary confidence cutoff:
-
-A missing confidence value means Overture has no confidence information, not that the place is invalid. We preserve confidence as evidence and validate the website/business downstream.
-
-## 10. Existing website requirement
-
-SolidDesign targets conversion leakage on an existing website.
-
-Therefore:
-
-```text
-website missing
-→ not a Phase-1 SolidDesign prospect
-```
-
-This is the inverse of many web-agency lead generators.
-
-The website is subsequently validated for:
-
-- public HTTP(S);
-- safe network destination;
-- reachability;
-- identity match;
-- auditability.
-
-An Overture URL is discovery evidence, not automatically trusted truth.
-
-## 11. Release policy
-
-Default live behavior:
-
-```text
-official Overture STAC catalog
-→ latest release
-```
-
-The adapter records the release in `Prospect.discovery_version`.
-
-For reproducible experiments, the operator can pin:
-
-```bash
---release 2026-07-22.0
-```
-
-or set:
-
-```text
-OVERTURE_RELEASE=2026-07-22.0
-```
-
-Rules:
-
-1. commercial batches should record release ID;
-2. do not silently compare two batches as if identical when source releases differ;
-3. schema-breaking release changes require tests/docs review;
-4. no automatic donor-framework upgrade is implied by an Overture data release.
-
-## 12. Cost model
-
-For the Overture source itself:
-
-```text
-API key          none
-Google project   none
-per-request API fee  none
-```
-
-Overture describes its datasets as freely available from its public cloud sources.
-
-This does **not** mean every execution environment is universally costless: local/cloud compute, network, storage or downstream tools can still have costs.
-
-For Phase 1, measure:
-
-```text
-source API fee              €0 expected
-query runtime
-downloaded/scanned data
-operator minutes
-invalid-record cleanup
-cost per qualified prospect
-```
-
-The economic advantage matters only if data quality remains sufficient.
-
-## 13. Demand evidence after removing Google Places
-
-The business thesis remains:
-
-> Convert existing demand better.
-
-But Overture discovery does not itself prove demand.
-
-Demand becomes a **separate qualification step**.
-
-Evidence may include:
-
-- commercial-intent sector;
-- evidence that the business is established/active;
-- search visibility observed during human review;
-- review/reputation evidence observed manually or from a later lawful enrichment source;
-- local peer comparison;
-- website traffic/search evidence if legitimately available;
-- market-specific signals.
-
-Do not assign high Existing Demand merely because:
-
-- the business exists in Overture;
-- it has a website;
-- Overture confidence is high.
-
-This separation is intentional:
-
-```text
-DISCOVERY asks:
-Does this business belong in the candidate universe?
-
-QUALIFICATION asks:
-Is there enough economic demand to pursue it?
-```
-
-## 14. Optional Google use
-
-Google Places is no longer a Phase-1 dependency.
-
-Possible later uses:
-
-- targeted rating/review enrichment for the final shortlist;
-- validating whether review signals improve response/win prediction;
-- filling a proven Overture coverage gap.
-
-Rules:
-
-- no Google scraping;
-- no paid enrichment across the full raw universe by default;
-- only add an API if measured value exceeds cost/complexity;
-- keep Google-specific data optional in `Prospect`.
-
-## 15. Fallback strategy
-
-Do not start with multiple live discovery sources.
-
-Fallback ladder:
-
-```text
-1. Overture alone
-      ↓ if insufficient empirical coverage
-2. Overture + bounded OpenStreetMap/Overpass enrichment
-      ↓ if still insufficient and economics justify it
-3. targeted commercial source such as Google Places
-```
-
-A fallback is justified by evidence such as:
-
-- too few valid candidates;
-- systematic missing categories;
-- unacceptable stale-record rate;
-- missing attributes that materially improve selection.
-
-Not by architecture preference.
-
-## 16. Deduplication
-
-Use Overture's place/GERS ID as the primary source identifier when present.
-
-Additional dedupe can later use:
-
-```text
-normalized website host
-+
-normalized business name
-+
+name
+category
+city
 address
+website_url
+phone
+place_id
+discovery_source = overture
+discovery_version = Overture release
+source_confidence
+operating_status
+canonical_sector_key when one sector is resolved
 ```
 
-Do not build a generalized entity-resolution system before duplicates become operationally material.
+Rating/review fields are normally absent at discovery and must not be invented.
 
-## 17. Privacy and responsible use
+## 6. Existing website requirement
 
-Phase 1 targets business entities and business contact surfaces.
+SolidDesign's acquisition model targets leakage on an existing owned website.
 
-Rules:
+Therefore the Overture adapter requires a website URL before a record enters the candidate intake.
 
-- minimize personal data;
-- do not intentionally harvest personal/private e-mail addresses;
-- do not enrich individuals without a defined lawful purpose;
-- do not publish raw prospect datasets in this public repository;
-- retain only data required by the acquisition/learning experiment.
+The URL remains source evidence, not automatically trusted truth; downstream preflight validates the destination.
 
-Overture's own contribution guidelines seek to exclude PII, but SolidDesign must still apply its own data-minimization rules.
+## 7. Release provenance
 
-## 18. Licensing and attribution
+The adapter resolves the latest official Overture release at run time and records the release identifier in candidate/run provenance.
 
-Overture Places combines multiple permissively licensed sources.
+Do not silently compare batches from different releases as if the source snapshot were identical.
 
-SolidDesign records:
+Schema-breaking Overture changes require adapter tests and documentation review.
 
-```text
-Data source: Overture Maps Foundation
-Access date / release
-Place/GERS ID where available
-```
+## 8. Cost and operational value
 
-Use appropriate attribution when Overture data is published/displayed externally. Internal lead-selection results are still documented with source provenance.
+Overture requires no Google Cloud project and no per-request Places API fee for the current query model.
 
-See:
+Actual business cost still includes:
 
-- https://docs.overturemaps.org/attribution/
+- browser/query time;
+- data transfer/compute;
+- invalid-record cleanup;
+- operator review minutes.
 
-The runtime query engine is DuckDB; donor inspiration for the bounded Overture/DuckDB pattern was also reviewed in `Dukotah/leadgen` under MIT.
+Its continued place in SolidDesign is evidence-gated by qualified yield and human effort, not by architectural preference.
 
-## 19. Failure handling
+## 9. Deduplication
 
-Discovery must fail loudly rather than silently return a misleading empty universe when:
+Overture `place_id` remains useful source provenance.
 
-- STAC latest-release lookup fails;
-- release ID is malformed;
-- DuckDB/httpfs cannot query Overture;
-- query/schema is incompatible.
+SolidDesign's practical cross-source candidate deduplication remains the normalized website key in the existing prospect ingest.
 
-An actual empty result from a successful query is different from infrastructure failure.
+Do not build generalized entity-resolution infrastructure before actual duplicate behaviour proves it necessary.
 
-## 20. Phase-1 acceptance test
+## 10. Failure handling
 
-Gate 2 closes the Overture discovery portion when one real Dutch market/sector run proves:
+Fail explicitly when:
 
-```text
-[ ] bounded Overture query succeeds
-[ ] release ID recorded
-[ ] candidates have existing websites
-[ ] sampled records are manually checked
-[ ] stale/incorrect rate recorded
-[ ] at least one candidate reaches audit
-[ ] no Google key/billing is required
-[ ] operator time is recorded
-```
+- release lookup fails;
+- Overture source query fails;
+- DuckDB/httpfs initialization fails;
+- taxonomy/schema becomes incompatible.
 
-Gate 3 then measures repeatability over five prospects.
+A successful query returning zero candidates is different from infrastructure failure and must not be disguised as the same state.
 
-## 21. Anti-overengineering rule
+## 11. Responsible use
 
-Do not add:
+Keep public business data only to the extent required by the prospect-selection/acquisition loop.
 
+Do not enrich individual people merely because source records expose contact details.
+
+Apply Overture attribution/licensing requirements when data is published externally.
+
+## 12. Non-goals
+
+Do not add without measured need:
+
+- national Overture mirror;
+- geospatial search service;
 - Elasticsearch;
-- a geocoding microservice;
-- a map tile server;
-- a national Overture mirror;
-- multi-provider reconciliation;
+- provider reconciliation;
+- automated source enrichment;
 - entity-resolution ML;
-- a discovery agent;
 - scheduled bulk refreshes;
+- an Overture-specific candidate workflow.
 
-until the current bounded-query model is proven insufficient.
+## 13. Removal/evolution gate
 
-The canonical Phase-1 implementation is intentionally:
+Keep this adapter while it supplies useful incremental candidates at acceptable operator cost.
 
-```text
-bbox + taxonomy
-→ DuckDB
-→ Overture cloud GeoParquet
-→ Prospect[]
-```
+Remove or replace it only when real comparative discovery evidence demonstrates that it no longer earns its maintenance/operational burden.
 
-That is enough to test the business.
+All candidate workflow semantics live in `docs/DISCOVERY.md`; this document owns only Overture-specific source/query behaviour.
