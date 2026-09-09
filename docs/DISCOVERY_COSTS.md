@@ -1,14 +1,58 @@
-# Discovery Economics — Overture Primary
+# Discovery Economics
 
-## Phase-1 decision
+**Status:** current discovery-cost contract  
+**Canonical discovery workflow:** `docs/DISCOVERY.md`
 
-Overture Maps Places is the canonical discovery source.
+## Objective
 
-The goal is to eliminate provider billing/account complexity from **candidate enumeration** while measuring whether data quality remains commercially sufficient.
+Measure which supported discovery input produces useful qualified prospects with the least total operator and provider cost.
 
-## Direct source cost
+SolidDesign currently has exactly three intake paths:
 
-For the canonical path:
+```text
+RESEARCH IMPORT | OVERTURE AREA SEARCH | SPECIFIC URL
+                       ↓
+                same candidate ingest
+                       ↓
+                 Discovery Inbox
+```
+
+Discovery source is provenance, not workflow identity or architectural authority.
+
+## Cost model
+
+Compare the complete cost of a useful prospect, not only API price:
+
+```text
+provider/source cost
++ compute/data transfer
++ research time
++ invalid-record cleanup
++ human review minutes
++ maintenance/credential burden
+= effective discovery cost
+```
+
+A free source can be economically worse when it creates materially more cleanup. A paid source is not justified merely because it has richer data.
+
+## Research import
+
+Research currently uses the operator's ChatGPT workflow and the canonical CSV transport contract.
+
+Measure:
+
+- research minutes;
+- candidates returned;
+- valid owned websites;
+- evidence quality;
+- promoted prospects;
+- eventual commercial outcomes.
+
+Do not treat research rank or PDOS-style evidence as outcome truth before real acquisition results support it.
+
+## Overture area search
+
+Current direct source cost for the bounded Overture path is effectively zero:
 
 ```text
 Overture API key         none
@@ -17,13 +61,9 @@ Google Places key        none
 per-request Overture fee none
 ```
 
-Overture publishes its data openly on cloud object storage and documents it as freely available.
+Actual cost still includes browser/query time, data transfer, invalid/stale records and operator review.
 
-This does not mean every environment is universally costless. Compute, internet/network, storage and human cleanup can still have costs.
-
-## What must be measured
-
-Per market/batch:
+Measure per batch:
 
 ```text
 source release
@@ -32,60 +72,43 @@ taxonomy filters
 query runtime
 raw records
 records with website
-valid records after manual sample
+valid records
 stale/incorrect records
 duplicates
-audit-eligible records
-qualified records
-human cleanup minutes
-effective cost per qualified prospect
+promoted prospects
+human review minutes
+effective cost per promoted prospect
 ```
 
-## Important economic distinction
+## Specific URL
+
+For a known business, direct URL intake avoids enumeration cost. Its value is speed and explicit operator intent, not broad market recall.
+
+## Provider rule
+
+There is no active Google Places discovery adapter and no generalized provider fallback layer.
+
+Add a new paid/enrichment provider only after a measured current-path gap and only when incremental value exceeds:
 
 ```text
-€0 source fee
-does not imply
-€0 acquisition cost
+provider cost
++ integration maintenance
++ credentials/billing complexity
++ operator burden
 ```
 
-If Overture requires materially more manual cleanup than another source, that time belongs in Cost To Pursue.
+If a later provider is earned, it must feed the existing normalized candidate boundary and Discovery Inbox rather than creating a parallel workflow.
 
-## Google Places status
+## Optimization order
 
-Google Places is optional enrichment/fallback, not the primary source.
+1. choose the intake path that matches the actual task;
+2. keep research scope or Overture geography bounded;
+3. discard invalid/website-less candidates early;
+4. review only plausible candidates;
+5. preserve source provenance and human minutes;
+6. compare downstream promotion and commercial outcomes;
+7. add a provider only after a measured gap.
 
-It may later be tested for:
+## Economic principle
 
-- rating;
-- review count;
-- specific coverage gaps.
-
-Do not enrich the entire raw universe by default.
-
-Only adopt a paid source when measured incremental value exceeds:
-
-```text
-API cost
-+
-integration maintenance
-+
-credentials/billing complexity
-+
-operator burden
-```
-
-## Cost optimization order
-
-1. keep Overture bbox narrow enough for the actual market;
-2. use taxonomy filters;
-3. discard website-less/closed places early;
-4. audit only plausible candidates;
-5. manually enrich only shortlisted prospects;
-6. add a new provider only after a measured gap.
-
-## Sources
-
-- https://docs.overturemaps.org/getting-data/
-- https://docs.overturemaps.org/getting-data/cloud-sources/
-- https://docs.overturemaps.org/guides/places/
+> Optimize for qualified prospect yield per unit of human effort and cost, not for source volume or technical sophistication.

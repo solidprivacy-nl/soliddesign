@@ -32,35 +32,22 @@ The offline vertical slice and Gate-2 live integration are complete. Evidence li
 
 ## Components established by this phase
 
-```text
-src/soliddesign/
-├── models.py
-├── states.py
-├── qualification.py
-├── verified_facts.py
-├── brief.py
-├── discovery/
-│   ├── overture.py
-│   └── google_places.py     # optional fallback/enrichment only
-├── audit/
-│   └── adapter.py
-├── demo/
-│   └── openpage.py
-├── print_pack/
-│   └── renderer.py
-└── cli.py
-```
+The phase established the core source-neutral domain and the Overture adapter that remains in use. An experimental Google Places fallback adapter also existed in the original phase but was later retired because no measured current use case justified carrying a fourth discovery path.
 
-Stable conclusions from this phase remain valid:
+Current source tree is authoritative; this historical record must not be used as a file inventory.
 
-- Overture is the canonical discovery source unless evidence justifies a fallback;
+Stable lessons from this phase remain valid:
+
+- a free bounded source such as Overture can be sufficient to prove broad discovery technically;
 - raw external evidence remains untrusted until validated;
 - the pre-sale proof remains separate from customer production delivery;
 - deterministic logic should remain deterministic;
 - infrastructure is added only when an observed bottleneck earns it.
 
+The later source-agnostic Discovery contract supersedes the original assumption that Overture should define the overall discovery architecture. Current intake paths are documented in `docs/DISCOVERY.md`.
+
 ## No longer current planning guidance
 
-The original plan predates the integrated multi-user Operator, prospect assignments, invite workflow, public prospect resolver and engagement telemetry. Statements in earlier revisions about a server-only Supabase model, a generic static preview area, single-operator operation or the absence of role/membership state are therefore historical, not current architecture.
+The original plan predates the integrated multi-user Operator, prospect assignments, invite workflow, public prospect resolver, engagement telemetry, research import and prospect-first Design cutover. Statements in earlier revisions about a server-only Supabase model, a generic static preview area, single-operator operation, Overture as the only/default architectural discovery authority, optional Google fallback code, or the absence of role/membership state are historical, not current architecture.
 
 Do not extend those earlier concepts. Use `docs/ROADMAP.md` for current implementation work.

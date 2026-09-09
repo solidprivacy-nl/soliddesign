@@ -1,7 +1,7 @@
 # Decision — Prospect-first Design and Sector Intelligence retirement
 
 **Date:** 2026-09-09  
-**Status:** ACCEPTED  
+**Status:** ACCEPTED / IMPLEMENTED IN PRODUCTION 2026-09-09  
 **Supersedes:** ADR-015, ADR-016 and `20260831_SECTOR_INTELLIGENCE_V05_CMS_BOUNDARY.md` as current architecture.
 
 ## Problem
@@ -109,7 +109,9 @@ stable start-design URL
 current Prospect Design Brief URL
 ```
 
-The two-URL handoff remains because it is already a proven small system boundary. This cutover does not move prospect Design into the operator Prompt Library.
+The two-URL handoff remains because it is already a proven small system boundary. Required design-method resources are resolved relative to the supplied SolidDesign origin (`SOLIDDESIGN_ORIGIN`), so a normal clean ChatGPT context does not need repository/provider discovery.
+
+This cutover does not move prospect Design into the operator Prompt Library.
 
 ## Artifact lifecycle
 
@@ -150,30 +152,61 @@ Rejected. Prompt Library and the system-governed prospect Design handoff solve d
 ### Rework the old private-repository Design PR around the new model
 Rejected when the old candidate contains extensive sector-dependent UX. Sunk-cost preservation is not a reason to maintain a large stale candidate. Future provider/private-repository work should start from current `main`.
 
+### Keep an unused Google Places fallback because it may be useful later
+Rejected during final closeout. The current product has exactly three supported discovery inputs and no measured need for a fourth provider path. The unused adapter increased conceptual surface without serving an operator workflow.
+
 ## Reversibility
 
 High.
 
 Discovery-sector data remains available. If future real outcomes prove that a category-specific design rule materially improves results and cannot cleanly become part of the generic design method, a narrow conditional mechanism can be reintroduced from evidence.
 
-Do not preserve current runtime complexity merely to make that hypothetical reversal easier.
+Likewise, a future discovery provider can be added behind the existing normalized candidate boundary if comparative evidence demonstrates a material gap.
+
+Do not preserve current runtime complexity merely to make hypothetical reversal easier.
+
+## Production evidence
+
+Core cutover:
+
+```text
+PR #50: merged
+merge SHA: 73ff1ad8cb5122a242c60ca01f98bdb5798ff61d
+CI #566 / run 34317993838: SUCCESS
+Deploy Operator #223 / run 34317993847: SUCCESS
+```
+
+Database retirement:
+
+```text
+Supabase migration: 20260909061328 retire_sector_linking_v01
+operator_list_sector_link_targets() = absent
+operator_set_prospect_sector(uuid,text) = absent
+canonical_sector_key column = retained
+```
+
+The final current-truth closeout removes the unused Google Places fallback adapter and stale PR44-era repository-boundary test, converts the prospect-first boundary checks into executable `unittest` regression coverage, and reconciles current/historical discovery documentation with the three actual product intake paths.
 
 ## Acceptance
 
-The cutover is complete only when:
+The cutover is complete when:
 
 - Discovery sector inputs/resolution still work;
 - direct-URL prospects work without sector classification;
 - Prospect Design works without `canonical_sector_key`;
 - Design exposes one primary ChatGPT action;
 - Design Brief and Bootstrap perform no sector lookup;
+- clean ChatGPT handoff is self-contained through the supplied SolidDesign origin;
 - concept upload/LIVE publication remains intact;
 - printmailing Design/Outreach boundary remains intact;
 - Sector Intelligence UI/API/content and manual-linking RPCs are absent from current runtime;
 - obsolete Sector Intelligence PRs are closed;
 - old sector-dependent Design candidate work is superseded;
+- no unused fourth discovery provider remains in current runtime;
 - current docs, tests, CI and deploy smoke all enforce the same boundary;
 - production behavior and database state are verified.
+
+All technical acceptance conditions above were satisfied on 2026-09-09. Real signed-in operator acceptance remains the next business-pilot gate, not unfinished architecture work.
 
 ## Final rule
 

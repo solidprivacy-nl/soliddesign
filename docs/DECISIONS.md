@@ -61,7 +61,7 @@ Current architecture always follows the documentation precedence in `docs/ARCHIT
 
 **Historical decision:** start with the smallest proven source set rather than activating multiple providers pre-emptively.
 
-**Current expression:** Research, Overture and Specific URL are three concrete intake paths into one candidate boundary. Do not build a provider framework until real duplication earns it.
+**Current expression:** Research, Overture and Specific URL are the three concrete intake paths into one candidate boundary. There is no active Google Places fallback or generalized provider framework. A new source must be earned by a measured gap and reuse the same candidate/Inbox workflow.
 
 ## ADR-014 — Raw donor audit is evidence; prospect-facing audit is root-cause reviewed
 
@@ -105,7 +105,7 @@ The Sector Intelligence UI/API/publication flow itself is retired.
 ## ADR-017 — Prospect-first Design; sector stops at the Discovery boundary
 
 **Date:** 2026-09-09  
-**Status:** **ACCEPTED / CURRENT**  
+**Status:** **IMPLEMENTED / CURRENT IN PRODUCTION**  
 **Expanded decision:** `docs/decisions/20260909_PROSPECT_FIRST_DESIGN_SECTOR_RETIREMENT.md`
 
 ### Decision
@@ -136,6 +136,8 @@ actual prospect evidence
 - unused `prompts/sectors/` overlay hook;
 - associated API/UI/RPC/test/deploy paths.
 
+The final closeout also removes the unused Google Places fallback so Discovery has only the three product-supported intake paths rather than a hidden fourth provider.
+
 ### Prospect Design UX
 
 Normal operator flow:
@@ -146,7 +148,15 @@ Normal operator flow:
 3. Upload resultaat
 ```
 
-There is one primary ChatGPT action. Project settings are secondary. Website versioning and Printmailing/Outreach boundaries remain unchanged.
+There is one primary ChatGPT action. The two-URL handoff is self-contained through the supplied `SOLIDDESIGN_ORIGIN`; normal Design execution requires no repository/provider discovery. Project settings are secondary. Website versioning and Printmailing/Outreach boundaries remain unchanged.
+
+### Production evidence
+
+- PR #50 merged as `73ff1ad8cb5122a242c60ca01f98bdb5798ff61d`;
+- production CI #566 succeeded;
+- production Deploy Operator #223 succeeded;
+- Supabase migration `20260909061328 retire_sector_linking_v01` applied;
+- both retired sector-linking RPCs read back as absent.
 
 ### Governing rule
 

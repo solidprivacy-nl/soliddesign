@@ -10,7 +10,7 @@ These revisions were directly inspected when defining SolidDesign adapters/patte
 | `nextlevelbuilder/ui-ux-pro-max-skill` | `e353a508767c6d39f0e7698b084dbfc8699fffd3` | design-intelligence patterns only; no runtime import |
 | `TheMattBerman/landing-page-factory` | `e65fbf28662ae85aa7384d13441f0537ea08a9aa` | authority/service routing, proof/copy discipline ideas only |
 | `pbakaus/impeccable` | `fcd7622cd2d8e2b09344ba8ede9fcac82cec4e70` | deterministic design QA; CLI pinned at `3.6.0` |
-| `JackInSightsV2/Automated-Agentic-AI-Web-Agency` | `56a02463316527542f01ba5ca405445319b43204` | comparator / optional Google reference only |
+| `JackInSightsV2/Automated-Agentic-AI-Web-Agency` | `56a02463316527542f01ba5ca405445319b43204` | historical comparator / Google API pattern reference only; no current adapter |
 
 ## Data/dependency pins
 
@@ -27,4 +27,5 @@ These revisions were directly inspected when defining SolidDesign adapters/patte
 - Overture schema changes require review of discovery tests/docs.
 - Do not vendor UI/UX Pro Max, Landing Page Factory, Taste Skill, Loupe or Open Design into the application runtime.
 - Do not import JackInSights' Claude orchestration runtime; the reviewed revision invokes Claude Code with `--dangerously-skip-permissions`.
-- `DesignProfile` must remain a small deterministic contract, not an agent framework or template catalog.
+- Do not restore a Google Places adapter merely because it existed in an earlier spike; a measured current discovery gap must earn a new provider.
+- `DesignProfile` must remain a small deterministic contract, not an agent framework or template catalog; discovery category/sector is not visual direction.
