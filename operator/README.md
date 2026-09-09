@@ -12,9 +12,9 @@ SolidDesign Operator remains deliberately narrow. It supports:
 - **Prospects** — shared prospect register and dossiers;
 - **Bedrijven zoeken** — research import, Overture area search and specific URL intake into one Discovery Inbox;
 - **Prompts** — reusable operator ChatGPT methods with small per-run invocation fields;
-- **Sectoronderzoek** — reusable advisory design intelligence;
 - **Team** — invite, role/status and work-distribution view for Key users/Admins;
 - per-prospect **Overzicht / Design / Outreach / Activiteit**;
+- prospect-specific ChatGPT design handoff;
 - immutable website mock-up versions with explicit LIVE promotion;
 - immutable printmailing versions with exact physical-send attribution;
 - stable public prospect links;
@@ -35,8 +35,6 @@ OUTREACH    → Outreach & opvolging
 
 One primary assignee exists per responsibility. **Mijn werk** is derived from these assignments; no task/portfolio table exists.
 
-Opening assigned work contextually lands on the relevant dossier phase where unambiguous.
-
 ## Roles and human identity
 
 Application roles are:
@@ -47,13 +45,13 @@ KEY_USER
 USER
 ```
 
-- **Admin** — governance, all normal team lifecycle and role changes, plus operator Prompt Library administration.
+- **Admin** — governance, team lifecycle/role changes and operator Prompt Library administration.
 - **Key user** — operational coordination, User invitations and User management.
 - **User** — normal prospect/design/outreach work.
 
 There is deliberately no Owner/Eigenaar or Prompt Manager role.
 
-`team_members.display_name` is the primary visible identity. E-mail is secondary account/login metadata. Assignments and Activity use display names, with initials derived client-side; no profile-photo/avatar subsystem exists.
+`team_members.display_name` is the primary visible identity. E-mail is secondary account/login metadata.
 
 ## Invite-only onboarding and access
 
@@ -68,17 +66,6 @@ Admin / Key user
 → normal login / Mijn werk
 ```
 
-Rules:
-
-- Admin can invite User or Key user;
-- Key user can invite User only;
-- invited users are not assignable until activation is complete;
-- at least one active Admin must remain;
-- active responsibilities must be reassigned before deactivation;
-- no service/admin secret is exposed to the browser.
-
-The invite Edge Function supplies an explicit validated Auth `redirectTo`; hosted Site/Redirect URL configuration and the future `cms.<brand>.nl` cutover are defined in `docs/AUTH_REDIRECTS.md`.
-
 Authorization is one model only:
 
 ```text
@@ -87,15 +74,7 @@ Supabase Auth UUID
 → role-aware RLS / RPC / server capability
 ```
 
-The historical `operator_allowlist` was removed from production on 2026-08-30. Do not recreate a parallel membership gate.
-
-Invitation metadata used by the password-setup overlay is onboarding UX state, not authorization authority.
-
-## Deactivation versus deletion
-
-**Deactiveren** is normal offboarding and preserves historical attribution.
-
-**Verwijderen** is Admin-only cleanup for mistaken/test accounts with no active responsibilities or prospect-linked business history. The server prevents self-delete and removal of the last active Admin. If business history exists, deactivate instead.
+The historical `operator_allowlist` is retired. Do not recreate a parallel membership gate.
 
 ## Discovery workflow
 
@@ -117,7 +96,7 @@ Research uses the canonical `prospect-research` Prompt Library method and `promp
 
 The existing cheap website preflight remains under `qualification.triage`. The two evidence namespaces are merge-safe and neither is a commercial qualification by itself.
 
-Overture remains a supported high-recall source adapter. It is no longer defined as the only canonical discovery source.
+Sector is a discovery input only. `Gericht zoeken` uses sector + location as research scope; `Breed zoeken` resolves the human sector term to a valid Overture category. `canonical_sector_key` may persist as discovery/provenance metadata when naturally known. A direct-URL prospect does not need one.
 
 A candidate becomes active prospect work only after explicit human promotion. Missing full commercial qualification is shown as **Nog niet uitgevoerd**, not as an implied score.
 
@@ -135,35 +114,53 @@ The CMS **Prompts** page reads metadata and invocation fields. USER and KEY_USER
 
 No prompt body/version table exists in Supabase. Git remains history and rollback.
 
-Repository writes are narrow and server-side:
-
-- path derives from a validated slug under `prompts/library/`;
-- update/delete uses the current GitHub content SHA;
-- PR previews cannot mutate GitHub `main` through the Prompt Library;
-- GitHub credentials never enter browser code.
-
-Static deployed Markdown is intentionally readable by ChatGPT/web tooling, so the current URL model is not a strict prompt-secrecy mechanism.
+Repository writes are narrow and server-side. PR previews cannot mutate GitHub `main` through the Prompt Library.
 
 Canonical details: `docs/PROMPT_LIBRARY.md`.
 
-## Design and LIVE workflow
+## Prospect-first Design workflow
+
+The Design tab is intentionally expressed as an operator task rather than prompt/sector machinery.
+
+Primary flow:
 
 ```text
-verified prospect context
-→ design brief / ChatGPT design workflow
-→ DRAFT mock-up version
-→ review
-→ explicit Maak live
-→ stable public prospect link
+1. Kopieer designopdracht
+2. Werk in ChatGPT
+3. Upload resultaat
 ```
+
+### Websiteontwerp
+
+The normal User sees:
+
+- optional **Designinstructie**;
+- one primary **Kopieer designopdracht** action;
+- **Open ChatGPT-project ↗** only when a project URL exists;
+- **Projectinstellingen** behind progressive disclosure.
+
+`Kopieer designopdracht` saves the prospect-specific instruction, generates the current Prospect Design Brief and copies the stable start URL + current Design Brief URL. The operator does not manage a raw brief URL in the normal flow.
+
+Sector/category state does not determine design. There is no `Sector voor design`, Sector Intelligence lookup, sector improvement prompt or sector template/preset.
 
 Current design entrypoint: `https://soliddesign-cms.pages.dev/start-design`.
 
-Publishable inputs are standalone `.html` or a static-site `.zip` with root `index.html`. External HTTPS previews are DRAFT/review escape hatches only; new LIVE publication requires a canonical stored artifact.
+Canonical design contract: `docs/PROSPECT_FIRST_DESIGN.md` and `docs/DESIGN_BRIEF.md`.
 
-Internal technical routes such as `/p/<prospect-id>/` and `/p/<prospect-id>/v/<demo-id>/` are not prospect-facing communication URLs.
+### Website versions and LIVE
 
-A finite set of grandfathered historical LIVE records still uses a host/path-bounded compatibility path. Do not expand it; remove it when the historical count reaches zero.
+```text
+verified prospect context
+→ ChatGPT design workflow
+→ CONCEPT mock-up version
+→ review
+→ explicit Publiceer live
+→ stable public prospect link
+```
+
+Publishable inputs are standalone `.html` or a static-site `.zip` with root `index.html`. External HTTPS previews are secondary review escape hatches behind progressive disclosure; new LIVE publication requires a canonical stored artifact.
+
+Internal technical routes are not prospect-facing communication URLs.
 
 ## Printmailing workflow
 
@@ -180,13 +177,9 @@ OUTREACH
 → Registreer als verstuurd
 ```
 
-**Design** owns the versioned artifact because the mailing is designed output. Each new PDF/PNG/JPG upload creates a new immutable version; version numbers are derived from creation order and existing versions are never overwritten.
-
-**Outreach** owns only the physical-send fact. Registering a send stores the exact `artifact_id`, the current LIVE `demo_id` and send time in the existing `mailings` record. This means the dossier can later prove exactly which paper artifact and website concept formed the proposition.
+**Design** owns the versioned artifact because the mailing is designed output. **Outreach** owns only the physical-send fact.
 
 The same private Storage file is shown in both phases. There is no phase-specific copy, generic attachments table, approval workflow or separate document system.
-
-PDF is recommended for the final print artifact. PNG/JPG are supported for concept/review use. Maximum size is 25 MB.
 
 See `docs/decisions/20260830_PRINT_MAILING_ARTIFACTS.md`.
 
@@ -205,7 +198,7 @@ https://<brand>.nl/<slug>
 https://cms.<brand>.nl   # internal CMS
 ```
 
-The slug is stable prospect state; full URLs are derived from configuration. PR previews derive their prospect links from the PR origin so acceptance remains on reviewed code.
+The slug is stable prospect state; full URLs are derived from configuration.
 
 See `docs/PROSPECT_PUBLIC_LINKS.md`.
 
@@ -213,21 +206,19 @@ See `docs/PROSPECT_PUBLIC_LINKS.md`.
 
 Outreach combines the selected printmailing version and physical send with external opening count, first/last opening, active visible time, max scroll, broad device, QR/direct source and opening detail. Engagement is observational and never automatically creates a lead score.
 
-Registering the physical send may advance only early contact states to `mailed`; it never regresses a prospect already further in the commercial process.
-
 **Test als medewerker** uses a short-lived signed token bound to the prospect slug; internal QA traffic remains separate from prospect response. No IP allowlist or guessable internal marker is used.
-
-Browser/persistence acceptance on 2026-08-30 verified EXTERNAL and INTERNAL openings plus active-time/scroll updates. See `docs/evidence/INTEGRATED_CMS_BROWSER_ACCEPTANCE_20260830.md`.
 
 ## Activity
 
-Activity shows material business changes and the actor where known. Current state comes from canonical tables; `events` is history, not a second state model. Printmailing version creation and physical send are material events; opening/previewing a file is not. Routine UI navigation is not logged.
+Activity shows material business changes and the actor where known. Current state comes from canonical tables; `events` is history, not a second state model. Routine UI navigation is not logged.
 
 ## Deployment verification
 
 The same post-deploy HTTP smoke applies to PR previews and production. It verifies:
 
 - CMS root and active-team bootstrap;
+- discovery UX and sector resolver;
+- prospect-first Design UI and Bootstrap/Brief boundary;
 - canonical Prompt Library and research-contract resources;
 - PR-preview Prompt Library mutation rejection;
 - engagement client asset;
@@ -235,7 +226,7 @@ The same post-deploy HTTP smoke applies to PR previews and production. It verifi
 - bounded legacy LIVE compatibility;
 - CORS for browser-invoked Edge Functions.
 
-Deployment upload success alone is not considered runtime acceptance.
+Deployment upload success alone is not runtime acceptance.
 
 ## Access and security
 
@@ -243,6 +234,6 @@ The frontend uses only the Supabase publishable key. Privileged operations use n
 
 Research CSV and AI output are untrusted input and must pass the versioned import contract before persistence. Imported research never automatically promotes a prospect, publishes a design or sends outreach.
 
-Printmailing artifacts live in a private Storage bucket. Active team membership is required to upload/read them; browser opening uses a short-lived signed URL. They are not prospect-facing public assets by default.
+Printmailing artifacts live in a private Storage bucket. Active team membership is required to upload/read them; browser opening uses a short-lived signed URL.
 
 Do not expose service-role, GitHub-write or other secret credentials to browser code. See `docs/SECURITY.md`.

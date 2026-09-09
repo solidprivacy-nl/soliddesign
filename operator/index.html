@@ -180,62 +180,60 @@
       </div>
 
       <section class="card" data-design-process>
-        <h3>Designproces</h3>
-        <p class="subtle">Gebruik ChatGPT om het ontwerp verder te ontwikkelen. Beschikbare sectorinzichten worden automatisch meegenomen.</p>
-        <div class="link-row">
-          <a data-design-link="brief" target="_blank" rel="noopener">Open designbrief ↗</a>
-          <a data-design-link="workspace" target="_blank" rel="noopener" class="disabled">Geen ChatGPT-project gekoppeld</a>
-          <button type="button" data-design-action="copySectorUpgrade" class="link-button">Kopieer verbeteropdracht met sectorinzichten</button>
+        <h3>Websiteontwerp</h3>
+        <p class="subtle">Maak of verbeter het ontwerp in ChatGPT en upload daarna het resultaat.</p>
+        <p class="subtle design-flow">1. Kopieer opdracht → 2. Werk in ChatGPT → 3. Upload resultaat</p>
+        <label>Designinstructie <span class="subtle">(optioneel)</span>
+          <textarea data-design-input="note" rows="4" placeholder="Bijv. behoud de rustige uitstraling, maar maak de primaire CTA duidelijker"></textarea>
+        </label>
+        <p class="subtle">Deze instructie blijft bij dit prospect bewaard en wordt meegenomen in de volgende designopdracht.</p>
+        <div class="save-row design-primary-row">
+          <a data-design-link="workspace" target="_blank" rel="noopener" class="hidden">Open ChatGPT-project ↗</a>
+          <button data-design-action="copyStart" class="primary">Kopieer designopdracht</button>
         </div>
-        <div class="form-grid">
+        <details class="design-options">
+          <summary>Projectinstellingen</summary>
           <label>ChatGPT-projectlink
             <input data-design-input="workspace" type="url" inputmode="url" placeholder="https://chatgpt.com/…" />
           </label>
-          <label>Designbrieflink
-            <input data-design-field="briefUrl" type="text" readonly />
-          </label>
-        </div>
-        <label>Extra designinstructie
-          <textarea data-design-input="note" rows="4" placeholder="Bijv. stijlvoorkeur of blijvende klantspecifieke wens"></textarea>
-        </label>
-        <div class="save-row">
-          <div class="subtle">Voor een nieuwe designchat: kopieer de startinstructie en plak die in ChatGPT.</div>
-          <div>
-            <button data-design-action="openBrief" class="secondary">Open actuele designbrief</button>
+          <div class="save-row">
+            <button data-design-action="openBrief" class="secondary">Open designbrief</button>
             <button data-design-action="save" class="secondary">Opslaan</button>
-            <button data-design-action="copyStart" class="primary">Kopieer startinstructie voor ChatGPT</button>
           </div>
-        </div>
+        </details>
         <p class="message" data-design-field="message" aria-live="polite"></p>
       </section>
 
       <section class="card mockup-card">
         <h3>Ontwerpversies</h3>
-        <p class="subtle">Beheer hier concepten, het huidige ontwerp en publicatie. Dit is de enige plek voor de ontwerpstatus.</p>
+        <p class="subtle">Upload een nieuw concept, bekijk versies en publiceer de beste versie live.</p>
         <div data-field="liveMockup" class="mockup-live hidden" aria-hidden="true"></div>
 
         <div class="mockup-upload-grid">
-          <label>Nieuwe ontwerpversie (.html of .zip)
+          <label>Nieuw ontwerp
             <input data-input="mockupFile" type="file" accept=".html,.zip,text/html,application/zip" />
           </label>
-          <label>Wat is er gewijzigd?
-            <input data-input="mockupNote" type="text" maxlength="240" placeholder="Bijv. hero, CTA en mobiel verbeterd" />
+          <label>Wat is er gewijzigd? <span class="subtle">(optioneel)</span>
+            <input data-input="mockupNote" type="text" maxlength="240" placeholder="Bijv. hero en mobiele navigatie verbeterd" />
           </label>
         </div>
         <div class="mockup-action-row">
-          <p class="subtle">ZIP: <code>index.html</code> in de hoofdmap; CSS, JS en afbeeldingen mogen in submappen staan.</p>
-          <button data-action="uploadMockup" class="primary">Upload als conceptversie</button>
+          <p class="subtle">HTML of ZIP. Bij ZIP staat <code>index.html</code> in de hoofdmap.</p>
+          <button data-action="uploadMockup" class="primary">Upload concept</button>
         </div>
 
-        <div class="mockup-external">
-          <label>Ontwerp via externe link
-            <input data-input="externalPreview" type="url" inputmode="url" placeholder="https://…" />
-          </label>
-          <button data-action="addExternalPreview" class="secondary">Voeg toe als conceptversie</button>
-        </div>
+        <details class="mockup-external-details">
+          <summary>Gebruik externe conceptlink</summary>
+          <div class="mockup-external">
+            <label>Conceptlink
+              <input data-input="externalPreview" type="url" inputmode="url" placeholder="https://…" />
+            </label>
+            <button data-action="addExternalPreview" class="secondary">Voeg concept toe</button>
+          </div>
+        </details>
 
         <p class="message" data-field="mockupMessage" aria-live="polite"></p>
-        <div class="version-heading"><h4>Alle ontwerpversies</h4><span data-field="versionCount" class="subtle"></span></div>
+        <div class="version-heading"><h4>Ontwerpversies</h4><span data-field="versionCount" class="subtle"></span></div>
         <div data-field="versionList" class="version-list"></div>
       </section>
 
@@ -280,8 +278,6 @@
   <script src="./prospect-preparation.js"></script>
   <script src="./design-process.js"></script>
   <script src="./discovery-sectors.js"></script>
-  <script src="./sector-intelligence-ui.js"></script>
-  <script src="./sector-link-suggestions.js"></script>
   <script src="./design-detail-ui.js"></script>
   <script type="module" src="./discovery.js"></script>
 </body>

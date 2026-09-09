@@ -1,25 +1,43 @@
 # Prospect Design Brief
 
-**Format:** v0.3  
-**Purpose:** give a SolidDesign design agent the smallest complete customer-specific context needed to make the right next design decision.
+**Format:** v0.4  
+**Purpose:** give a SolidDesign design agent the smallest complete prospect-specific context needed to make the right next design decision.
 
 ## First principle
 
 The Design Brief is not a database dump, qualification report or prompt framework. Supabase remains the operational source of truth. The brief is a deterministic design handoff derived from that source.
 
-A field belongs in the brief only when it materially affects design truth, design direction, evaluation of the current site or evaluation of the current mock-up.
+A field belongs in the brief only when it materially affects design truth, design direction, evaluation of the current website or evaluation of the current mock-up.
 
 ## Required order
 
 1. **Design objective** — what the next design pass must accomplish.
-2. **Prospect profile** — identity, location, source category, canonical sector key, website, phone and site kind.
+2. **Prospect profile** — identity, location, source category, website, phone and site kind.
 3. **Verified prospect facts** — customer-facing facts that may safely be used.
 4. **Verification gaps** — facts that must not be inferred or invented.
 5. **Current website evidence** — compact verified audit issues and strengths; no raw audit JSON.
 6. **Current design state** — current LIVE version first, plus a newer non-LIVE version only when one exists.
-7. **Sector Intelligence** — canonical lookup identity and advisory-only authority rule.
-8. **Operator direction** — explicit prospect-specific human direction.
-9. **Hard constraints** — no-invention and authority boundaries.
+7. **Operator direction** — explicit prospect-specific human direction.
+8. **Hard constraints** — no-invention and authority boundaries.
+
+## Prospect-first design boundary
+
+Sector/category information may exist upstream for discovery and classification, but it is not a design instruction.
+
+The brief therefore does **not** contain a canonical sector key, Sector Intelligence lookup, sector template or design preset.
+
+Design context is derived from:
+
+```text
+prospect identity
++ verified facts
++ source website/assets/screenshots
++ current website evidence
++ current LIVE/concept
++ operator direction
+```
+
+This keeps design decisions grounded in the actual business rather than generalized assumptions about its category.
 
 ## Deliberate exclusions
 
@@ -29,13 +47,7 @@ The brief does not expose `site_config` or other mock-up implementation internal
 
 The brief does not repeat generic SolidDesign design-method instructions. Those remain in the Design Bootstrap and required prompt resources.
 
-## Taxonomy rule
-
-`prospects.category` is source taxonomy metadata and is never automatically treated as approved marketing copy.
-
-The **Canonical sector key** is derived from the prospect's discovery-run sector identity when exactly one safe key is available. It exists only to locate optional published Sector Intelligence. It must not be used as a customer-facing service claim unless separately verified.
-
-This prevents broad source categories such as `home service` from becoming copy such as “Home service in Amsterdam.”
+`prospects.category` is source/discovery metadata. It may be shown as concise descriptive context, but it is never automatically treated as approved marketing copy or a design rule.
 
 ## Current design rule
 
@@ -61,12 +73,12 @@ SolidDesign design method
 ↓
 Prospect Design Brief / verified prospect facts / operator direction
 ↓
-Sector Intelligence
+source website / supplied assets / current design evidence
 ↓
 other external evidence
 ```
 
-Sector Intelligence may raise the quality bar but cannot create prospect facts or justify copying another site's distinctive design.
+No classification layer may override verified prospect facts or direct visual evidence.
 
 ## Presentation
 

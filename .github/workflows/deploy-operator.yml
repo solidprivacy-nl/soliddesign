@@ -6,13 +6,11 @@ on:
     paths:
       - "operator/**"
       - "prompts/**"
-      - "sector-intelligence/**"
       - ".github/workflows/deploy-operator.yml"
   pull_request:
     paths:
       - "operator/**"
       - "prompts/**"
-      - "sector-intelligence/**"
       - ".github/workflows/deploy-operator.yml"
   workflow_dispatch:
 
@@ -65,7 +63,6 @@ jobs:
           set -euo pipefail
           rm -rf operator/prompts operator/sector-intelligence
           cp -R prompts operator/prompts
-          cp -R sector-intelligence operator/sector-intelligence
           proof=$(openssl rand -hex 16)
           printf '%s\n' "$proof" > operator/deployment-proof.txt
           echo "proof=$proof" >> "$GITHUB_OUTPUT"
@@ -85,15 +82,13 @@ jobs:
           LEGACY_SMOKE_SLUG: koppen-electro-techniek
         run: |
           set -euo pipefail
+          trap 'echo "::error::Smoke failed at line $LINENO: $BASH_COMMAND"' ERR
           if [ "$GITHUB_EVENT_NAME" = "push" ]; then
             BASE_URL="https://soliddesign-cms.pages.dev"
           else
             BASE_URL="https://${DEPLOY_BRANCH}.soliddesign-cms.pages.dev"
           fi
 
-          # Pages can report a deployment complete slightly before the stable hostname
-          # serves that exact deployment. Wait on an opaque per-deployment proof before
-          # running content assertions so a stale alias cannot produce a false result.
           ready=0
           for attempt in $(seq 1 30); do
             actual=$(curl -fsS --max-time 5 \
@@ -114,7 +109,7 @@ jobs:
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/" -o /tmp/operator.html
           grep -q 'SolidDesign' /tmp/operator.html
 
-          # Bedrijven zoeken is one operator task with three progressive modes.
+          # Bedrijven zoeken remains one task with three progressive modes.
           grep -q 'data-discovery-mode="research"' /tmp/operator.html
           grep -q 'data-discovery-mode="area"' /tmp/operator.html
           grep -q 'data-discovery-mode="url"' /tmp/operator.html
@@ -127,6 +122,11 @@ jobs:
           grep -q '1. Kopieer opdracht' /tmp/research-discovery.js
           grep -q '2. Importeer resultaat' /tmp/research-discovery.js
           grep -q 'enriched_count' /tmp/research-discovery.js
+          grep -q 'canonical_sector_key: context.canonicalKey' /tmp/research-discovery.js
+
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/discovery-sectors.js" -o /tmp/discovery-sectors.js
+          grep -q '/api/resolve-sector' /tmp/discovery-sectors.js
+          grep -q 'SOLIDDESIGN_RESOLVE_SINGLE_SECTOR' /tmp/discovery-sectors.js
 
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/discovery-triage.js" -o /tmp/discovery-triage.js
           grep -q 'KANSRIJK' /tmp/discovery-triage.js
@@ -135,21 +135,41 @@ jobs:
           grep -q 'Toevoegen' /tmp/discovery-triage.js
           ! grep -q 'Basischeck OK' /tmp/discovery-triage.js
 
-          # Production and previews must bootstrap access from active team membership only.
+          # Prospect-first Design: one operator action, no sector-design machinery.
+          grep -q 'Kopieer designopdracht' /tmp/operator.html
+          grep -q 'Designinstructie' /tmp/operator.html
+          grep -q 'Projectinstellingen' /tmp/operator.html
+          grep -q 'Upload concept' /tmp/operator.html
+          grep -q 'Gebruik externe conceptlink' /tmp/operator.html
+          ! grep -q 'Sectoronderzoek' /tmp/operator.html
+          ! grep -q 'copySectorUpgrade' /tmp/operator.html
+          ! grep -q 'sector-intelligence-ui.js' /tmp/operator.html
+          ! grep -q 'sector-link-suggestions.js' /tmp/operator.html
+
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/design-process.js" -o /tmp/design-process.js
+          grep -q 'Brief format version:.*0.4' /tmp/design-process.js
+          grep -q '✓ Designopdracht gekopieerd' /tmp/design-process.js
+          ! grep -qi 'sector-intelligence' /tmp/design-process.js
+          ! grep -q 'canonical_sector_key' /tmp/design-process.js
+
+          # Production and previews bootstrap access from active team membership only.
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/app.js" -o /tmp/app.js
           grep -q "from('team_members')" /tmp/app.js
           grep -q "eq('active', true)" /tmp/app.js
           ! grep -q 'operator_allowlist' /tmp/app.js
 
-          # Design methodology, operator prompts, research contracts and Sector Intelligence
-          # are served through the same CMS origin that ChatGPT invocations reference.
+          # Design methodology, operator prompts and research contracts are served through one CMS origin.
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/start-design" -o /tmp/start-design.html
           grep -q '/prompts/SOLIDDESIGN_BOOTSTRAP.md' /tmp/start-design.html
+          grep -q 'Prompt architecture version: 0.4' /tmp/start-design.html
+          ! grep -qi 'Sector Intelligence' /tmp/start-design.html
           ! grep -Eqi 'github\.com|raw\.githubusercontent\.com' /tmp/start-design.html
 
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prompts/SOLIDDESIGN_BOOTSTRAP.md" -o /tmp/bootstrap.md
-          grep -q 'Prompt architecture version.*0.3' /tmp/bootstrap.md
-          grep -q 'soliddesign-cms.pages.dev/sector-intelligence/' /tmp/bootstrap.md
+          grep -q 'Prompt architecture version.*0.4' /tmp/bootstrap.md
+          grep -q 'Design the actual prospect' /tmp/bootstrap.md
+          ! grep -qi 'sector-intelligence' /tmp/bootstrap.md
+          ! grep -q 'prompts/sectors' /tmp/bootstrap.md
           ! grep -Eqi 'github\.com|raw\.githubusercontent\.com' /tmp/bootstrap.md
 
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prompts/core/DESIGN_CONSTITUTION.md" -o /tmp/design-constitution.md
@@ -163,7 +183,12 @@ jobs:
           grep -q 'prospect-research-import-v1' /tmp/prospect-research-contract.json
           grep -q 'triage_decision' /tmp/prospect-research-contract.json
 
-          # Prompt repository writes are a production-CMS capability, never a PR-preview capability.
+          # Retired Sector Intelligence content must not be deliverable. Cloudflare may route a missing static path to the app shell, so HTTP 404 alone is not the invariant.
+          sector_status=$(curl -sS -o /tmp/sector-retired.body -w '%{http_code}' "$BASE_URL/sector-intelligence/README.md")
+          test "$sector_status" = "404" || test "$sector_status" = "200"
+          ! grep -Eqi '(^|[[:space:]#])Sector Intelligence([[:space:]#:]|$)|sector_intelligence_version|canonical sector research' /tmp/sector-retired.body
+
+          # Prompt repository writes are production-only, never PR-preview capability.
           prompt_write_status=$(curl -sS -o /tmp/prompt-write.body -w '%{http_code}' \
             -X POST "$BASE_URL/api/prompt-library" \
             -H 'Content-Type: application/json' \
@@ -175,18 +200,12 @@ jobs:
             test "$prompt_write_status" = "401"
           fi
 
-          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/sector-intelligence/README.md" -o /tmp/sector-intelligence-readme.md
-          grep -q 'canonical v0.5' /tmp/sector-intelligence-readme.md
-
-          # The centrally injected engagement client must itself be deployed and executable.
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prospect-engagement.js" -o /tmp/prospect-engagement.js
           grep -q '__SOLIDDESIGN_PROSPECT_ENGAGEMENT__' /tmp/prospect-engagement.js
 
           status=$(curl -sS -o /tmp/missing.html -w '%{http_code}' "$BASE_URL/prospect/does-not-exist/")
           test "$status" = "404"
 
-          # Historical one-segment links are compatibility aliases only. They may never
-          # resolve directly to UUID or legacy preview infrastructure.
           curl -sS -D /tmp/root-alias.headers -o /dev/null "$BASE_URL/$SMOKE_SLUG?src=qr"
           grep -Eq '^HTTP/[^ ]+ 302' /tmp/root-alias.headers
           grep -Eqi "^location: .*\/prospect\/$SMOKE_SLUG/\?src=qr" /tmp/root-alias.headers
@@ -202,8 +221,6 @@ jobs:
           grep -q 'soliddesignProspectEngagement' /tmp/prospect.html
           grep -q 'prospect-engagement.js' /tmp/prospect.html
 
-          # Grandfathered compatibility is intentionally finite. While these rows exist,
-          # prove one representative legacy LIVE page remains under the public prospect URL.
           curl -sS --retry 5 --retry-delay 1 --retry-all-errors \
             -D /tmp/legacy.headers \
             "$BASE_URL/prospect/$LEGACY_SMOKE_SLUG/?src=qr" \

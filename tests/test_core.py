@@ -6,7 +6,7 @@ from pathlib import Path
 from soliddesign.audit.adapter import audit_result_from_dict
 from soliddesign.brief import build_conversion_brief
 from soliddesign.demo.openpage import build_site_config, render_static_html
-from soliddesign.design import derive_design_profile
+from soliddesign.design import DEFAULT_ACCENT, derive_design_profile
 from soliddesign.models import (
     AuditFinding,
     AuditResult,
@@ -85,11 +85,15 @@ class DemoTests(unittest.TestCase):
         self.assertIn("no_fake_proof", profile.anti_patterns)
         self.assertIn("no_decorative_empty_hero_panel", profile.anti_patterns)
 
-    def test_sector_accent_is_contextual_without_new_template(self):
-        facts = VerifiedFacts(company_name="Warmte BV", category="installatietechniek", city="Utrecht", address="Test 1", website_url="https://example.com", phone=None, rating=None, review_count=None, services=("warmtepompinstallatie", "verwarming"), brand_colors=(), approved_claims=(), evidence={})
-        profile = derive_design_profile(facts, self._brief())
-        self.assertEqual(profile.palette["accent"], "#3F6754")
-        self.assertEqual(profile.hero_variant, "service_split")
+    def test_visual_fallback_is_not_category_driven(self):
+        warm = VerifiedFacts(company_name="Warmte BV", category="installatietechniek", city="Utrecht", address="Test 1", website_url="https://example.com", phone=None, rating=None, review_count=None, services=("warmtepompinstallatie", "verwarming"), brand_colors=(), approved_claims=(), evidence={})
+        barber = VerifiedFacts(company_name="Barber BV", category="barber", city="Utrecht", address="Test 2", website_url="https://barber.example.com", phone=None, rating=None, review_count=None, services=("knippen",), brand_colors=(), approved_claims=(), evidence={})
+        self.assertEqual(derive_design_profile(warm, self._brief()).palette["accent"], DEFAULT_ACCENT)
+        self.assertEqual(derive_design_profile(barber, self._brief()).palette["accent"], DEFAULT_ACCENT)
+
+    def test_verified_brand_color_still_has_priority(self):
+        facts = self._facts()
+        self.assertEqual(derive_design_profile(facts, self._brief()).palette["accent"], "#155EEF")
 
     def test_customer_copy_is_not_database_copy(self):
         facts = self._facts()
@@ -99,6 +103,14 @@ class DemoTests(unittest.TestCase):
         self.assertIn("Ook voor duurzame woninginstallaties", brief.subheadline)
         self.assertNotIn(facts.company_name + ".", brief.headline)
         self.assertNotIn("helder overzicht van de dienstverlening", brief.subheadline.lower())
+
+    def test_source_category_is_never_customer_copy_fallback(self):
+        facts = VerifiedFacts(company_name="Acme BV", category="home_service", city="Utrecht", address=None, website_url="https://acme.example", phone=None, rating=None, review_count=None, services=(), brand_colors=(), approved_claims=(), evidence={})
+        audit = AuditResult(url=facts.website_url, score=40, grade="F", findings=(), source="test")
+        brief = build_conversion_brief(facts, audit)
+        self.assertEqual(brief.headline, "Acme BV in Utrecht.")
+        self.assertNotIn("home service", brief.headline.lower())
+        self.assertNotIn("home_service", brief.headline.lower())
 
     def test_premium_renderer_avoids_known_ai_slop_and_overlap_pattern(self):
         facts = self._facts()

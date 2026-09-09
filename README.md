@@ -1,12 +1,12 @@
 # SolidDesign — Website Growth Engine
 
-**Status:** integrated operating model in production; M7 operational pilot is the next business gate.
+**Status:** integrated operating model in production; M8 operational/commercial pilot is active.
 
-SolidDesign identifies established local businesses with existing demand but measurable website/conversion leakage, creates an evidence-backed redesign proof, and tests acquisition through personalized physical mail and human follow-up.
+SolidDesign identifies established local businesses with measurable website/conversion headroom, creates an evidence-backed redesign proof, and tests acquisition through personalized physical mail and human follow-up.
 
 ## Mission
 
-> Find commercially attractive businesses where the gap between business quality and website conversion quality is large enough to justify a standardized redesign, then prove the opportunity before asking the prospect to buy.
+> Find commercially attractive businesses where the gap between business quality and website quality is large enough to justify a redesign, then prove the opportunity before asking the prospect to buy.
 
 ## Governing principles
 
@@ -23,9 +23,9 @@ SolidDesign identifies established local businesses with existing demand but mea
 ## Commercial loop
 
 ```text
-OVERTURE DISCOVERY
-→ QUALIFY / AUDIT
+DISCOVERY
 → HUMAN SELECT
+→ QUALIFICATION / AUDIT
 → VERIFIED FACTS
 → DESIGN
 → REVIEW
@@ -66,13 +66,6 @@ internal: https://soliddesign-cms.pages.dev
 public:   https://soliddesign-cms.pages.dev/prospect/<slug>
 ```
 
-Preferred final shape after brand/domain selection:
-
-```text
-internal: https://cms.<brand>.nl
-public:   https://<brand>.nl/<slug>
-```
-
 Hostnames are delivery configuration. `prospects.public_slug` is the stable prospect-facing identity.
 
 See `docs/ARCHITECTURE.md` and `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`.
@@ -91,7 +84,46 @@ CASE_LEAD | DESIGN | OUTREACH
 
 Current responsibility is stored in assignments; history and actor attribution are stored as business events. `Mijn werk` and work-distribution views are derived from those assignments. There is no task engine, capacity planner or portfolio database.
 
-Authorization is derived only from the authenticated Auth UUID and an active `team_members` row. The historical `operator_allowlist` compatibility model was retired from production on 2026-08-30 and must not be recreated as a second membership authority.
+Authorization is derived only from the authenticated Auth UUID and an active `team_members` row. The historical `operator_allowlist` compatibility model is retired and must not be recreated as a second membership authority.
+
+## Discovery
+
+Discovery has exactly three current intake paths:
+
+```text
+RESEARCH IMPORT | OVERTURE AREA SEARCH | SPECIFIC URL
+                       ↓
+                same candidate ingest
+                       ↓
+                 Discovery Inbox
+```
+
+Sector remains a discovery input where it is materially required:
+
+- research uses human sector + location as market scope;
+- Overture broad search resolves the human term to a valid Overture category;
+- `canonical_sector_key` may remain as discovery/provenance metadata when naturally available.
+
+A direct-URL prospect may remain unclassified.
+
+Canonical discovery documentation: `docs/DISCOVERY.md` and `docs/DISCOVERY_SECTOR_RESOLUTION.md`.
+
+## Prospect-first Design
+
+Once a candidate becomes a prospect, design is based on the actual business rather than a generalized sector model.
+
+```text
+operator instruction
++ SolidDesign design method
++ Prospect Design Brief / verified facts
++ source website / assets / screenshots
++ current LIVE / concept
+→ prospect-specific redesign
+```
+
+Sector/category metadata does not trigger design research, templates or presets.
+
+The Design tab has one primary ChatGPT action (`Kopieer designopdracht`), one website-version lifecycle and the printmailing artifact lifecycle. See `docs/PROSPECT_FIRST_DESIGN.md`.
 
 ## Public delivery contract
 
@@ -105,8 +137,6 @@ slug
 ```
 
 New LIVE publication requires an uploaded HTML/ZIP artifact. External HTTPS preview links are review/DRAFT escape hatches only.
-
-A narrow compatibility path exists for a small number of grandfathered historical LIVE previews on explicitly allowlisted SolidDesign Cloudflare hosts. It is transition debt, not a general reverse-proxy feature.
 
 The public page remains `noindex, nofollow,noarchive` during pre-sale use.
 
@@ -123,45 +153,11 @@ SolidDesign records only the response signals needed for commercial follow-up:
 
 It deliberately does **not** collect raw IP addresses, IP hashes, browser fingerprints, persistent visitor IDs, heatmaps or session replay. Telemetry is fail-open: measurement failure may never block the prospect page.
 
-## Discovery and proof foundation
-
-**Overture Maps Places is the canonical discovery source.** Google Places is optional future enrichment only if evidence shows sufficient commercial value to justify the extra provider/cost surface.
-
-The established proof pipeline remains:
-
-```text
-Overture Maps + DuckDB
-        ↓
-Prospect
-        ↓
-Pitch Doctor audit evidence
-        ↓
-5-factor qualification
-        ↓
-VerifiedFacts trust boundary
-        ↓
-conversion/design context
-        ↓
-static mock-up artifact
-        ↓
-LIVE publication + print pack
-```
-
-Sector Intelligence is reusable advisory design evidence keyed by the prospect's primary sector. It is managed through the CMS and does not expose engineering storage/review mechanics to normal operators. See `sector-intelligence/README.md` and `docs/SECTOR_INTELLIGENCE_LINKAGE.md`.
-
-## Gate-2 evidence — historical proof
-
-Gate 2 proved the first bounded Utrecht Overture run and one real electrical-services prospect end-to-end. The test demonstrated discovery, live audit, human root-cause review, qualification, concept assembly, print-pack generation, Cloudflare publication, `noindex`, disable/restore behavior and minimal synthetic preview telemetry.
-
-That evidence describes what was proven at that time; it is not the current runtime architecture contract. See `docs/evidence/GATE2_OVERTURE_UTRECHT.md`.
-
-The actual prospect URL is deliberately not committed to this public repository. Operational prospect data belongs in Supabase, not source documentation.
-
 ## Operational truth
 
-- **GitHub:** code, tests, architecture, prompts safe for disclosure, decisions and roadmap.
+- **GitHub:** code, tests, architecture, reusable prompts/methods, decisions and roadmap.
 - **Supabase:** prospects, audits, demos, team membership, assignments, mailings, events and engagement.
-- **Cloudflare Pages:** one deployment serving the internal and public delivery surfaces.
+- **Cloudflare Pages:** one deployment serving internal and public delivery surfaces.
 - **Supabase Storage:** canonical immutable mock-up bundles and LIVE manifest state.
 
 Browser code uses only the Supabase publishable key. Access is controlled with least-privilege grants, RLS and narrow server/RPC capabilities; privileged/service credentials remain server-side.
@@ -198,39 +194,31 @@ soliddesign discover \
 
 No Google Cloud project, Google API key or Google Places billing is required for this path.
 
-For donor audit tooling:
-
-```bash
-bash scripts/bootstrap_donors.sh
-```
-
-See `docs/OPERATIONS.md`.
-
 ## Documentation map
 
-`docs/ARCHITECTURE.md` defines the documentation truth hierarchy. In short: current architecture/security/operations/roadmap outrank historical evidence and completed plans.
+`docs/ARCHITECTURE.md` defines the documentation truth hierarchy.
 
 - `ENGINEERING_CONSTITUTION.md` — top-level mandatory engineering standard
 - `docs/ARCHITECTURE.md` — canonical architecture entrypoint + documentation precedence
 - `docs/INTEGRATED_OPERATING_ARCHITECTURE.md` — current system/operating model
-- `docs/SECURITY.md` — current trust, auth and public/private boundaries
+- `docs/PROSPECT_FIRST_DESIGN.md` — current Design boundary and operator UX contract
+- `docs/DESIGN_BRIEF.md` — prospect-specific AI handoff contract
+- `docs/DISCOVERY.md` — current discovery contract
+- `docs/PROMPT_LIBRARY.md` — operator prompt-library contract
+- `docs/SECURITY.md` — current trust/auth boundaries
 - `docs/OPERATIONS.md` — current operating guide
 - `docs/ROADMAP.md` — current evidence-gated status and next gates
-- `sector-intelligence/README.md` — current Sector Intelligence contract
-- `docs/SECTOR_INTELLIGENCE_LINKAGE.md` — prospect-sector linkage and CMS boundary
 - `docs/MISSION_CONTRACT.md` — mission and non-goals
 - `docs/BUSINESS_MODEL.md` — offer, acquisition model and economics
-- `docs/DISCOVERY_OVERTURE.md` — discovery contract
 - `docs/SCORING_RUBRICS.md` — qualification model
 - `docs/DECISIONS.md` and `docs/decisions/` — decision history; later accepted decisions supersede conflicts
 - `docs/evidence/` — dated proof snapshots, not runtime contracts
-- `docs/IMPLEMENTATION_PLAN.md` — completed Gate-1/2 historical plan, not current execution guidance
 
 ## Donor / dependency strategy
 
 No complete agency framework is imported.
 
-- **Overture Maps** — canonical open discovery dataset
+- **Overture Maps** — current open broad-discovery dataset
 - **DuckDB** — bounded cloud GeoParquet query engine
 - **Pitch Doctor** — existing-site audit donor
 - **OpenPage** — JSON-first pre-sale demo compatibility
@@ -240,4 +228,4 @@ See `docs/DONOR_REGISTER.md` and `docs/THIRD_PARTY_NOTICES.md`.
 
 ## Repository visibility
 
-This repository can be public. Never commit secrets, real prospect/customer datasets, private e-mail content, operational access tokens or intentionally proprietary prompt material. If opportunity scoring/prompts become meaningful proprietary IP, move them behind a private-core boundary rather than exposing them here.
+This repository is currently public. Never commit secrets, real prospect/customer datasets, private e-mail content or operational access tokens. Prompt/library content that must not remain public requires a future repository/private-execution boundary rather than security by obscurity.

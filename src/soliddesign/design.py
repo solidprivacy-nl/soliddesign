@@ -7,6 +7,9 @@ from typing import Any
 from .models import ConversionBrief, VerifiedFacts
 
 
+DEFAULT_ACCENT = "#315E57"
+
+
 @dataclass(frozen=True)
 class DesignProfile:
     """Small deterministic art-direction contract for pre-sale concepts."""
@@ -34,12 +37,12 @@ class DesignProfile:
 def derive_design_profile(facts: VerifiedFacts, brief: ConversionBrief) -> DesignProfile:
     """Derive one restrained premium service-business profile.
 
-    Premium v2 intentionally keeps a single composition. The correction is better
-    hierarchy, copy and responsive robustness, not more templates.
+    Premium v2 intentionally keeps a single composition. Verified brand color may
+    influence the profile; discovery/category classification may not. When no
+    verified brand color exists, use one neutral SolidDesign fallback rather than
+    guessing visual direction from a sector label.
     """
-    accent = _first_valid_color(facts.brand_colors) or _category_accent(
-        f"{facts.category} {' '.join(facts.services)}"
-    )
+    accent = _first_valid_color(facts.brand_colors) or DEFAULT_ACCENT
     return DesignProfile(
         page_type="authority_service",
         tone="premium_trustworthy",
@@ -79,20 +82,3 @@ def _first_valid_color(colors: tuple[str, ...]) -> str | None:
         if re.fullmatch(r"#[0-9A-Fa-f]{6}", color):
             return color.upper()
     return None
-
-
-def _category_accent(text: str) -> str:
-    normalized = text.lower()
-    if any(term in normalized for term in ("warmtepomp", "duurzaam", "verwarming")):
-        return "#3F6754"
-    if any(term in normalized for term in ("klimaat", "loodgiet", "sanitair")):
-        return "#356A67"
-    if any(term in normalized for term in ("elektr", "groepenkast", "brandmeld", "data", "domotica")):
-        return "#9A4726"
-    if any(term in normalized for term in ("bouw", "aannem", "onderhoud")):
-        return "#8A633F"
-    if any(term in normalized for term in ("zorg", "health", "therap", "praktijk")):
-        return "#2E746C"
-    if any(term in normalized for term in ("interieur", "hout", "schilder", "renov")):
-        return "#8A633F"
-    return "#315E57"

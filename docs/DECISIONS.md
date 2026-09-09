@@ -1,238 +1,153 @@
 # Architecture and Business Decisions
 
+This file is the concise decision index. Dated files under `docs/decisions/` preserve expanded rationale where one exists.
+
+Current architecture always follows the documentation precedence in `docs/ARCHITECTURE.md`. A historical ADR may explain why a path once existed without remaining current runtime policy.
+
 ## ADR-001 — Optimize for learning, not platform completeness
 
 **Decision:** Phase 1 prioritizes reliable commercial learning over architectural completeness.
 
-**Consequence:** queues, realtime dashboards, MCP, agent fabrics and autonomous outbound are deferred.
+**Consequence:** queues, realtime dashboards, agent fabrics and autonomous outbound are deferred until observed friction justifies them.
 
 ## ADR-002 — Compose before full-chassis adoption
 
-**Decision:** use a small composition of semantically aligned components rather than importing a complete AI web-agency chassis by default.
-
-**Current composition:** Overture Maps + DuckDB discovery + Pitch Doctor audit + own qualification + OpenPage-compatible demo + static preview + thin print pack.
+**Decision:** use a small composition of semantically aligned components rather than importing a complete AI web-agency chassis.
 
 ## ADR-003 — Supabase as operational state
 
 **Decision:** operational prospect/audit/demo/mailing/outcome data uses the dedicated SolidDesign Supabase project.
 
-**Offline exception:** fixtures/local artifacts remain permitted for deterministic tests.
-
 ## ADR-004 — GitHub as software/documentation truth
 
-**Decision:** mission, schemas, code, tests, prompts safe for disclosure, provenance and decisions live in GitHub.
+**Decision:** mission, code, tests, reusable prompts/methods, provenance, architecture and decisions live in GitHub. Supabase remains business state.
 
 ## ADR-005 — Pre-sale proof separated from production delivery
 
-**Decision:** optimize pre-sale demo for persuasion, speed, correctness and editability. Production stack is selected after real customer requirements exist.
+**Decision:** optimize pre-sale demo for persuasion, speed, correctness and editability. Production delivery architecture is selected from real customer requirements.
 
 ## ADR-006 — Physical mail + human sales
 
-**Decision:** Phase 1 uses personalized physical mail for outbound attention and human sales after engagement. Automated cold email/calling is not part of MVP.
+**Decision:** Phase 1 uses personalized physical mail for outbound attention and human sales after engagement. Automated cold outreach is not MVP scope.
 
-## ADR-007 — Five-factor unweighted score
+## ADR-007 — Five-factor unweighted qualification
 
 **Decision:** use hard gates plus five 0–5 rubrics; do not introduce arbitrary factor weights before outcome data.
 
-## ADR-008 — Public-repo safety boundary
+## ADR-008 — Repository safety boundary
 
-**Decision:** this public repo contains no secrets, real prospect/customer datasets or intentionally proprietary core material.
+**Decision:** repository content contains no secrets or raw private prospect/customer datasets. Confidentiality requirements must be solved by an actual access/execution boundary, not obscurity.
 
-## ADR-009 — Overture Maps is the canonical Phase-1 discovery source
+## ADR-009 — Overture as Phase-1 open discovery source
 
-**Date:** 2026-08-25
+**Date:** 2026-08-25  
+**Historical/current nuance:** Overture replaced Google Places as the default Phase-1 open discovery provider. Since M7, SolidDesign discovery is source-agnostic at the business boundary and also supports Research Import and Specific URL intake.
 
-**Decision:** replace Google Places as the default discovery provider with Overture Maps Places.
-
-**Reasons:**
-
-- no Google Cloud project or billing requirement;
-- no provider API key;
-- open global Places dataset;
-- website/phone/address/category fields are available;
-- bounded cloud-native queries fit the small-market MVP;
-- data-provider complexity should not precede proof that it improves sales.
-
-**Implementation:** DuckDB queries Overture cloud GeoParquet using an explicit bbox and current taxonomy fields.
-
-**Consequence:** Google-specific rating/review data is no longer assumed at discovery time. `rating` and `review_count` remain optional/null unless later enriched.
+**Still current:** Overture remains the supported broad-search adapter while it earns useful recall. It is not the definition of Discovery itself.
 
 ## ADR-010 — Demand evidence is independent from discovery-source existence
 
 **Decision:** Overture presence, confidence, operating status and website presence cannot by themselves establish Existing Demand.
 
-**Reason:** Overture's `confidence` describes confidence that a place exists, not commercial demand.
+## ADR-011 — Explicit bbox before unnecessary geography architecture
 
-**Consequence:** demand is separately evidenced during human qualification.
+**Decision:** deterministic bounded geography remains preferred for reproducible technical discovery. Normal CMS UX may use the existing geocoding path where it already solves operator need.
 
-## ADR-011 — Explicit bbox before geocoder
+## ADR-012 — Use current Overture taxonomy fields
 
-**Decision:** Phase-1 market geography is supplied as `west,south,east,north`.
+**Decision:** SolidDesign discovery uses supported Overture taxonomy/category fields rather than deprecated legacy category structures.
 
-**Reason:** deterministic, reproducible, free and dependency-light.
+## ADR-013 — Add discovery sources only after measured need
 
-**Consequence:** no geocoding service is built until operator friction proves it necessary.
+**Historical decision:** start with the smallest proven source set rather than activating multiple providers pre-emptively.
 
-## ADR-012 — New Overture taxonomy fields only
-
-**Decision:** new SolidDesign discovery logic uses `basic_category` and `taxonomy`, not the deprecated legacy `categories` field.
-
-**Reason:** Overture announced removal of `categories` in September 2026.
-
-## ADR-013 — Single-source first, fallback only after measured failure
-
-**Decision:** do not simultaneously activate Overture + OSM + Google.
-
-**Fallback order:**
-
-1. Overture;
-2. bounded OSM/Overpass if a specific coverage gap is proven;
-3. targeted commercial enrichment if economics justify it.
+**Current expression:** Research, Overture and Specific URL are three concrete intake paths into one candidate boundary. Do not build a provider framework until real duplication earns it.
 
 ## ADR-014 — Raw donor audit is evidence; prospect-facing audit is root-cause reviewed
 
 **Date:** 2026-08-25
 
-**Decision:** preserve the raw Pitch Doctor report unchanged, but require a human-reviewed `AuditResult` before audit findings become prospect-facing proof or sales copy.
-
-**Trigger:** the first live Utrecht audit showed a blocking expired TLS certificate. Because the page never loaded normally, the donor also emitted numerous downstream critical checks that were not independent verified defects.
-
-**Rule:** when a blocking root cause prevents normal page evaluation, cascading failed-load findings are suppressed/collapsed in the presentation layer rather than counted as separate opportunities.
+**Decision:** preserve raw Pitch Doctor evidence, but require root-cause-aware normalization/human interpretation before findings become prospect-facing proof or sales copy.
 
 ```text
 RAW DONOR AUDIT
 → preserve
 → identify root cause
 → collapse cascading unknowns
-→ human-reviewed AuditResult
-→ brief / print pack
+→ reviewed AuditResult
+→ verified design/sales evidence
 ```
 
-**Consequence:** SolidDesign favors fewer defensible findings over a larger, more dramatic list. This is both a trust requirement and a commercial-quality requirement.
+## ADR-015 — Sector Intelligence via ChatGPT + GitHub
 
-## ADR-015 — Sector Intelligence uses ChatGPT + GitHub, not a new subsystem
+**Date:** 2026-08-27  
+**Status:** **SUPERSEDED 2026-09-09 by ADR-017.**
 
-**Date:** 2026-08-27
+Historical decision: reuse ChatGPT + GitHub Markdown to create advisory reusable sector design research rather than a research database/service.
 
-### Problem
+This remains history only. The Sector Intelligence capability and design lookup are retired.
 
-Future designs should reuse what SolidDesign learns from strong websites in the same market without repeating expensive research per prospect.
+## ADR-016 — Hide Sector Intelligence repository mechanics from operators
 
-### Hard requirements
+**Date:** 2026-08-28  
+**Status:** **SUPERSEDED 2026-09-09 by ADR-017 as a Sector Intelligence capability decision.**
 
-- research follows actual market language, not only the technical Overture taxonomy term;
-- external inspiration remains subordinate to verified prospect facts;
-- knowledge is reviewable, versioned and reusable;
-- missing Sector Intelligence must never block design production;
-- a later Sector Intelligence publication must be able to improve an existing mock-up without replacing the current LIVE version automatically.
+Historical decision: if Sector Intelligence existed, its GitHub transport/review mechanics should stay behind the CMS and active `team_members` authorization should remain the only membership authority.
 
-### Simplest viable solution
+The broader principles remain current:
 
-Use the ordinary ChatGPT client for extensive web research, synthesis and GitHub writing. Store one reviewed Markdown file per canonical sector under `sector-intelligence/`.
+- operators work with business concepts rather than repository plumbing;
+- active `team_members` is the authorization truth;
+- server credentials never enter browser code.
 
-The Overture key is the stable filename/identity; the human discovery term and market geography guide research vocabulary.
+The Sector Intelligence UI/API/publication flow itself is retired.
 
-The design bootstrap conditionally loads the matching published sector file when it exists.
+## ADR-017 — Prospect-first Design; sector stops at the Discovery boundary
 
-### Existing solution reused
+**Date:** 2026-09-09  
+**Status:** **ACCEPTED / CURRENT**  
+**Expanded decision:** `docs/decisions/20260909_PROSPECT_FIRST_DESIGN_SECTOR_RETIREMENT.md`
 
-- ChatGPT: research, synthesis, self-review and design refinement;
-- GitHub: Markdown storage, branches, PR review, history and rollback;
-- existing CMS demos: DRAFT/LIVE versioning and promotion.
+### Decision
 
-### Added complexity
-
-One GitHub directory, one conditional bootstrap lookup and one CMS clipboard action for a Sector Intelligence improvement pass. No new database table, service, queue, crawler, screenshot store or lifecycle is introduced.
-
-### Failure modes
-
-- taxonomy term skews research → use human market language and location;
-- external inspiration becomes pseudo-policy → keep Sector Intelligence below Prospect Design Brief / verified facts in source priority;
-- late research silently changes a mailed/live proof → create a new DRAFT and require the existing human `Maak live` step;
-- deterministic baseline becomes a template zoo → do not inject unstructured Sector Intelligence into the baseline renderer.
-
-### Reversibility
-
-High. Sector Intelligence is Markdown and the CMS addition is a thin launch action. No operational data migration is required.
-
-### Verdict
-
-Adopt. The deterministic automatic baseline remains unchanged. Sector Intelligence enriches the ChatGPT design/refinement layer. If Sector Intelligence exists before design refinement, it is used immediately; if it arrives later, the CMS can launch one SI-informed improvement pass that returns a new DRAFT for normal review and LIVE promotion.
-
-Canonical method: `sector-intelligence/README.md`.
-
-## ADR-016 — Operators do not need GitHub access for Sector Intelligence
-
-**Date:** 2026-08-28
-
-**Supersedes:** only the operator publication mechanism in ADR-015. ADR-015 remains authoritative for the purpose, storage model and design use of Sector Intelligence.
-
-### Problem
-
-Sector Intelligence was the only normal CMS function that required an operator to connect a personal ChatGPT account to GitHub. That breaks an otherwise clean separation between operational users and engineering infrastructure.
-
-### Hard requirements
-
-- a normal operator needs only a CMS account and access to the shared SolidDesign ChatGPT project;
-- research remains extensive and human-reviewable;
-- GitHub remains canonical storage and version history;
-- publication never writes directly to `main`;
-- the operator must not need repository knowledge, repository credentials or repository paths;
-- user flow must stay minimal;
-- do not add a research database, queue, scheduler or general-purpose GitHub gateway.
-
-### Simplest viable solution
-
-Split research from publication at the CMS boundary:
+Sector is a Discovery/search/classification input. It is not a Prospect Design input.
 
 ```text
-CMS → start research prompt → ChatGPT research → final Markdown
-    → operator Copy → CMS Verwerk onderzoeksresultaat
-    → deterministic validation → constrained server-side publisher
-    → branch + PR → human review → merge
+DISCOVERY
+sector + location
+→ research / Overture category resolution
+→ candidate/prospect
+
+DESIGN
+actual prospect evidence
+→ prospect-specific redesign
 ```
 
-The research prompt contains the complete execution contract and research inputs but no repository URL, path, branch or PR instructions. ChatGPT does not read or write GitHub in this operator flow.
+`canonical_sector_key` may remain as legitimate discovery/provenance metadata when naturally available. A direct-URL prospect may have none.
 
-The browser submits only `canonical_sector_key` and Markdown. Repository, path, branch, base branch and PR metadata are server-side constants.
+### Retired
 
-### Existing solutions reused
+- top-level Sectoronderzoek workspace;
+- Sector Intelligence research/review/publication;
+- manual prospect-sector linking;
+- `Sector voor design`;
+- sector-specific improvement prompt;
+- Sector Intelligence/canonical-sector lookup in Design Brief and Design Bootstrap;
+- unused `prompts/sectors/` overlay hook;
+- associated API/UI/RPC/test/deploy paths.
 
-- existing Discovery sector input and Overture resolver;
-- ordinary ChatGPT for research and synthesis;
-- browser clipboard API, with paste-field fallback;
-- Cloudflare Pages Function for the narrow server-side capability;
-- GitHub branches and pull requests for review/versioning.
+### Prospect Design UX
 
-### Security boundary
+Normal operator flow:
 
-The publication endpoint:
+```text
+1. Kopieer designopdracht
+2. Werk in ChatGPT
+3. Upload resultaat
+```
 
-- requires an authenticated, allowlisted CMS operator;
-- validates the canonical sector key and Markdown contract;
-- can write only canonical Sector Intelligence content;
-- creates a new branch and PR;
-- never accepts arbitrary repository/path/branch input;
-- never writes directly to `main`.
+There is one primary ChatGPT action. Project settings are secondary. Website versioning and Printmailing/Outreach boundaries remain unchanged.
 
-The technical GitHub credential is a fine-grained repository-scoped token stored only as the Cloudflare Pages secret `GITHUB_SECTOR_INTELLIGENCE_TOKEN`.
+### Governing rule
 
-### Added complexity
-
-One narrow Pages Function and one second CMS action (`Verwerk onderzoeksresultaat`). No new database table, job state, queue, scheduler, agent, generic GitHub API proxy or operator credential is added.
-
-### Failure modes
-
-- clipboard read blocked → reveal a simple paste field only as fallback;
-- user copies the wrong ChatGPT content → reject deterministic contract mismatch before publication;
-- result already equals canonical content → create no branch or PR;
-- technical credential missing/expired → fail closed with a generic CMS error; no fallback to operator GitHub access;
-- publication fails after branch creation → no direct-main impact; maintainer can inspect/remove the orphan branch.
-
-### Reversibility
-
-High. Remove the one endpoint and processing action to return to manual publication. Canonical Sector Intelligence files and Git history remain unchanged.
-
-### Verdict
-
-Adopt. Normal SolidDesign operators do not require a GitHub account or ChatGPT↔GitHub connection. GitHub is an engineering/publication boundary behind the CMS.
+> Design the actual prospect, not an abstract sector.
