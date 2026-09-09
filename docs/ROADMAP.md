@@ -117,11 +117,11 @@ candidate
 
 Canonical detail: `docs/DISCOVERY.md`.
 
-### M8.2 — Prospect-first Design cutover ← CURRENT IMPLEMENTATION GATE
+### M8.2 — Prospect-first Design cutover ✅ production complete 2026-09-09
 
-Business objective: remove sector/design machinery from the prospect workflow and make Design immediately understandable to a new operator.
+Business objective achieved: Design is now immediately understandable as prospect-specific work and no longer carries a reusable sector-research/linking subsystem.
 
-Target boundary:
+Current boundary:
 
 ```text
 DISCOVERY
@@ -133,48 +133,80 @@ DESIGN
 sector no longer participates
 ```
 
-Required implementation:
+Delivered:
 
-- remove top-level `Sectoronderzoek` workspace;
-- remove Sector Intelligence research/review/publication API/UI;
-- remove manual prospect-sector linking;
-- remove `Sector voor design` and separate sector-improvement prompt;
-- remove sector lookup from Prospect Design Brief and Design Bootstrap;
-- remove unused `prompts/sectors/` overlay hook;
-- retain sector input/resolution in Discovery;
-- retain `canonical_sector_key` only as legitimate discovery/provenance metadata;
-- simplify Design to one primary ChatGPT action: `Kopieer designopdracht`;
-- keep project settings behind progressive disclosure;
-- keep canonical website version lifecycle (`upload → CONCEPT → inspect → LIVE`);
-- keep printmailing artifact creation in Design and physical send in Outreach;
-- remove obsolete API/RPC/tests/deploy paths and conflicting current docs;
-- close obsolete Sector Intelligence content PRs and supersede stale design PRs that depend on retired sector UX.
+- top-level `Sectoronderzoek` workspace removed;
+- Sector Intelligence research/review/publication API/UI/content removed;
+- manual prospect-sector linking removed;
+- `Sector voor design` and separate sector-improvement prompt removed;
+- Prospect Design Brief v0.4 and Bootstrap v0.4 contain no sector lookup;
+- unused `prompts/sectors/` overlay hook removed;
+- sector input/resolution retained in Discovery;
+- `canonical_sector_key` retained only as legitimate discovery/provenance metadata;
+- Design reduced to one primary ChatGPT action: `Kopieer designopdracht`;
+- clean two-URL ChatGPT handoff resolves the design method from the supplied `SOLIDDESIGN_ORIGIN` and requires no repository/provider discovery;
+- project settings remain behind progressive disclosure;
+- website version lifecycle remains `upload → CONCEPT → inspect → LIVE`;
+- printmailing artifact creation remains in Design and physical send remains in Outreach;
+- obsolete sector API/RPC/tests/deploy paths and conflicting current docs removed;
+- unused Google Places fallback code removed so current Discovery has exactly the three documented intake paths;
+- obsolete Sector Intelligence PRs #20, #21, #39 and stale sector-dependent Design PR #44 closed/superseded.
+
+Production evidence:
+
+```text
+PR #50 merged (squash)
+merge SHA: 73ff1ad8cb5122a242c60ca01f98bdb5798ff61d
+CI #566 / run 34317993838: SUCCESS
+Deploy Operator #223 / run 34317993847: SUCCESS
+Supabase migration: 20260909061328 retire_sector_linking_v01
+RPC readback:
+  operator_list_sector_link_targets() = absent
+  operator_set_prospect_sector(uuid,text) = absent
+canonical_sector_key column = retained
+```
 
 Acceptance:
 
 ```text
-[ ] sector + location discovery still works
-[ ] Overture resolution still works
-[ ] direct URL prospect works without canonical sector
-[ ] Design works without canonical sector
-[ ] exactly one primary design ChatGPT action
-[ ] Design Brief v0.4 contains no sector lookup
-[ ] Bootstrap v0.4 performs no sector lookup
-[ ] HTML/ZIP concept upload works
-[ ] concept can be published LIVE
-[ ] printmailing versioning remains intact
-[ ] Outreach still records exact sent artifact
-[ ] no active /api/sector-intelligence path remains
-[ ] obsolete sector linking RPCs dropped in production
-[ ] CI/deploy smoke enforce the new boundary
-[ ] current docs contain one coherent truth
+[x] sector + location discovery regression boundary remains intact
+[x] Overture resolution regression boundary remains intact
+[x] direct URL flow has no canonical-sector requirement
+[x] Design works without canonical sector
+[x] exactly one primary Design ChatGPT action
+[x] Design Brief v0.4 contains no sector lookup
+[x] Bootstrap v0.4 performs no sector lookup
+[x] clean ChatGPT handoff is origin-relative and provider-neutral
+[x] HTML/ZIP concept lifecycle regression remains intact
+[x] LIVE publication regression remains intact
+[x] printmailing versioning regression remains intact
+[x] Outreach exact-artifact send boundary remains intact
+[x] no active /api/sector-intelligence path remains
+[x] obsolete sector-linking RPCs dropped and read back in production
+[x] CI/deploy smoke enforce the new boundary
+[x] current docs/runtime represent one coherent truth
 ```
 
 Canonical detail: `docs/PROSPECT_FIRST_DESIGN.md`.
 
-### M8.3 — Operator acceptance
+### M8.3 — Operator acceptance ← NEXT BUSINESS GATE
 
 Exercise implemented boundaries with real signed-in roles and real prospect work. This is acceptance, not a new subsystem milestone.
+
+Focus on the actual operator outcome:
+
+```text
+find/select prospect
+→ open Design
+→ copy design assignment
+→ work in clean ChatGPT context
+→ upload result
+→ inspect/publish
+→ create mailing artifact
+→ hand off to Outreach
+```
+
+Do not add architecture to prepare for this gate. Record observed friction and fix only material root causes.
 
 ### M8.4 — Real research/commercial batch
 
