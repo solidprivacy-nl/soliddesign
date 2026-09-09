@@ -215,7 +215,9 @@ jobs:
           grep -q 'papaparse@5.7.0' operator/research-discovery.js
           grep -q 'qualification.research' docs/DISCOVERY.md
           grep -q 'qualification.triage' docs/DISCOVERY.md
-          grep -q 'Show the decision; hide the machinery' docs/DISCOVERY.md
+          grep -q 'Technical acceptance — verified' docs/DISCOVERY.md
+          grep -q 'one candidate boundary, one Discovery Inbox, one human decision' docs/DISCOVERY.md
+          ! grep -q 'GOOGLE_PLACES_API_KEY' .env.example
           grep -q "'AREA','URL','IMPORT'" supabase/migrations/20260908_research_discovery_import_v01.sql
 
           ! grep -Eqi 'github\.com|raw\.githubusercontent\.com|api\.github\.com' operator/start-design.html
