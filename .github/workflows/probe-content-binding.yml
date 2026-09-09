@@ -11,7 +11,7 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Check binding names without exposing values
+      - name: Check binding metadata without exposing values
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -32,7 +32,19 @@ jobs:
           for scope in ('production', 'preview'):
               env_vars = (configs.get(scope) or {}).get('env_vars') or {}
               for key in ('GITHUB_CONTENT_TOKEN', 'GITHUB_SECTOR_INTELLIGENCE_TOKEN'):
-                  print(f'cloudflare:{scope}:{key}={"present" if key in env_vars else "missing"}')
+                  item = env_vars.get(key)
+                  if item is None:
+                      print(f'cloudflare:{scope}:{key}=missing')
+                      continue
+                  value = item.get('value') if isinstance(item, dict) else None
+                  if value is None or value == '':
+                      value_state = 'empty_or_redacted'
+                  elif set(str(value)) <= {'*'}:
+                      value_state = 'masked'
+                  else:
+                      value_state = 'nonempty_returned'
+                  kind = item.get('type', 'unknown') if isinstance(item, dict) else type(item).__name__
+                  print(f'cloudflare:{scope}:{key}=present,type={kind},value_state={value_state}')
           PY
           if [ -n "$ACTIONS_CONTENT_TOKEN" ]; then
             echo 'github-actions:GITHUB_CONTENT_TOKEN=present'
