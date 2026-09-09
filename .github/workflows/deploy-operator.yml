@@ -82,6 +82,7 @@ jobs:
           LEGACY_SMOKE_SLUG: koppen-electro-techniek
         run: |
           set -euo pipefail
+          trap 'echo "::error::Smoke failed at line $LINENO: $BASH_COMMAND"' ERR
           if [ "$GITHUB_EVENT_NAME" = "push" ]; then
             BASE_URL="https://soliddesign-cms.pages.dev"
           else
