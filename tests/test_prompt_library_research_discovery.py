@@ -22,11 +22,23 @@ class PromptLibraryResearchDiscoveryTests(unittest.TestCase):
         self.assertIn("includeBody && member.role !== 'ADMIN'", api)
         self.assertIn("expectedSha", api)
         self.assertIn("prompts/library/<slug>.md", docs)
-        self.assertIn("No custom prompt resolver is required", docs)
+        self.assertIn("GITHUB_CONTENT_TOKEN", docs)
 
         self.assertIn("url.pathname === '/api/prompt-library'", middleware)
         self.assertIn("DEFAULT_INTERNAL_ORIGIN", middleware)
         self.assertIn("Promptwijzigingen zijn alleen toegestaan vanuit de productie-CMS", middleware)
+
+    def test_prompt_repository_binding_prefers_neutral_current_name(self):
+        api = self.read("operator/functions/api/prompt-library.js")
+        env_example = self.read(".env.example")
+        docs = self.read("docs/PROMPT_LIBRARY.md")
+
+        self.assertIn("return env?.GITHUB_CONTENT_TOKEN || env?.GITHUB_SECTOR_INTELLIGENCE_TOKEN || ''", api)
+        self.assertEqual(api.count("GITHUB_SECTOR_INTELLIGENCE_TOKEN"), 1)
+        self.assertLess(api.index("GITHUB_CONTENT_TOKEN"), api.index("GITHUB_SECTOR_INTELLIGENCE_TOKEN"))
+        self.assertNotIn("GOOGLE_PLACES_API_KEY", env_example)
+        self.assertNotIn("proven sector overlays", docs.lower())
+        self.assertIn("Acceptance — verified", docs)
 
     def test_prompt_invocation_is_shared_and_initial_methods_are_real_repository_files(self):
         config = self.read("operator/config.js")
@@ -79,6 +91,7 @@ class PromptLibraryResearchDiscoveryTests(unittest.TestCase):
         html = self.read("operator/index.html")
         discovery_js = self.read("operator/discovery.js")
         research = self.read("operator/research-discovery.js")
+        discovery_docs = self.read("docs/DISCOVERY.md")
 
         self.assertIn("Vind bedrijven en voeg geschikte kandidaten toe aan Prospects", html)
         self.assertIn('data-discovery-mode="research"', html)
@@ -99,6 +112,8 @@ class PromptLibraryResearchDiscoveryTests(unittest.TestCase):
         self.assertIn("2. Importeer resultaat", research)
         self.assertIn("+ Extra instructie", research)
         self.assertFalse((ROOT / "operator/sector-intelligence-ui.js").exists())
+        self.assertIn("Technical acceptance — verified", discovery_docs)
+        self.assertNotIn("[ ]", discovery_docs)
 
     def test_research_and_deterministic_triage_are_merge_safe_in_one_inbox(self):
         triage = self.read("operator/discovery-triage.js")
