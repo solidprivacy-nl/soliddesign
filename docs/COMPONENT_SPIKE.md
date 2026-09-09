@@ -30,9 +30,9 @@ fixture Prospect
 
 `Prospect` is the owned source-neutral boundary.
 
-Canonical live source is Overture Maps; Google is optional enrichment/fallback only when evidence justifies it.
+The original live Gate-1/2 implementation used Overture Maps as its discovery source. The current product has three explicit intake paths — research import, Overture area search and specific URL — and no Google Places fallback adapter. See `docs/DISCOVERY.md`.
 
-Source provenance fields:
+Source provenance fields established by the spike remain useful:
 
 ```text
 discovery_source
@@ -42,7 +42,7 @@ operating_status
 place_id
 ```
 
-This is enough to change a discovery provider without touching scoring/demo logic. Do not build a generalized plugin framework.
+This is enough to change or add an evidence-backed discovery input without touching scoring/demo logic. Do not build a generalized plugin framework.
 
 ### Audit donor → AuditResult
 
@@ -68,7 +68,7 @@ Site config follows the reviewed OpenPage-compatible shape:
 
 The original spike deliberately avoided testimonial and contact-form blocks. That remains a useful trust default for unsolicited pre-sale proofs, not a universal production-site limitation.
 
-## Overture adapter contract
+## Historical Overture adapter contract
 
 ```text
 bbox + taxonomy
