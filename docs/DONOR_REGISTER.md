@@ -18,7 +18,7 @@ Classifications:
 
 Documentation: https://docs.overturemaps.org/guides/places/
 
-Role: **CANONICAL PHASE-1 DISCOVERY DATASET**
+Role: **BROAD DISCOVERY DATA SOURCE**
 
 Status: `ADOPT DATA SOURCE`
 
@@ -37,10 +37,12 @@ Relevant capability:
 
 Boundary:
 
-- Overture is candidate discovery, not commercial-demand truth;
+- Overture is one of the three current discovery inputs, not the definition of Discovery;
+- Overture is candidate recall, not commercial-demand truth;
 - release ID is recorded;
 - external data remains untrusted until validated;
-- use `basic_category` / `taxonomy`, not deprecated `categories`.
+- use `basic_category` / `taxonomy`, not deprecated `categories`;
+- sector/taxonomy metadata never becomes Design instruction.
 
 Licensing/attribution: follow Overture's theme/source attribution guidance:
 https://docs.overturemaps.org/attribution/
@@ -87,7 +89,7 @@ SolidDesign modifications:
 - website required;
 - closed-place filtering;
 - explicit release/source provenance;
-- no multi-source pipeline by default.
+- no multi-source provider framework.
 
 ## 4. NezbiT/pitch-doctor
 
@@ -136,7 +138,7 @@ Repository: https://github.com/JackInSightsV2/Automated-Agentic-AI-Web-Agency
 
 License: MIT — verified in root `LICENSE`.
 
-Role: **FULL-CHASSIS COMPARATOR / OPTIONAL GOOGLE REFERENCE**
+Role: **HISTORICAL COMPARATOR / REFERENCE ONLY**
 
 Status: `IDEA / DEFER`
 
@@ -148,8 +150,9 @@ Previously useful:
 
 Current decision:
 
-- Google Places is no longer canonical discovery;
-- larger agentic runtime is not incorporated.
+- no Google Places adapter exists in the current SolidDesign discovery runtime;
+- the larger agentic runtime is not incorporated;
+- a future source may be reconsidered only after a measured gap and must feed the existing candidate boundary.
 
 Security note: reviewed upstream orchestrator invokes Claude Code with `--dangerously-skip-permissions`; do not import that runtime without explicit sandbox design.
 
@@ -157,16 +160,16 @@ Security note: reviewed upstream orchestrator invokes Claude Code with `--danger
 
 Provider, not donor repository.
 
-Role: **OPTIONAL FUTURE ENRICHMENT/FALLBACK**
+Role: **POTENTIAL FUTURE ENRICHMENT SOURCE**
 
-Status: `DEFER`
+Status: `DEFER — NOT IN CURRENT RUNTIME`
 
 Potential later value:
 
 - rating/review count;
-- measured Overture coverage gaps.
+- measured coverage gaps.
 
-Not a Phase-1 dependency. No Google scraping.
+There is no current Google Places discovery adapter, credential requirement or fallback workflow. Do not add one until comparative operating evidence justifies the extra provider/billing/maintenance burden. No Google scraping.
 
 ## 8. GoogleChrome/lighthouse
 
@@ -214,17 +217,19 @@ Status: `IDEA / ADAPT CONTRACT`
 
 Useful reviewed concepts:
 
-- industry/product-aware design reasoning;
-- palette, typography and style selection as structured design decisions;
+- structured design reasoning;
+- palette, typography and style as explicit design decisions;
 - explicit design-system output instead of free-form generated code.
 
 SolidDesign adoption:
 
 - one small deterministic `DesignProfile` contract;
+- verified prospect brand information may affect bounded visual tokens;
+- absent verified brand information, one neutral fallback is used;
+- discovery category/sector does not choose visual direction;
 - no donor runtime;
 - no copied design database;
-- no search engine or agent added;
-- category signals only influence bounded design tokens.
+- no search engine or agent added.
 
 ## 12. TheMattBerman/landing-page-factory
 
@@ -285,7 +290,7 @@ The following remain research/reference donors only and are **not** dependencies
 - `winchxyz/loupe` — reference-backed design tokens and reviewer-loop concepts;
 - `nexu-io/open-design` — structured design-system packaging/craft references.
 
-Do not add their runtimes, daemons, visual editors, agents or catalogs during Phase 1.
+Do not add their runtimes, daemons, visual editors, agents or catalogs during the current pilot.
 
 ## Provenance template
 
