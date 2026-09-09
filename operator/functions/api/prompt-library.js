@@ -55,6 +55,10 @@ async function caller(request) {
   return row?.active === true ? row : null;
 }
 
+function repositoryToken(env) {
+  return env?.GITHUB_CONTENT_TOKEN || env?.GITHUB_SECTOR_INTELLIGENCE_TOKEN || '';
+}
+
 function validSlug(value) {
   const slug = String(value || '').trim().toLowerCase();
   return /^[a-z0-9][a-z0-9-]{0,62}$/.test(slug) ? slug : null;
@@ -219,7 +223,7 @@ async function deletePrompt(input, token) {
 export async function onRequestGet(context) {
   const member = await caller(context.request);
   if (!member) return json({ error: 'Niet geautoriseerd.' }, 401);
-  const token = context.env?.GITHUB_SECTOR_INTELLIGENCE_TOKEN || context.env?.GITHUB_CONTENT_TOKEN || '';
+  const token = repositoryToken(context.env);
   const url = new URL(context.request.url);
   const slug = validSlug(url.searchParams.get('slug'));
   const includeBody = url.searchParams.get('body') === '1';
@@ -242,7 +246,7 @@ export async function onRequestPost(context) {
   const member = await caller(context.request);
   if (!member) return json({ error: 'Niet geautoriseerd.' }, 401);
   if (member.role !== 'ADMIN') return json({ error: 'Alleen een Admin kan prompts wijzigen.' }, 403);
-  const token = context.env?.GITHUB_SECTOR_INTELLIGENCE_TOKEN || context.env?.GITHUB_CONTENT_TOKEN;
+  const token = repositoryToken(context.env);
   if (!token) return json({ error: 'Repositorybeheer is nog niet geconfigureerd.' }, 503);
 
   let body;
