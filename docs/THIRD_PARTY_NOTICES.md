@@ -8,7 +8,7 @@ Source: Overture Maps Foundation
 Documentation: https://docs.overturemaps.org/  
 Attribution/licensing: https://docs.overturemaps.org/attribution/
 
-SolidDesign uses the Overture **Places** dataset for Phase-1 business discovery.
+SolidDesign uses the Overture **Places** dataset for the current broad area-search discovery path. Research import and specific-URL intake are separate current discovery inputs and do not depend on Overture.
 
 Overture Places combines data from multiple sources under permissive licenses, including CDLA Permissive 2.0, Apache 2.0 and CC0 sources as documented by Overture. When Overture-derived data is published/displayed externally, applicable attribution requirements must be followed.
 
@@ -76,7 +76,7 @@ Repository: https://github.com/JackInSightsV2/Automated-Agentic-AI-Web-Agency
 Reviewed revision: `56a02463316527542f01ba5ca405445319b43204`  
 License: MIT
 
-Its Google Places pattern was reviewed during earlier architecture work. Google Places is now optional/non-canonical and the upstream agentic runtime is not incorporated.
+Its Google Places pattern was reviewed during earlier architecture work. SolidDesign does not currently ship a Google Places adapter or that upstream agentic runtime.
 
 ## Segno
 
