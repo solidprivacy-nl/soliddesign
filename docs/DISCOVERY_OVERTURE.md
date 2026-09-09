@@ -68,7 +68,7 @@ taxonomy.hierarchy
 taxonomy.alternates
 ```
 
-Sector identity in SolidDesign is separate from Overture taxonomy. Overture taxonomy is source query vocabulary; `prospects.canonical_sector_key` is the SolidDesign primary sector identity used by reusable sector intelligence/design context.
+Sector identity in SolidDesign is separate from Overture taxonomy. Overture taxonomy is source query vocabulary; `prospects.canonical_sector_key` is optional SolidDesign discovery/provenance metadata when a validated key naturally exists. It is not required downstream and is never Design context or a design instruction.
 
 ## 5. Candidate fields
 
