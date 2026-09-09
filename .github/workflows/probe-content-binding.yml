@@ -1,0 +1,46 @@
+name: Probe content binding
+
+on:
+  push:
+    branches: [chore/current-truth-final]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check binding names without exposing values
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ACTIONS_CONTENT_TOKEN: ${{ secrets.GITHUB_CONTENT_TOKEN }}
+          ACTIONS_LEGACY_TOKEN: ${{ secrets.GITHUB_SECTOR_INTELLIGENCE_TOKEN }}
+          PROJECT: soliddesign-cms
+        run: |
+          set -euo pipefail
+          curl -fsS \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT" \
+            > /tmp/project.json
+          python - <<'PY'
+          import json
+          payload = json.load(open('/tmp/project.json', encoding='utf-8'))
+          project = payload.get('result') or {}
+          configs = project.get('deployment_configs') or {}
+          for scope in ('production', 'preview'):
+              env_vars = (configs.get(scope) or {}).get('env_vars') or {}
+              for key in ('GITHUB_CONTENT_TOKEN', 'GITHUB_SECTOR_INTELLIGENCE_TOKEN'):
+                  print(f'cloudflare:{scope}:{key}={"present" if key in env_vars else "missing"}')
+          PY
+          if [ -n "$ACTIONS_CONTENT_TOKEN" ]; then
+            echo 'github-actions:GITHUB_CONTENT_TOKEN=present'
+          else
+            echo 'github-actions:GITHUB_CONTENT_TOKEN=missing'
+          fi
+          if [ -n "$ACTIONS_LEGACY_TOKEN" ]; then
+            echo 'github-actions:GITHUB_SECTOR_INTELLIGENCE_TOKEN=present'
+          else
+            echo 'github-actions:GITHUB_SECTOR_INTELLIGENCE_TOKEN=missing'
+          fi
