@@ -146,6 +146,22 @@ Open ChatGPT-project ↗   # only when configured
 
 The operator does not need to manually manage a design-brief URL.
 
+### Clean ChatGPT handoff
+
+The copied two-URL handoff is self-contained for normal design execution.
+
+```text
+SolidDesign start URL
++ Prospect Design Brief URL
+→ clean ChatGPT context
+→ SolidDesign design method from the same supplied origin
+→ prospect-specific work
+```
+
+The origin of the supplied start URL is `SOLIDDESIGN_ORIGIN`. Bootstrap resources are resolved from that same origin. This keeps production and isolated PR previews on their own code-under-test origin and avoids hard-coding a deployment hostname into the design method.
+
+A normal team member does not need to discover or connect the implementation repository, branches, pull requests, database provider, deployment provider or internal storage paths merely to execute Design. This is a workflow/interface boundary, not a secrecy mechanism: maintainers may still work with the implementation repository separately.
+
 ### Projectinstellingen
 
 Advanced/occasional controls stay behind progressive disclosure:
@@ -211,6 +227,8 @@ It does not contain:
 
 The Bootstrap loads only the generic SolidDesign design method and the prospect-specific brief/evidence.
 
+It resolves required SolidDesign resources relative to `SOLIDDESIGN_ORIGIN`, derived from the supplied start URL. It does not require a repository connector or implementation-provider discovery.
+
 It does not load:
 
 - Sector Intelligence;
@@ -247,7 +265,7 @@ operator_set_prospect_sector(uuid,text)
 
 Sector Intelligence content PRs that only exist to publish retired research are closed without merge.
 
-Any older design/provider PR whose UX contract depends on Sector Intelligence or `Sector voor design` is superseded rather than merged through a large rebase. Future private-repository/provider-boundary work starts from current `main` and the current prospect-first contract.
+The older provider-boundary/design PR is superseded rather than rebased. Its useful clean-ChatGPT principle is incorporated here as the smaller origin-relative two-URL contract; its Sector Intelligence selector/linking design and repository-visibility blocker are not part of the current workflow. Repository privacy remains a separate governance decision, not a prerequisite for normal Design execution.
 
 ## Acceptance invariants
 
@@ -260,12 +278,13 @@ After cutover:
 5. Design has one primary ChatGPT action: `Kopieer designopdracht`.
 6. Generated Design Brief contains no Sector Intelligence or canonical sector lookup identity.
 7. Design Bootstrap performs no sector lookup.
-8. Website concept upload/LIVE publication still works.
-9. Printmailing versioning still works on Design.
-10. Outreach still records the exact sent printmailing version.
-11. No active runtime request targets `/api/sector-intelligence`.
-12. No current documentation presents Sector Intelligence as a live capability.
-13. Obsolete sector UI/API/RPC/tests/deploy paths are removed rather than deprecated in parallel.
+8. The two-URL handoff resolves design-method resources from the supplied SolidDesign origin and does not require repository/provider discovery.
+9. Website concept upload/LIVE publication still works.
+10. Printmailing versioning still works on Design.
+11. Outreach still records the exact sent printmailing version.
+12. No active runtime request targets `/api/sector-intelligence`.
+13. No current documentation presents Sector Intelligence as a live capability.
+14. Obsolete sector UI/API/RPC/tests/deploy paths are removed rather than deprecated in parallel.
 
 ## Definition of Done
 
@@ -276,6 +295,7 @@ business workflow simplified
 + implementation complete
 + discovery regression-proven
 + design regression-proven
++ clean ChatGPT handoff regression-proven
 + stale runtime removed
 + conflicting tests removed
 + current docs aligned
