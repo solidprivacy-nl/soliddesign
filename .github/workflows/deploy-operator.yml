@@ -183,9 +183,10 @@ jobs:
           grep -q 'prospect-research-import-v1' /tmp/prospect-research-contract.json
           grep -q 'triage_decision' /tmp/prospect-research-contract.json
 
-          # Retired Sector Intelligence is not deployed as an active resource.
+          # Retired Sector Intelligence content must not be deliverable. Cloudflare may route a missing static path to the app shell, so HTTP 404 alone is not the invariant.
           sector_status=$(curl -sS -o /tmp/sector-retired.body -w '%{http_code}' "$BASE_URL/sector-intelligence/README.md")
-          test "$sector_status" = "404"
+          test "$sector_status" = "404" || test "$sector_status" = "200"
+          ! grep -Eqi '(^|[[:space:]#])Sector Intelligence([[:space:]#:]|$)|sector_intelligence_version|canonical sector research' /tmp/sector-retired.body
 
           # Prompt repository writes are production-only, never PR-preview capability.
           prompt_write_status=$(curl -sS -o /tmp/prompt-write.body -w '%{http_code}' \
