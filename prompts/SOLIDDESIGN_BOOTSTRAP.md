@@ -11,10 +11,12 @@ A customer design project starts with exactly two URLs:
 1. the stable SolidDesign start URL;
 2. one SolidDesign Prospect Design Brief URL for the customer being worked on.
 
+Let `SOLIDDESIGN_ORIGIN` be the origin (`scheme + host`) of the supplied SolidDesign start URL. Resolve every SolidDesign path in this document against that same origin. Do not discover, inspect or require underlying source repositories, branches, pull requests, database providers, deployment providers or internal storage paths merely to execute the design workflow.
+
 When invoked this way:
 
 1. read this canonical SolidDesign Design Bootstrap completely;
-2. read every resource marked **REQUIRED** below;
+2. read every resource marked **REQUIRED** below from `SOLIDDESIGN_ORIGIN`;
 3. read the supplied Prospect Design Brief completely;
 4. open the source website from the brief;
 5. follow the explicit preview hyperlink in the brief when a current or LIVE mock-up exists; never reconstruct or guess preview URLs;
@@ -27,18 +29,18 @@ When invoked this way:
 
 ## Required prompt resources
 
-Read these in order before doing design work:
+Read these paths in order from `SOLIDDESIGN_ORIGIN` before doing design work:
 
 1. **REQUIRED — Design constitution**  
-   https://soliddesign-cms.pages.dev/prompts/core/DESIGN_CONSTITUTION.md
+   `/prompts/core/DESIGN_CONSTITUTION.md`
 2. **REQUIRED — Diagnose**  
-   https://soliddesign-cms.pages.dev/prompts/workflow/01_DIAGNOSE.md
+   `/prompts/workflow/01_DIAGNOSE.md`
 3. **REQUIRED — Design direction**  
-   https://soliddesign-cms.pages.dev/prompts/workflow/02_DESIGN_DIRECTION.md
+   `/prompts/workflow/02_DESIGN_DIRECTION.md`
 4. **REQUIRED — Build and iterate**  
-   https://soliddesign-cms.pages.dev/prompts/workflow/03_BUILD.md
+   `/prompts/workflow/03_BUILD.md`
 5. **REQUIRED — Critique and acceptance**  
-   https://soliddesign-cms.pages.dev/prompts/workflow/04_CRITIQUE.md
+   `/prompts/workflow/04_CRITIQUE.md`
 
 ## Prospect-first design boundary
 
