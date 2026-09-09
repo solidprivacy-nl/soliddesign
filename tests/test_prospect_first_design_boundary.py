@@ -58,6 +58,21 @@ def test_bootstrap_has_no_sector_lookup_or_overlay_hook() -> None:
     assert "Design the actual prospect" in bootstrap
 
 
+def test_clean_chatgpt_handoff_uses_the_supplied_soliddesign_origin() -> None:
+    bootstrap = read("prompts/SOLIDDESIGN_BOOTSTRAP.md")
+    start = read("operator/start-design.html")
+    combined = f"{bootstrap}\n{start}".lower()
+
+    assert "SOLIDDESIGN_ORIGIN" in bootstrap
+    assert "SOLIDDESIGN_ORIGIN" in start
+    assert "/prompts/core/DESIGN_CONSTITUTION.md" in bootstrap
+    assert "repository and infrastructure discovery are outside the normal design workflow" in start
+    assert "soliddesign-cms.pages.dev" not in bootstrap
+    assert "github.com" not in combined
+    assert "raw.githubusercontent.com" not in combined
+    assert "supabase.co" not in combined
+
+
 def test_sector_remains_only_a_discovery_concern_in_active_ui() -> None:
     discovery = read("operator/discovery-sectors.js")
     research = read("operator/research-discovery.js")
