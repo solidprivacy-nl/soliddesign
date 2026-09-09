@@ -1,107 +1,67 @@
 # SolidDesign Prompt Library
 
-**Status:** canonical operator-prompt contract  
-**Date:** 2026-09-08  
-**Principle:** centralize reusable method without creating a prompt-management platform.
+**Status:** canonical production contract  
+**Date:** 2026-09-09  
+**Principle:** centralize reusable operator method without creating a prompt-management platform.
 
 ## 1. Objective
 
-SolidDesign uses reusable ChatGPT methods for prospect research, website design and other operator workflows. Copying the full method into every chat creates version drift and operator friction.
-
-The Prompt Library therefore separates:
+SolidDesign keeps reusable ChatGPT methods in one place so operators do not copy or maintain full method text per chat.
 
 ```text
 METHOD
-GitHub-managed Markdown prompt
+GitHub-managed Markdown
 
-from
++
 
 INVOCATION CONTEXT
-small per-run values supplied by the operator
+small per-run operator values
+
+→ one copyable ChatGPT invocation
 ```
 
-Operators copy a stable SolidDesign URL plus the current context. They do not copy the prompt body itself.
+The Prompt Library is an operator interface over repository-managed method content. It is not a second workflow engine, prompt database or AI execution service.
 
 ## 2. Source of truth
 
-Prompt content is repository content:
+Canonical operator prompts live only at:
 
 ```text
 prompts/library/<slug>.md
 ```
 
-Git provides history, diff and rollback. Supabase does not duplicate prompt content, versions, fields or categories.
+Git provides history, diff and rollback. Supabase contains no duplicate prompt body/version table.
 
-Cloudflare Pages already stages `prompts/` into the Operator deployment. The stable consumption shape therefore remains:
-
-```text
-https://soliddesign-cms.pages.dev/prompts/library/<slug>.md
-```
-
-No custom prompt resolver is required.
+Static prompt Markdown is staged with the Operator deployment and is readable from the same SolidDesign origin so ChatGPT/web tooling can consume the referenced method.
 
 ## 3. Prompt classes
 
-System/design architecture and operator prompts are deliberately separate.
-
-### Engineering-governed system prompts
-
-Examples:
+Engineering-governed system/design resources remain outside Prompt Library administration:
 
 - `prompts/SOLIDDESIGN_BOOTSTRAP.md`;
 - `prompts/core/*`;
-- `prompts/workflow/*`;
-- proven sector overlays.
+- `prompts/workflow/*`.
 
-These are not mutable through Prompt Library administration.
+Only files directly below `prompts/library/` are managed by the CMS Prompt Library.
 
-### Admin-managed operator prompts
+An operator prompt delegates to an existing canonical system method when one already exists instead of copying that method into a competing prompt.
 
-Only files directly below:
+## 4. Identity and file contract
 
-```text
-prompts/library/
-```
-
-are managed by the CMS Prompt Library.
-
-An operator prompt should delegate to an existing canonical system method when one already exists rather than copy that method into a second prompt.
-
-## 4. Identity
-
-The Markdown filename is stable prompt identity.
-
-Example:
+The Markdown filename is stable prompt identity:
 
 ```text
 prompts/library/website-design.md
 slug = website-design
 ```
 
-An existing slug is immutable through the CMS. Change title, description, invocation fields or body without breaking existing workflow references.
+Slug contract:
 
-If a fundamentally different reusable method is needed, create a new slug.
-
-## 5. File contract
-
-Each operator prompt contains constrained front matter plus Markdown body.
-
-Example:
-
-```markdown
----
-title: "Website design"
-category: "Design"
-description: "Start een website-redesign."
-invocation: {"intro":"Lees en volg deze SolidDesign-prompt volledig:","fields":[{"key":"website","label":"Website","control":"url","placeholder":"https://www.bedrijf.nl","required":true}]}
----
-# SolidDesign Website Design
-...
+```regex
+^[a-z0-9][a-z0-9-]{0,62}$
 ```
 
-The front matter deliberately supports only the fields SolidDesign uses. It is not a generic YAML-driven form platform.
-
-Invocation field contract:
+Each prompt contains constrained front matter plus Markdown body. Supported invocation fields are intentionally small:
 
 ```text
 key
@@ -111,66 +71,49 @@ placeholder
 required
 ```
 
-No conditions, formulas, field dependencies or workflow scripting are supported.
+No conditions, formulas, scripting, workflow logic or generic form-builder features are supported.
 
-## 6. Role model
+## 5. Role model
 
-### USER
+### USER / KEY_USER
 
 May:
 
-- list prompt title/category/description;
-- see required invocation fields;
-- supply invocation values;
+- list title/category/description;
+- see invocation fields;
+- supply run-specific values;
 - copy the completed ChatGPT invocation.
 
-May not:
-
-- retrieve prompt body through the CMS management API;
-- add, update or delete prompts.
-
-### KEY_USER
-
-Has the same Prompt Library rights as USER.
-
-No additional Prompt Manager role exists.
+May not retrieve prompt body through the CMS management API or mutate prompt files.
 
 ### ADMIN
 
 May additionally:
 
-- retrieve prompt body through the authenticated management endpoint;
-- create an operator prompt;
-- update an operator prompt;
-- update invocation metadata/fields;
-- delete obsolete operator prompts.
+- retrieve operator prompt body;
+- create/update/delete operator prompts;
+- edit invocation metadata.
 
-The server validates the active `team_members` row and `role = ADMIN`. UI hiding is not authorization.
+The server re-checks the active `team_members` row and role. UI visibility is never authorization.
 
-## 7. Repository-write boundary
+## 6. Repository-write boundary
 
-The Prompt Library server capability never accepts an arbitrary repository path.
-
-The only writable path is derived as:
+The server derives the only writable path itself:
 
 ```text
 validated slug
 → prompts/library/<slug>.md
 ```
 
-Slug contract:
+It never accepts an arbitrary repository path. Core prompts, workflow prompts, source code and documentation are outside the mutation capability.
 
-```regex
-^[a-z0-9][a-z0-9-]{0,62}$
-```
+Update/delete operations require the current GitHub content SHA. A stale editor receives a conflict rather than overwriting newer content.
 
-Core/workflow prompts, source code, documentation and other repository files are outside this capability.
+PR previews are read-only for repository mutations; Prompt Library writes are production-CMS-only.
 
-Existing file updates and deletes use the current GitHub content SHA as optimistic concurrency protection. A stale editor receives a conflict rather than silently overwriting newer content.
+## 7. Browser data boundary
 
-## 8. Browser data boundary
-
-Normal Prompt Library reads return only:
+Normal Prompt Library reads expose only:
 
 ```text
 slug
@@ -180,111 +123,85 @@ description
 invocation
 ```
 
-The body is returned only when an authenticated Admin explicitly requests the management detail.
+Body retrieval is Admin-only. Invocation values remain ephemeral browser state unless a separate business workflow already owns the value.
 
-Generic invocation values are ephemeral browser state. They are not persisted to Supabase.
+No GitHub write credential is exposed to browser code.
 
-Known prospect values may be supplied as workflow prefill without creating new prompt state.
+## 8. Invocation renderer
 
-## 9. Invocation renderer
-
-One browser utility owns the copied text format.
+One browser utility owns the copied invocation format. CMS workflows call that renderer instead of maintaining independent prompt strings.
 
 Conceptually:
 
 ```text
 invocation intro
 prompt URL
-field label + supplied value
-field label + supplied value
+field label + value
+field label + value
 ...
 ```
 
-Example:
+## 9. Repository credential boundary
+
+The neutral runtime binding is:
 
 ```text
-Lees en volg deze SolidDesign-prompt volledig:
-https://soliddesign-cms.pages.dev/prompts/library/website-design.md
-
-Website:
-https://www.bedrijf.nl
-
-Aanvullende instructie:
-Behoud de bestaande merknaam.
+GITHUB_CONTENT_TOKEN
 ```
 
-CMS workflows should call this renderer instead of maintaining independent prompt strings.
+Production still contains one isolated compatibility fallback for the previously deployed Cloudflare secret name `GITHUB_SECTOR_INTELLIGENCE_TOKEN`. A read-only 2026-09-09 configuration probe confirmed that Cloudflare production currently has the legacy secret binding and not the neutral binding; Cloudflare returns secret values redacted, and no duplicate GitHub Actions secret exists. Copying or renaming that secret autonomously would therefore require unsafe secret-exfiltration machinery and is deliberately rejected.
+
+Runtime must prefer `GITHUB_CONTENT_TOKEN` whenever present. The legacy name may exist only as that single compatibility fallback; it is not Sector Intelligence functionality and must not spread to any other code or documentation.
+
+Once the neutral Cloudflare secret is configured with the same repository credential, remove the fallback without any product/workflow change.
 
 ## 10. Confidentiality boundary
 
-The current requirement is:
+The current requirement is role-based CMS access, not cryptographic prompt secrecy. Static prompt URLs are intentionally readable so ChatGPT can consume them.
 
-> USER and KEY_USER may not inspect prompt bodies through the CMS.
+If strict prompt secrecy later becomes a real business requirement, the correct boundary is server-side AI execution. Hidden URLs, obscurity and user-agent checks are not substitutes.
 
-The implementation enforces that requirement.
+## 11. Initial canonical entries
 
-It does **not** claim that URL-delivered prompts are cryptographically secret from those operators. If ChatGPT can anonymously retrieve a URL that an operator copies, that operator can in principle retrieve the same URL outside the CMS.
+Current authoritative operator methods are:
 
-Making the GitHub repository private later protects repository access but does not alter that URL-consumption fact.
+- `prospect-research` — evidence-backed prospect research and the CMS CSV handoff;
+- `website-design` — a light wrapper around the canonical SolidDesign Design Bootstrap.
 
-If strict prompt secrecy later becomes an observed business requirement, the correct architecture is server-side AI execution where the private prompt never reaches the operator browser. Signed-looking URLs, obscurity or user-agent checks are not substitutes for that boundary.
+New entries are added only when an authoritative reusable method actually exists.
 
-## 11. GitHub credential
+## 12. Failure behaviour
 
-Repository access remains server-side. No GitHub credential is sent to browser code.
+- repository read unavailable → Prompt Library reports unavailable; prospect state is unchanged;
+- malformed front matter → invalid prompt is excluded until corrected;
+- non-Admin body request/mutation → rejected;
+- stale SHA → conflict;
+- missing write credential → explicit configuration error;
+- Prompt Library failure never publishes a design, promotes a prospect or sends outreach.
 
-The current deployment already carries the Sector Intelligence repository credential. Prompt Library accepts that existing binding and also supports the neutral future binding `GITHUB_CONTENT_TOKEN`. Do not remove the deployed existing binding until Cloudflare configuration has been migrated and verified.
-
-This compatibility is configuration transition, not a second authorization model.
-
-## 12. Initial canonical entries
-
-Current implementation seeds only methods for which SolidDesign has authoritative content:
-
-- `prospect-research` — evidence-backed prospect research and CMS CSV handoff;
-- `website-design` — a light wrapper that delegates to the existing canonical SolidDesign design bootstrap.
-
-Logo/flyer methods may be added by Admin once their authoritative prompt bodies are deliberately adopted. Do not fabricate placeholder methodology merely to populate the library.
-
-## 13. Failure behaviour
-
-- repository read unavailable → library reports unavailable; existing prospect work remains usable;
-- malformed prompt front matter → invalid file is excluded from normal listing and must be corrected by Admin/engineering;
-- non-Admin body request → `403`;
-- non-Admin mutation → `403`;
-- stale SHA on update/delete → `409`;
-- missing repository write credential → Admin mutation returns configuration error;
-- Prompt Library failure never changes prospect state.
-
-## 14. Non-goals
+## 13. Non-goals
 
 Do not add without observed need:
 
-- prompt database;
-- prompt-version table;
-- favorites;
-- ratings;
-- usage analytics;
+- prompt database/version table;
+- favorites/ratings/usage analytics;
 - approval state machine;
 - generic form builder;
 - prompt marketplace;
-- background AI execution;
-- AI job queue;
+- background AI execution or queue;
 - separate Prompt Manager role.
 
-## 15. Acceptance
+## 14. Acceptance — verified
 
-Prompt Library is complete only when:
+Production/CI verification establishes:
 
-```text
-[ ] active USER can list/use invocation metadata
-[ ] active KEY_USER can list/use invocation metadata
-[ ] neither can retrieve body through CMS management API
-[ ] ADMIN can read/create/update/delete operator prompts
-[ ] Admin writes cannot escape prompts/library/
-[ ] stale-SHA overwrite is rejected
-[ ] copied invocation uses the one shared renderer
-[ ] no prompt content is duplicated into Supabase
-[ ] deployed static prompt URL is readable by ChatGPT/web tooling
-[ ] repository and security documentation match runtime behaviour
-```
+- active USER/KEY_USER can use invocation metadata without CMS body access;
+- ADMIN mutation is constrained to `prompts/library/` and SHA-guarded;
+- one shared invocation renderer is used;
+- prompt content is not duplicated into Supabase;
+- static prompt URLs are deployed on the SolidDesign origin;
+- PR-preview mutations are rejected;
+- repository credentials remain server-side;
+- Prompt Library remains separate from the prospect-specific Design Bootstrap/Brief workflow.
+
+Prompt Library is therefore technically complete. Further work is evidence-gated by real operator/commercial use, not by feature completeness.
