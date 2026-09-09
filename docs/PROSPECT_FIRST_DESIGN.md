@@ -1,7 +1,7 @@
 # Prospect-first Design
 
-**Status:** canonical target/current contract after cutover  
-**Date:** 2026-09-09  
+**Status:** current production contract  
+**Production cutover:** 2026-09-09  
 **Governing rule:** `ENGINEERING_CONSTITUTION.md`
 
 ## Business goal
@@ -107,7 +107,7 @@ The cutover removes active use of:
 - Sector Intelligence API/UI code;
 - sector-linking RPCs.
 
-Historical database migrations remain immutable history. A retirement migration drops only the now-unused runtime RPCs.
+Historical database migrations remain immutable history. The production retirement migration removes only the now-unused runtime RPCs.
 
 ## Design tab UX contract
 
@@ -254,7 +254,7 @@ Keeping the proven two-URL design handoff avoids unnecessary coupling and scope 
 
 Do not drop `canonical_sector_key` merely to make the schema look cleaner. It remains legitimate discovery/provenance data and removing it would create migration risk without improving the operator workflow.
 
-Do drop runtime capabilities that have no caller after cutover:
+The following retired runtime capabilities are absent from production:
 
 ```text
 operator_list_sector_link_targets()
@@ -263,9 +263,33 @@ operator_set_prospect_sector(uuid,text)
 
 ## Open-work cleanup
 
-Sector Intelligence content PRs that only exist to publish retired research are closed without merge.
+Sector Intelligence content PRs #20, #21 and #39 were closed without merge.
 
-The older provider-boundary/design PR is superseded rather than rebased. Its useful clean-ChatGPT principle is incorporated here as the smaller origin-relative two-URL contract; its Sector Intelligence selector/linking design and repository-visibility blocker are not part of the current workflow. Repository privacy remains a separate governance decision, not a prerequisite for normal Design execution.
+PR #44 was superseded rather than rebased. Its useful clean-ChatGPT principle was incorporated as the smaller origin-relative two-URL contract; its Sector Intelligence selector/linking design and repository-visibility blocker are not part of the current workflow. Repository privacy remains a separate governance decision, not a prerequisite for normal Design execution.
+
+The final current-truth sweep also removed the unused Google Places fallback adapter and the stale PR44-era repository-boundary test. Discovery therefore has exactly the three documented product inputs rather than a hidden fourth provider path.
+
+## Production closeout evidence
+
+Core cutover:
+
+```text
+PR #50: merged
+merge SHA: 73ff1ad8cb5122a242c60ca01f98bdb5798ff61d
+CI #566 / run 34317993838: SUCCESS
+Deploy Operator #223 / run 34317993847: SUCCESS
+```
+
+Database retirement:
+
+```text
+Supabase migration: 20260909061328 retire_sector_linking_v01
+operator_list_sector_link_targets() = absent
+operator_set_prospect_sector(uuid,text) = absent
+canonical_sector_key column = retained
+```
+
+Cleanup is protected by executable `unittest` regression coverage so the retired sector capability and unused Google fallback cannot silently reappear as current code.
 
 ## Acceptance invariants
 
@@ -285,6 +309,7 @@ After cutover:
 12. No active runtime request targets `/api/sector-intelligence`.
 13. No current documentation presents Sector Intelligence as a live capability.
 14. Obsolete sector UI/API/RPC/tests/deploy paths are removed rather than deprecated in parallel.
+15. Discovery exposes only the three documented product intake paths unless real evidence earns another source.
 
 ## Definition of Done
 
