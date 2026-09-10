@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
+  <title>Design-tab preview · SolidDesign</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    body { padding: 32px; }
+    .preview-shell { max-width: 900px; margin: 0 auto; }
+    .preview-head { margin-bottom: 18px; }
+    .preview-head h1 { margin: 6px 0; font: 700 36px/1.05 Georgia, 'Times New Roman', serif; letter-spacing: -.03em; }
+    .preview-note { padding: 12px 14px; border: 1px solid #d9dfda; background: #f4f7f5; border-radius: 12px; color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+    .design-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .design-actions button { min-height: 42px; }
+    .design-meta { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 18px; }
+    .published-design { border: 1px solid var(--line); background: #faf9f5; border-radius: 12px; padding: 14px; margin-bottom: 18px; }
+    .published-design strong { display: block; margin-bottom: 4px; }
+    .published-design a { color: var(--accent-strong); font-weight: 750; }
+    .upload-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 14px; }
+    .upload-row { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-top: 12px; }
+    .upload-row p { margin: 0; max-width: 560px; font-size: 12px; }
+    details.external { border-top: 1px solid #ecebe5; margin-top: 18px; padding-top: 16px; }
+    details.external summary { cursor: pointer; font-weight: 750; font-size: 13px; color: var(--accent-strong); }
+    .external-body { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 10px; margin-top: 14px; }
+    .version-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-top: 1px solid #ecebe5; margin-top: 18px; padding-top: 18px; }
+    .version-heading h4 { margin: 0 0 10px; font-size: 14px; }
+    .version-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid #e7e6df; border-radius: 11px; padding: 12px; }
+    .version-main { min-width: 0; }
+    .version-title { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .version-meta { color: var(--muted); font-size: 11px; }
+    .version-note { margin-top: 5px; font-size: 12px; }
+    .version-status { border-radius: 999px; padding: 3px 7px; font-size: 10px; font-weight: 800; background: #f4efe2; color: #6d5a2f; }
+    .version-actions { display: flex; gap: 7px; }
+    .version-actions a { color: var(--text); text-decoration: none; border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; font-size: 12px; font-weight: 750; }
+    @media (max-width: 700px) {
+      body { padding: 16px; }
+      .upload-grid, .external-body { grid-template-columns: 1fr; }
+      .upload-row, .version-row { align-items: stretch; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="preview-shell">
+    <div class="preview-head">
+      <div class="eyebrow">Parallelle UI-test · geen productiewijziging</div>
+      <h1>Design</h1>
+      <p class="subtle">Prototype voor een eenvoudiger Design-tabblad. De bestaande workflow en huidige Operator blijven ongemoeid.</p>
+    </div>
+
+    <div class="preview-note"><strong>Uitgangspunt:</strong> minder labels, minder duplicatie, exact benoemen wat een knop doet. Geen nieuwe statussen of workflowlogica.</div>
+
+    <section class="card">
+      <h3>Ontwerp in ChatGPT</h3>
+      <p class="subtle">Kopieer een prompt en plak die in ChatGPT. De actuele designbrief en beschikbare sectorinzichten worden meegenomen.</p>
+
+      <div class="link-row">
+        <a href="#">Open designbrief ↗</a>
+        <a href="#" class="disabled">Geen ChatGPT-project gekoppeld</a>
+      </div>
+
+      <div class="design-meta">
+        <label>ChatGPT-projectlink
+          <input type="url" placeholder="https://chatgpt.com/…" />
+        </label>
+        <label>Extra designinstructie
+          <textarea rows="3" placeholder="Bijv. stijlvoorkeur of blijvende klantspecifieke wens"></textarea>
+        </label>
+      </div>
+
+      <div class="design-actions">
+        <button class="secondary">Opslaan</button>
+        <button class="primary">Kopieer startprompt</button>
+        <button class="secondary">Kopieer verbeterprompt</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>Ontwerpversies</h3>
+
+      <div class="published-design">
+        <strong>Gepubliceerd ontwerp</strong>
+        <div class="version-meta">v1 · 1 sep 2026, 08:42</div>
+        <a href="#">Open gepubliceerd ontwerp ↗</a>
+      </div>
+
+      <div class="upload-grid">
+        <label>Nieuwe versie (.html of .zip)
+          <input type="file" accept=".html,.zip,text/html,application/zip" />
+        </label>
+        <label>Wat is er gewijzigd?
+          <input type="text" placeholder="Bijv. hero, CTA en mobiel verbeterd" />
+        </label>
+      </div>
+
+      <div class="upload-row">
+        <p class="subtle">Bij voorkeur één self-contained HTML; ZIP alleen indien nodig.</p>
+        <button class="primary">Upload concept</button>
+      </div>
+
+      <details class="external">
+        <summary>Externe preview gebruiken</summary>
+        <div class="external-body">
+          <label>Previewlink
+            <input type="url" placeholder="https://…" />
+          </label>
+          <button class="secondary">Voeg concept toe</button>
+        </div>
+        <p class="subtle">Alleen voor conceptreview. Publiceren via de prospectlink vereist een HTML- of ZIP-upload.</p>
+      </details>
+
+      <div class="version-heading">
+        <h4>Versiehistorie</h4>
+        <span class="subtle">2 versies</span>
+      </div>
+      <div class="version-row">
+        <div class="version-main">
+          <div class="version-title"><strong>v2</strong><span class="version-status">CONCEPT</span></div>
+          <div class="version-meta">1 sep 2026, 18:43 · upload</div>
+          <div class="version-note">Polish + tekstuele variatie</div>
+        </div>
+        <div class="version-actions">
+          <a href="#">Open</a>
+          <button class="secondary">Publiceer</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
