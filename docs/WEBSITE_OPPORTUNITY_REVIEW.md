@@ -1,6 +1,6 @@
 # Website Opportunity Review — v5.1
 
-**Status:** current target contract for M8.3 implementation  
+**Status:** current production contract; technical implementation verified 2026-09-13  
 **Date:** 2026-09-13  
 **Scope:** selected prospect → reviewed website opportunities → Design → Printmailing → Outreach  
 **Governing doctrine:** `ENGINEERING_CONSTITUTION.md`
@@ -136,7 +136,7 @@ There is deliberately no:
 - `OP-*` identity;
 - workflow status machine.
 
-`key` is the semantic identity needed for this scope.
+`key` is the semantic identity needed for this scope and must be unique within one review.
 
 A maximum of five findings prevents the object from becoming a disguised audit report. Fewer are valid. An empty array is valid when a human review finds no material supported opportunity.
 
@@ -207,20 +207,21 @@ operator_set_website_opportunity(
 )
 ```
 
-The RPC must:
+The RPC:
 
-- require an active authorized team member;
-- require a non-archived prospect;
-- verify that the audit belongs to that prospect;
-- validate the exact finding shape;
-- require concrete evidence for every finding;
-- enforce the small finding-count limit;
-- preserve every unrelated `qualification.*` namespace;
-- replace only `qualification.website_opportunity`;
-- log `website_opportunity_reviewed` in the same transaction;
-- fail atomically.
+- requires an active authorized team member;
+- requires a non-archived prospect;
+- verifies that the audit belongs to that prospect;
+- validates the exact finding shape;
+- requires concrete evidence for every finding;
+- enforces the small finding-count limit;
+- enforces unique semantic finding keys;
+- preserves every unrelated `qualification.*` namespace;
+- replaces only `qualification.website_opportunity`;
+- logs `website_opportunity_reviewed` in the same transaction;
+- fails atomically.
 
-It must not:
+It does not:
 
 - accept arbitrary qualification JSON;
 - update `audits`;
@@ -258,7 +259,7 @@ Overzicht | Design | Outreach | Activiteit
 
 No new navigation module is added.
 
-The Overview receives one compact `Websitekansen` card.
+The Overview contains one compact `Websitekansen` card.
 
 Before review:
 
@@ -336,7 +337,7 @@ A redesign should also preserve existing verified strengths where appropriate.
 
 The current operational Print flow is intentionally manual: the operator uploads an immutable PDF/PNG/JPG mailing artifact. v5.1 does not add a PDF generator or screenshot platform.
 
-The Printmailing surface must therefore show/copy the same persisted Website Opportunity findings so the operator does not retype or re-rank them while creating the final artifact.
+The Printmailing surface shows and can copy the same persisted Website Opportunity findings so the operator does not retype or re-rank them while creating the final artifact.
 
 Prospect-facing proof must use:
 
@@ -409,17 +410,25 @@ Security requirements:
 - function execution is revoked from `PUBLIC`/`anon` and explicitly granted to `authenticated`;
 - activity logging happens in the same transaction.
 
+Supabase's generic security advisor warns that signed-in users can execute exposed `SECURITY DEFINER` functions. This is intentional for the operator RPC pattern in SolidDesign: the callable function is the guarded business capability and immediately applies the existing active-team authorization check before any mutation. The v5.1 function uses the same pattern as the existing operator RPCs rather than creating a second authorization model.
+
 ## 16. Reversibility / rollback
 
 v5.1 is deliberately additive and reversible.
 
 ### Before merge
 
-The implementation lives on a dedicated feature branch/PR. Closing the PR leaves production unchanged.
+The implementation was developed and verified on dedicated PR #53. Before merge, closing that PR would have left the application runtime unchanged.
 
 ### After merge — application rollback
 
-Revert the v5.1 merge commit. Because the CMS reads Website Opportunity only through the v5.1 module/Design projection, the persisted JSON becomes inert when those readers are removed.
+Revert production commit:
+
+```text
+443a533fbe05cc9f29e5ed55d4fd043cf197c25a
+```
+
+Because the CMS reads Website Opportunity only through the v5.1 module/Design projection, persisted JSON becomes inert when those readers are removed.
 
 ### Database capability rollback
 
@@ -458,13 +467,13 @@ Do not add in v5.1:
 - new Design or Outreach state machine;
 - automatic review for every Discovery candidate.
 
-## 18. Acceptance
+## 18. Technical acceptance
 
-Technical implementation is complete only when:
+Technical implementation is complete and verified:
 
 - canonical prompt is in GitHub;
 - exact write contract is enforced by one narrow RPC;
-- unrelated qualification namespaces survive writes;
+- unrelated qualification namespaces survive writes by bounded merge;
 - source audit ownership is validated;
 - Websitekansen appears in the existing prospect Overview;
 - the same state is projected into Design Brief in stored order;
@@ -473,5 +482,20 @@ Technical implementation is complete only when:
 - authorization and validation tests pass;
 - Discovery, Design publication, mailing artifact and Outreach send regressions remain green;
 - documentation and roadmap match runtime reality.
+
+Verification evidence:
+
+```text
+PR #53: merged (squash)
+PR exact head: dc3066f8de872b0184c3a9ba4c84b13ef1250616
+PR CI #604 / run 34780801643: SUCCESS
+PR Deploy Operator #232 / run 34780801625: SUCCESS
+production merge SHA: 443a533fbe05cc9f29e5ed55d4fd043cf197c25a
+production CI #605 / run 34780908610: SUCCESS
+production Deploy Operator #233 / run 34780908617: SUCCESS
+Supabase migration: 20260913202811 website_opportunity_v51
+migration readback: guarded SECURITY DEFINER RPC, fixed search_path, intended authenticated execute grant
+migration data effect: 0 prospect rows populated merely by migration application
+```
 
 Commercial validation remains separate. The A. van Berkel pilot and subsequent real sends determine whether the method improves response enough to justify its operating cost.
