@@ -35,15 +35,18 @@ class ProspectFirstDesignBoundaryTests(unittest.TestCase):
         process = read("operator/design-process.js")
         docs = read("docs/DESIGN_BRIEF.md")
 
-        self.assertIn("Brief format version:** 0.4", process)
+        self.assertIn("Brief format version:** 0.5", process)
         self.assertIn("## Verified prospect facts", process)
         self.assertIn("## Verification gaps", process)
+        self.assertIn("## Prioritized website opportunities", process)
         self.assertIn("## Current website evidence", process)
         self.assertIn("## Current design state", process)
         self.assertIn("## Operator direction", process)
+        self.assertIn("websiteOpportunityMarkdown(prospect, audit)", process)
         self.assertNotIn("Canonical sector key", process)
         self.assertNotIn("Sector Intelligence", process)
         self.assertIn("prospect-specific", docs.lower())
+        self.assertIn("Website Opportunity", docs)
 
     def test_bootstrap_has_no_sector_lookup_or_overlay_hook(self) -> None:
         bootstrap = read("prompts/SOLIDDESIGN_BOOTSTRAP.md")
