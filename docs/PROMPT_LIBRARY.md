@@ -1,7 +1,7 @@
 # SolidDesign Prompt Library
 
 **Status:** canonical production contract  
-**Date:** 2026-09-09  
+**Date:** 2026-09-13  
 **Principle:** centralize reusable operator method without creating a prompt-management platform.
 
 ## 1. Objective
@@ -125,6 +125,8 @@ invocation
 
 Body retrieval is Admin-only. Invocation values remain ephemeral browser state unless a separate business workflow already owns the value.
 
+Website Opportunity Review is an example of that separation: its prompt body remains in GitHub, while only the operator-approved result is persisted by the dedicated prospect workflow at `qualification.website_opportunity`.
+
 No GitHub write credential is exposed to browser code.
 
 ## 8. Invocation renderer
@@ -140,6 +142,8 @@ field label + value
 field label + value
 ...
 ```
+
+The prospect Website Opportunity surface reuses this renderer for `website-opportunity-review`; it does not embed a second prompt body or renderer.
 
 ## 9. Repository credential boundary
 
@@ -161,25 +165,43 @@ The current requirement is role-based CMS access, not cryptographic prompt secre
 
 If strict prompt secrecy later becomes a real business requirement, the correct boundary is server-side AI execution. Hidden URLs, obscurity and user-agent checks are not substitutes.
 
-## 11. Initial canonical entries
+## 11. Canonical entries
 
 Current authoritative operator methods are:
 
 - `prospect-research` — evidence-backed prospect research and the CMS CSV handoff;
-- `website-design` — a light wrapper around the canonical SolidDesign Design Bootstrap.
+- `website-design` — a light wrapper around the canonical SolidDesign Design Bootstrap;
+- `website-opportunity-review` — business-first, evidence-backed review for a selected prospect, returning the exact human-review/import contract used by the prospect dossier.
 
 New entries are added only when an authoritative reusable method actually exists.
 
-## 12. Failure behaviour
+## 12. Workflow result ownership
+
+Prompt Library owns reusable method content, not business results.
+
+Where a business workflow needs a reviewed result, that workflow owns its narrow persistence contract. For Website Opportunity Review:
+
+```text
+GitHub prompt
+→ ChatGPT proposal
+→ human review
+→ operator_set_website_opportunity(...)
+→ prospects.qualification.website_opportunity
+```
+
+Do not generalize this into a prompt-output database or arbitrary AI import API.
+
+## 13. Failure behaviour
 
 - repository read unavailable → Prompt Library reports unavailable; prospect state is unchanged;
 - malformed front matter → invalid prompt is excluded until corrected;
 - non-Admin body request/mutation → rejected;
 - stale SHA → conflict;
 - missing write credential → explicit configuration error;
-- Prompt Library failure never publishes a design, promotes a prospect or sends outreach.
+- Prompt Library failure never publishes a design, promotes a prospect or sends outreach;
+- Website Opportunity prompt failure leaves the previous approved opportunity state unchanged.
 
-## 13. Non-goals
+## 14. Non-goals
 
 Do not add without observed need:
 
@@ -189,11 +211,12 @@ Do not add without observed need:
 - generic form builder;
 - prompt marketplace;
 - background AI execution or queue;
+- generic AI-result import framework;
 - separate Prompt Manager role.
 
-## 14. Acceptance — verified
+## 15. Acceptance
 
-Production/CI verification establishes:
+Production/CI verification must establish:
 
 - active USER/KEY_USER can use invocation metadata without CMS body access;
 - ADMIN mutation is constrained to `prompts/library/` and SHA-guarded;
@@ -202,6 +225,7 @@ Production/CI verification establishes:
 - static prompt URLs are deployed on the SolidDesign origin;
 - PR-preview mutations are rejected;
 - repository credentials remain server-side;
+- Website Opportunity reuses the same renderer and persists only its reviewed business result through its own narrow RPC;
 - Prompt Library remains separate from the prospect-specific Design Bootstrap/Brief workflow.
 
-Prompt Library is therefore technically complete. Further work is evidence-gated by real operator/commercial use, not by feature completeness.
+Further AI automation remains evidence-gated by real operator/commercial use, not by feature completeness.
