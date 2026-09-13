@@ -165,15 +165,15 @@ technical website evidence exists
 → but without persisted reviewed state the operator must copy/recreate it for Design and Print
 ```
 
-That is a real one-source-of-truth/operator-friction problem, not imagined scale.
+That was a real one-source-of-truth/operator-friction problem, not imagined scale.
 
-#### M8.3.1 — Website Opportunity Review v5.1 🟠 implementation / technical acceptance
+#### M8.3.1 — Website Opportunity Review v5.1 ✅ technical implementation complete 2026-09-13
 
-Objective:
+Objective achieved technically:
 
-> create one human-reviewed business-first interpretation of current website evidence and reuse it consistently in the prospect dossier, Design and Print without changing audit semantics or adding an Opportunity subsystem.
+> one human-reviewed business-first interpretation of current website evidence can be stored once and reused consistently in the prospect dossier, Design and Print without changing audit semantics or adding an Opportunity subsystem.
 
-Target flow:
+Production flow:
 
 ```text
 selected prospect + current audit + actual website
@@ -187,7 +187,7 @@ selected prospect + current audit + actual website
 → response/outcome learning
 ```
 
-Smallest implementation boundary:
+Implemented boundary:
 
 - one canonical `prompts/library/website-opportunity-review.md`;
 - one bounded `qualification.website_opportunity` namespace;
@@ -199,25 +199,41 @@ Smallest implementation boundary:
 - Design Brief v0.5 adds only reviewed priority + evidence;
 - current manual Printmailing surface reuses the same reviewed state;
 - real before/after and QR/concept integrity remain human verification gates;
-- implementation is reversible by reverting the application change and dropping the single RPC; persisted namespace data may remain inert to preserve history.
+- implementation remains reversible by reverting application commit `443a533fbe05cc9f29e5ed55d4fd043cf197c25a` and dropping the single RPC; persisted namespace data may remain inert to preserve history.
 
 Technical acceptance:
 
 ```text
-[ ] canonical prompt delivered through existing Prompt Library
-[ ] narrow RPC validates active member, prospect, source-audit ownership and exact finding contract
-[ ] unrelated qualification namespaces preserved
-[ ] Websitekansen integrated into existing Overview
-[ ] reviewed state projected into Design Brief in stored order
-[ ] Printmailing surface reads/copies the same state
-[ ] audit evidence remains unchanged
-[ ] activity records human review
-[ ] regression tests remain green
-[ ] PR preview/deploy smoke green
-[ ] rollback path documented and verified structurally
+[x] canonical prompt delivered through existing Prompt Library
+[x] narrow RPC validates active member, prospect, source-audit ownership and exact finding contract
+[x] unrelated qualification namespaces preserved by bounded JSON merge
+[x] Websitekansen integrated into existing Overview
+[x] reviewed state projected into Design Brief in stored order
+[x] Printmailing surface reads/copies the same state
+[x] audit evidence remains unchanged
+[x] activity records human review
+[x] regression tests green
+[x] PR preview/deploy smoke green
+[x] production deploy smoke green
+[x] rollback path documented and verified structurally
 ```
 
-Commercial acceptance remains separate:
+Verification evidence:
+
+```text
+PR #53: merged (squash)
+production merge SHA: 443a533fbe05cc9f29e5ed55d4fd043cf197c25a
+PR exact-head SHA: dc3066f8de872b0184c3a9ba4c84b13ef1250616
+PR CI #604 / run 34780801643: SUCCESS
+PR Deploy Operator #232 / run 34780801625: SUCCESS
+production CI #605 / run 34780908610: SUCCESS
+production Deploy Operator #233 / run 34780908617: SUCCESS
+Supabase migration: 20260913202811 website_opportunity_v51
+Supabase readback: SECURITY DEFINER, fixed search_path, authenticated execute only through guarded operator RPC pattern
+migration data effect at apply time: 0 prospects with qualification.website_opportunity
+```
+
+Commercial acceptance remains separate and open:
 
 ```text
 A. van Berkel pilot
@@ -230,9 +246,9 @@ Technical completion does not prove conversion economics.
 
 Canonical detail: `docs/WEBSITE_OPPORTUNITY_REVIEW.md` and ADR `docs/decisions/20260913_WEBSITE_OPPORTUNITY_REVIEW_V51.md`.
 
-### M8.3.2 — Real signed-in operator acceptance
+### M8.3.2 — Real signed-in operator acceptance ← NEXT
 
-After the v5.1 technical slice is green, exercise the complete normal operator outcome:
+Exercise the complete normal operator outcome:
 
 ```text
 find/select prospect

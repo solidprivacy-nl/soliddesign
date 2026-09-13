@@ -89,7 +89,8 @@ class WebsiteOpportunityV51Tests(unittest.TestCase):
 
         self.assertIn("drop function if exists public.operator_set_website_opportunity", contract)
         self.assertIn("No destructive data cleanup is required", contract)
-        self.assertIn("Revert the v5.1 application merge commit", decision)
+        self.assertIn("Revert production application commit", decision)
+        self.assertIn("443a533fbe05cc9f29e5ed55d4fd043cf197c25a", decision)
         self.assertIn("Leave persisted `qualification.website_opportunity` JSON intact", decision)
 
 

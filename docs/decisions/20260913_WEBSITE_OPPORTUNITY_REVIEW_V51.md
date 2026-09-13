@@ -1,7 +1,7 @@
 # ADR — Website Opportunity Review v5.1
 
 **Date:** 2026-09-13  
-**Status:** accepted for implementation under M8.3  
+**Status:** accepted and implemented in production under M8.3  
 **Supersedes:** the transient/manual persistence choice in Architecture Brief v5; preserves the evidence/domain corrections introduced by v5.
 
 ## Context
@@ -78,12 +78,27 @@ Rejected because Git/PR rollback plus one removable RPC already provides a simpl
 
 ## Rollback
 
-1. Revert the v5.1 application merge commit.
+1. Revert production application commit `443a533fbe05cc9f29e5ed55d4fd043cf197c25a`.
 2. Apply a compensating migration dropping `operator_set_website_opportunity(uuid, uuid, jsonb)`.
 3. Leave persisted `qualification.website_opportunity` JSON intact unless explicit destructive cleanup is required; old code ignores it.
 
 This restores prior runtime behaviour without data loss or table/schema surgery.
 
 ## Verification
+
+Technical implementation was verified on 2026-09-13:
+
+```text
+PR #53: merged (squash)
+PR exact head: dc3066f8de872b0184c3a9ba4c84b13ef1250616
+PR CI #604 / run 34780801643: SUCCESS
+PR Deploy Operator #232 / run 34780801625: SUCCESS
+production merge SHA: 443a533fbe05cc9f29e5ed55d4fd043cf197c25a
+production CI #605 / run 34780908610: SUCCESS
+production Deploy Operator #233 / run 34780908617: SUCCESS
+Supabase migration: 20260913202811 website_opportunity_v51
+```
+
+Database readback confirmed the function is `SECURITY DEFINER`, uses fixed `search_path = public, pg_temp`, is executable by the intended authenticated operator role, checks the existing active-team authorization boundary, verifies source-audit ownership and stores no data merely by applying the migration. At migration time, zero prospects contained `qualification.website_opportunity`.
 
 Implementation acceptance is defined in `docs/WEBSITE_OPPORTUNITY_REVIEW.md`. Commercial acceptance remains evidence-gated by real prospect sends and response/outcome data.
