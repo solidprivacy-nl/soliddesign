@@ -70,7 +70,7 @@ class DesignPromptCoreTests(unittest.TestCase):
         self.assertIn("Do not make the user orchestrate that loop", build)
 
         self.assertIn("### Asset-readiness regression", critique)
-        self.assertIn("return internally to Workflow 02", critique.lower())
+        self.assertIn("return internally to workflow 02", critique.lower())
         self.assertIn("Do not deliver a candidate marked `REVISE`", critique)
 
     def test_generated_imagery_truth_boundary_is_explicit(self):
