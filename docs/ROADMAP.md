@@ -2,7 +2,7 @@
 
 SolidDesign is evidence-gated: code completion is not business validation. Technical cutovers close on implementation + verification + cleanup; operator/commercial assumptions close only on real operating evidence.
 
-Current architecture is governed by `ENGINEERING_CONSTITUTION.md`, `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`, `docs/PROSPECT_FIRST_DESIGN.md`, `docs/DISCOVERY.md`, `docs/PROMPT_LIBRARY.md`, `docs/SECURITY.md`, `docs/OPERATIONS.md` and this roadmap. Historical plans/evidence explain decisions but do not override current state.
+Current architecture is governed by `ENGINEERING_CONSTITUTION.md`, `docs/INTEGRATED_OPERATING_ARCHITECTURE.md`, `docs/PROSPECT_FIRST_DESIGN.md`, `docs/WEBSITE_OPPORTUNITY_REVIEW.md`, `docs/DISCOVERY.md`, `docs/PROMPT_LIBRARY.md`, `docs/SECURITY.md`, `docs/OPERATIONS.md` and this roadmap. Historical plans/evidence explain decisions but do not override current state.
 
 ## Technical foundation
 
@@ -89,7 +89,7 @@ No provider framework, candidate table, research-results table, crawler/agent, j
 
 ## M8 — Integrated operational/commercial pilot ← ACTIVE
 
-The system is now optimized for real operator use and commercial learning rather than more architecture.
+The system is optimized for real operator use and commercial learning rather than architecture for its own sake. Material friction discovered while exercising the real acquisition loop may earn the smallest root-cause correction.
 
 ### M8.1 — Discovery operator UX ✅ production 2026-09-08
 
@@ -119,7 +119,7 @@ Canonical detail: `docs/DISCOVERY.md`.
 
 ### M8.2 — Prospect-first Design cutover ✅ production complete 2026-09-09
 
-Business objective achieved: Design is now immediately understandable as prospect-specific work and no longer carries a reusable sector-research/linking subsystem.
+Business objective achieved: Design is immediately understandable as prospect-specific work and no longer carries a reusable sector-research/linking subsystem.
 
 Current boundary:
 
@@ -139,7 +139,7 @@ Delivered:
 - Sector Intelligence research/review/publication API/UI/content removed;
 - manual prospect-sector linking removed;
 - `Sector voor design` and separate sector-improvement prompt removed;
-- Prospect Design Brief v0.4 and Bootstrap v0.4 contain no sector lookup;
+- Prospect Design Brief v0.4 and Bootstrap v0.4 closed the original cutover without sector lookup;
 - unused `prompts/sectors/` overlay hook removed;
 - sector input/resolution retained in Discovery;
 - `canonical_sector_key` retained only as legitimate discovery/provenance metadata;
@@ -149,64 +149,104 @@ Delivered:
 - website version lifecycle remains `upload → CONCEPT → inspect → LIVE`;
 - printmailing artifact creation remains in Design and physical send remains in Outreach;
 - obsolete sector API/RPC/tests/deploy paths and conflicting current docs removed;
-- unused Google Places fallback code removed so current Discovery has exactly the three documented intake paths;
-- obsolete Sector Intelligence PRs #20, #21, #39 and stale sector-dependent Design PR #44 closed/superseded.
-
-Production evidence:
-
-```text
-PR #50 merged (squash)
-merge SHA: 73ff1ad8cb5122a242c60ca01f98bdb5798ff61d
-CI #566 / run 34317993838: SUCCESS
-Deploy Operator #223 / run 34317993847: SUCCESS
-Supabase migration: 20260909061328 retire_sector_linking_v01
-RPC readback:
-  operator_list_sector_link_targets() = absent
-  operator_set_prospect_sector(uuid,text) = absent
-canonical_sector_key column = retained
-```
-
-Acceptance:
-
-```text
-[x] sector + location discovery regression boundary remains intact
-[x] Overture resolution regression boundary remains intact
-[x] direct URL flow has no canonical-sector requirement
-[x] Design works without canonical sector
-[x] exactly one primary Design ChatGPT action
-[x] Design Brief v0.4 contains no sector lookup
-[x] Bootstrap v0.4 performs no sector lookup
-[x] clean ChatGPT handoff is origin-relative and provider-neutral
-[x] HTML/ZIP concept lifecycle regression remains intact
-[x] LIVE publication regression remains intact
-[x] printmailing versioning regression remains intact
-[x] Outreach exact-artifact send boundary remains intact
-[x] no active /api/sector-intelligence path remains
-[x] obsolete sector-linking RPCs dropped and read back in production
-[x] CI/deploy smoke enforce the new boundary
-[x] current docs/runtime represent one coherent truth
-```
+- unused Google Places fallback code removed so current Discovery has exactly the three documented intake paths.
 
 Canonical detail: `docs/PROSPECT_FIRST_DESIGN.md`.
 
-### M8.3 — Operator acceptance ← NEXT BUSINESS GATE
+### M8.3 — Operator acceptance ← CURRENT BUSINESS GATE
 
-Exercise implemented boundaries with real signed-in roles and real prospect work. This is acceptance, not a new subsystem milestone.
+Exercise implemented boundaries with real signed-in roles and real prospect work. This is acceptance, not permission to create generic execution architecture.
 
-Focus on the actual operator outcome:
+Observed design/outreach gap entering this gate:
+
+```text
+technical website evidence exists
+→ business-first opportunity interpretation happens in ChatGPT
+→ but without persisted reviewed state the operator must copy/recreate it for Design and Print
+```
+
+That is a real one-source-of-truth/operator-friction problem, not imagined scale.
+
+#### M8.3.1 — Website Opportunity Review v5.1 🟠 implementation / technical acceptance
+
+Objective:
+
+> create one human-reviewed business-first interpretation of current website evidence and reuse it consistently in the prospect dossier, Design and Print without changing audit semantics or adding an Opportunity subsystem.
+
+Target flow:
+
+```text
+selected prospect + current audit + actual website
+→ Website Opportunity Review via Prompt Library / ChatGPT
+→ human review
+→ qualification.website_opportunity
+→ Websitekansen in existing Overview
+→ Design Brief priority + evidence projection
+→ same reviewed findings on Printmailing surface
+→ existing immutable mailing / Outreach lifecycle
+→ response/outcome learning
+```
+
+Smallest implementation boundary:
+
+- one canonical `prompts/library/website-opportunity-review.md`;
+- one bounded `qualification.website_opportunity` namespace;
+- one narrow `operator_set_website_opportunity(...)` RPC;
+- no new table or top-level module;
+- no mutation of `audits.findings`;
+- no score/severity/confidence model;
+- no generic AI runtime/importer;
+- Design Brief v0.5 adds only reviewed priority + evidence;
+- current manual Printmailing surface reuses the same reviewed state;
+- real before/after and QR/concept integrity remain human verification gates;
+- implementation is reversible by reverting the application change and dropping the single RPC; persisted namespace data may remain inert to preserve history.
+
+Technical acceptance:
+
+```text
+[ ] canonical prompt delivered through existing Prompt Library
+[ ] narrow RPC validates active member, prospect, source-audit ownership and exact finding contract
+[ ] unrelated qualification namespaces preserved
+[ ] Websitekansen integrated into existing Overview
+[ ] reviewed state projected into Design Brief in stored order
+[ ] Printmailing surface reads/copies the same state
+[ ] audit evidence remains unchanged
+[ ] activity records human review
+[ ] regression tests remain green
+[ ] PR preview/deploy smoke green
+[ ] rollback path documented and verified structurally
+```
+
+Commercial acceptance remains separate:
+
+```text
+A. van Berkel pilot
+→ subsequent real sends
+→ operator minutes + corrections
+→ viewed/responded/meeting/proposal/win-loss
+```
+
+Technical completion does not prove conversion economics.
+
+Canonical detail: `docs/WEBSITE_OPPORTUNITY_REVIEW.md` and ADR `docs/decisions/20260913_WEBSITE_OPPORTUNITY_REVIEW_V51.md`.
+
+### M8.3.2 — Real signed-in operator acceptance
+
+After the v5.1 technical slice is green, exercise the complete normal operator outcome:
 
 ```text
 find/select prospect
+→ review Websitekansen
 → open Design
 → copy design assignment
 → work in clean ChatGPT context
 → upload result
 → inspect/publish
-→ create mailing artifact
+→ create mailing artifact using the same reviewed findings
 → hand off to Outreach
 ```
 
-Do not add architecture to prepare for this gate. Record observed friction and fix only material root causes.
+Record observed friction. Fix only material root causes.
 
 ### M8.4 — Real research/commercial batch
 
@@ -219,6 +259,7 @@ Prompt Library
 → Import
 → Discovery Inbox
 → human selection
+→ Website Opportunity Review
 → Design
 → mailing
 → response/outcome
@@ -231,6 +272,7 @@ raw candidates
 → valid websites
 → human review minutes
 → promoted
+→ opportunity-review minutes/corrections
 → mailed
 → viewed
 → responded
@@ -251,24 +293,17 @@ Choose one future canonical qualification model only when outcome evidence is ma
 
 Automation is authorized only for a measured bottleneck.
 
-Possible later boundary:
+Possible later boundaries include server-side research or Website Opportunity model calls only when repeated manual invocation is a measured material cost and the output contract is stable.
 
-```text
-CMS
-→ server-side AI research
-→ structured result
-→ same candidate intake
-```
+Until then, manual ChatGPT invocation + narrow validated workflow-specific import remains the canonical smallest solution.
 
-Until then, manual ChatGPT invocation + validated CSV import is the canonical smallest solution.
-
-No queues, generalized agents, production-site factory, richer orchestration or server-side AI execution merely because they are technically possible.
+No queues, generalized agents, provider framework, production-site factory, richer orchestration or server-side AI execution merely because they are technically possible.
 
 ## Business evidence gates
 
-- **Gate 4 — 30–50 physical-mail offer validation:** measure `raw → valid → promoted → mailed → viewed → responded`, meeting rate, cost and human minutes, including discovery-source provenance.
+- **Gate 4 — 30–50 physical-mail offer validation:** measure `raw → valid → promoted → reviewed → mailed → viewed → responded`, meeting rate, cost and human minutes, including discovery-source provenance.
 - **Gate 5 — Pricing / first customer:** validate accepted price, sales/delivery effort, corrections, external cost, gross margin and support burden.
-- **Gate 6 — 100+ prospect learning:** compare discovery/qualification evidence with responses, meetings, proposals, wins and gross margin.
+- **Gate 6 — 100+ prospect learning:** compare discovery/qualification/opportunity evidence with responses, meetings, proposals, wins and gross margin.
 - **Gate 7 — Automate proven bottlenecks:** only observed friction may earn queues, API-based research or other orchestration.
 
 ## Roadmap rules
@@ -276,14 +311,15 @@ No queues, generalized agents, production-site factory, richer orchestration or 
 1. Customer value and commercial learning lead; technology follows.
 2. One application and one operational state plane remain default.
 3. GitHub is reusable method/content history; Supabase is business state.
-4. Prefer derived views over new state.
+4. Prefer derived views over new state; persist only when multiple real workflow consumers need one current truth.
 5. Prefer explicit human decisions over hidden automation until outcomes justify change.
 6. Discovery source is provenance, not workflow identity.
 7. Sector is a discovery/classification input, not a design method.
 8. Design is prospect-first: actual evidence outranks abstract category assumptions.
-9. Workflow `QUALIFIED` is not evidence that full qualification was completed.
-10. Current qualification is not replaced merely because a richer model exists.
-11. Transitional compatibility must shrink after verified cutover.
-12. Technical implementation evidence and real operator/commercial evidence are separate gates.
-13. No subsystem is added merely because it appears on this roadmap.
-14. A milestone is not Done while replaced code, open obsolete work or contradictory current documentation remains.
+9. Technical audit evidence and business-priority interpretation are separate concepts and must not overwrite each other.
+10. Workflow `QUALIFIED` is not evidence that full qualification was completed.
+11. Current qualification is not replaced merely because a richer model exists.
+12. Transitional compatibility must shrink after verified cutover.
+13. Technical implementation evidence and real operator/commercial evidence are separate gates.
+14. No subsystem is added merely because it appears on this roadmap.
+15. A milestone is not Done while replaced code, open obsolete work or contradictory current documentation remains.
