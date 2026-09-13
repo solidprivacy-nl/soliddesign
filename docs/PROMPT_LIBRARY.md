@@ -1,7 +1,7 @@
 # SolidDesign Prompt Library
 
 **Status:** canonical production contract  
-**Date:** 2026-09-13  
+**Date:** 2026-09-14  
 **Principle:** centralize reusable operator method without creating a prompt-management platform.
 
 ## 1. Objective
@@ -34,7 +34,7 @@ Git provides history, diff and rollback. Supabase contains no duplicate prompt b
 
 Static prompt Markdown is staged with the Operator deployment and is readable from the same SolidDesign origin so ChatGPT/web tooling can consume the referenced method.
 
-## 3. Prompt classes
+## 3. Prompt classes and design boundary
 
 Engineering-governed system/design resources remain outside Prompt Library administration:
 
@@ -46,27 +46,21 @@ Only files directly below `prompts/library/` are managed by the CMS Prompt Libra
 
 An operator prompt delegates to an existing canonical system method when one already exists instead of copying that method into a competing prompt.
 
-For design this boundary is explicit:
+For design there is now exactly one operator entry:
 
 ```text
-WEBSITE_ONLY
 prompts/library/website-design.md
         ↓
 prompts/SOLIDDESIGN_BOOTSTRAP.md
         ↓
-canonical core + workflows 01–04
-
-LOGO_AND_WEBSITE
-prompts/library/logo-website-design.md
-        ↓
-optional prompts/workflow/00_LOGO.md
-        ↓
-prompts/SOLIDDESIGN_BOOTSTRAP.md
-        ↓
-the same canonical core + workflows 01–04
+canonical Design Constitution + workflows 01–04
 ```
 
-The two entry modes may differ only in whether logo redesign precedes the website workflow. They do not own competing website-design rules.
+There is no separate WEBSITE_ONLY versus LOGO_AND_WEBSITE mode.
+
+The canonical redesign flow itself assesses the logo on every run and chooses KEEP / REFINE / REDESIGN. It also resolves prominent imagery before HTML through the `ASSET_READY` gate. This keeps logo and imagery inside the actual design process instead of making the operator orchestrate separate ChatGPT rounds.
+
+The retired `logo-website-design` entry and standalone `00_LOGO` workflow are not compatibility paths; Git history is their rollback/history source.
 
 ## 4. Identity and file contract
 
@@ -192,8 +186,7 @@ If strict prompt secrecy later becomes a real business requirement, the correct 
 Current authoritative operator methods are:
 
 - `prospect-research` — evidence-backed prospect research and the CMS CSV handoff;
-- `website-design` — WEBSITE_ONLY entry that delegates to the canonical SolidDesign Design Bootstrap; the approved/current logo remains locked unless the user explicitly changes scope;
-- `logo-website-design` — LOGO_AND_WEBSITE entry that runs the optional logo workflow, locks one exact final logo, then delegates to the same canonical website method;
+- `website-design` — one integrated end-to-end redesign entry. The canonical design method assesses logo equity, resolves art direction and produces/locks required imagery before HTML; no separate logo mode exists;
 - `website-opportunity-review` — business-first, evidence-backed review for a selected prospect, returning the exact human-review/import contract used by the prospect dossier.
 
 New entries are added only when an authoritative reusable method actually exists.
@@ -214,7 +207,9 @@ GitHub prompt
 
 Do not generalize this into a prompt-output database or arbitrary AI import API.
 
-Design artifacts remain owned by the existing Design/version workflow. The Prompt Library does not create a parallel design state plane.
+Design artifacts remain owned by the existing Design/version workflow. The Prompt Library does not create a parallel design state plane or an asset-management subsystem.
+
+Logo and imagery created during a design run are design artifacts/inputs for that run. When practical they are embedded into the final self-contained HTML. SolidDesign does not add database asset state merely to support this prompt correction.
 
 ## 13. Failure behaviour
 
@@ -224,7 +219,8 @@ Design artifacts remain owned by the existing Design/version workflow. The Promp
 - stale SHA → conflict;
 - missing write credential → explicit configuration error;
 - Prompt Library failure never publishes a design, promotes a prospect or sends outreach;
-- Website Opportunity prompt failure leaves the previous approved opportunity state unchanged.
+- Website Opportunity prompt failure leaves the previous approved opportunity state unchanged;
+- design asset generation/editing unavailable → the canonical design run may use adequate existing assets; if a professional prominent role cannot be solved, it must report a genuine design blocker rather than silently deliver known-bad imagery.
 
 ## 14. Non-goals
 
@@ -238,7 +234,12 @@ Do not add without observed need:
 - background AI execution or queue;
 - generic AI-result import framework;
 - separate Prompt Manager role;
-- a second website-design core for logo+website work.
+- separate logo-design mode for normal prospect redesign;
+- asset database/DAM;
+- image-generation service or orchestration layer;
+- visual scoring engine.
+
+The current correction is a design execution contract, not new runtime architecture.
 
 ## 15. Acceptance
 
@@ -253,8 +254,11 @@ Production/CI verification must establish:
 - repository credentials remain server-side;
 - Website Opportunity reuses the same renderer and persists only its reviewed business result through its own narrow RPC;
 - Prompt Library remains separate from the prospect-specific Design Bootstrap/Brief workflow;
-- `website-design` delegates to the canonical Bootstrap rather than duplicating a full website method;
-- `logo-website-design` contains only the logo-first entry behavior and delegates subsequent website work to that same Bootstrap;
-- core website rules have one authoritative location across WEBSITE_ONLY and LOGO_AND_WEBSITE modes.
+- `website-design` delegates to the canonical Bootstrap rather than duplicating a full design method;
+- there is only one active operator design entry;
+- the canonical method contains logo KEEP / REFINE / REDESIGN assessment as part of every redesign;
+- prominent imagery is selected/edited/generated and locked before HTML via `ASSET_READY`;
+- no retired `logo-website-design` or `00_LOGO` parallel path remains;
+- no new database/runtime subsystem exists for the adjustment.
 
 Further AI automation remains evidence-gated by real operator/commercial use, not by feature completeness.
