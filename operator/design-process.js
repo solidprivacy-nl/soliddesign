@@ -79,6 +79,16 @@
     };
   }
 
+  async function refreshQualification(context) {
+    const { data, error } = await db
+      .from('prospects')
+      .select('qualification')
+      .eq('id', context.prospect.id)
+      .single();
+    if (error) throw error;
+    context.prospect.qualification = data?.qualification || {};
+  }
+
   function verifiedFactsMarkdown(prospect) {
     const facts = prospect.verified_facts && typeof prospect.verified_facts === 'object'
       ? prospect.verified_facts
@@ -131,6 +141,33 @@
     return gaps.length ? gaps.map((gap) => `- ${gap}`).join('\n') : '- No material verification gaps recorded for the fields used by the design.';
   }
 
+  function websiteOpportunityMarkdown(prospect, audit) {
+    const review = prospect.qualification?.website_opportunity;
+    if (!review || typeof review !== 'object' || !Array.isArray(review.findings)) {
+      return '_No human-reviewed Website Opportunity Review has been recorded._';
+    }
+
+    const lines = [];
+    if (review.source_audit_id && audit?.id && review.source_audit_id !== audit.id) {
+      lines.push('> **Freshness warning:** this Website Opportunity Review is based on earlier audit evidence. Re-review before treating it as current prospect-facing truth.', '');
+    }
+
+    if (!review.findings.length) {
+      lines.push('_Reviewed: no material website opportunities were recorded._');
+      return lines.join('\n');
+    }
+
+    review.findings.forEach((finding, index) => {
+      const title = oneLine(finding?.title || finding?.key || 'Website opportunity');
+      const evidence = Array.isArray(finding?.evidence)
+        ? finding.evidence.map(oneLine).filter(Boolean).join('; ')
+        : '';
+      lines.push(`${index + 1}. **${title}**`);
+      lines.push(`   Evidence: ${evidence || 'No concrete evidence recorded.'}`);
+    });
+    return lines.join('\n');
+  }
+
   function auditLines(findings, severity) {
     return (Array.isArray(findings) ? findings : [])
       .filter((finding) => finding && finding.verified !== false && String(finding.severity || '').toLowerCase() === severity)
@@ -166,7 +203,7 @@
 - **Audit source:** ${valueOrUnknown([audit.source, audit.source_version].filter(Boolean).join(' / '))}
 - **Audit date:** ${audit.created_at ?? '_Niet vastgelegd._'}
 
-### Verified issues to consider
+### Verified technical/diagnostic issues
 
 ${issues.length ? issues.join('\n') : '_No verified warning or critical findings are recorded._'}
 
@@ -218,7 +255,7 @@ Audit findings are diagnostic evidence. Separate design-actionable issues from h
 
     return `# SolidDesign Prospect Design Brief
 
-**Brief format version:** 0.4  
+**Brief format version:** 0.5  
 **Generated:** ${generatedAt}  
 **Prospect ID:** ${prospect.id}
 
@@ -248,6 +285,10 @@ ${verifiedFactsMarkdown(prospect)}
 
 ${verificationGapsMarkdown(prospect)}
 
+## Prioritized website opportunities
+
+${websiteOpportunityMarkdown(prospect, audit)}
+
 ## Current website evidence
 
 ${auditEvidenceMarkdown(audit)}
@@ -266,8 +307,9 @@ ${prospect.design_brief_note?.trim() || '_No additional operator design directio
 - Internal taxonomy, qualification labels and discovery terms are not customer-facing copy unless separately verified.
 - Do not invent services, testimonials, review scores, years active, guarantees, certifications, response times, team size, project counts, service areas, awards, customer segments or brand claims.
 - Do not turn audit recommendations into claims about the prospect.
+- Website Opportunity recommendations are advisory direction; solve the visual/UX problem through the SolidDesign design method rather than copying recommendations mechanically.
 - Do not claim the visual mock-up fixes hosting, security, legal or infrastructure issues that require separate implementation.
-- Preserve verified facts and explicit operator direction.
+- Preserve verified facts, prioritized evidence and explicit operator direction.
 `;
   }
 
@@ -292,6 +334,7 @@ ${prospect.design_brief_note?.trim() || '_No additional operator design directio
   }
 
   async function publishBrief(context) {
+    await refreshQualification(context);
     const markdown = buildDesignBrief(context);
     const path = `${context.prospect.design_brief_token}.md`;
     const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
