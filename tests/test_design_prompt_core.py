@@ -11,70 +11,79 @@ class DesignPromptCoreTests(unittest.TestCase):
         self.assertTrue(path.is_file(), f"missing required file: {relative_path}")
         return path.read_text(encoding="utf-8")
 
-    def test_one_canonical_website_method_with_two_thin_entry_modes(self):
+    def test_one_integrated_design_entry_without_parallel_logo_mode(self):
         bootstrap = self.read("prompts/SOLIDDESIGN_BOOTSTRAP.md")
-        website_entry = self.read("prompts/library/website-design.md")
-        combined_entry = self.read("prompts/library/logo-website-design.md")
-        logo_workflow = self.read("prompts/workflow/00_LOGO.md")
+        design_entry = self.read("prompts/library/website-design.md")
         docs = self.read("docs/PROMPT_LIBRARY.md")
 
-        self.assertIn("WEBSITE_ONLY", website_entry)
-        self.assertIn("/prompts/SOLIDDESIGN_BOOTSTRAP.md", website_entry)
-        self.assertNotIn("# 6. PHASE A", website_entry)
-        self.assertNotIn("# 11. Grounded artistic freedom for imagery", website_entry)
+        self.assertIn("## One integrated redesign flow", bootstrap)
+        self.assertIn("There is one normal SolidDesign redesign flow", bootstrap)
+        self.assertIn("logo assessment is mandatory", bootstrap.lower())
+        self.assertIn("NO HTML BEFORE `ASSET_READY`", bootstrap)
 
-        self.assertIn("LOGO_AND_WEBSITE", combined_entry)
-        self.assertIn("/prompts/workflow/00_LOGO.md", combined_entry)
-        self.assertIn("/prompts/SOLIDDESIGN_BOOTSTRAP.md", combined_entry)
-        self.assertIn("LOGO_FINAL_01", combined_entry)
-        self.assertNotIn("# 9. Website information architecture", combined_entry)
+        self.assertIn("# SolidDesign Redesign", design_entry)
+        self.assertIn("Treat this as one end-to-end design assignment", design_entry)
+        self.assertIn("KEEP / REFINE / REDESIGN", design_entry)
+        self.assertIn("ASSET_READY", design_entry)
+        self.assertNotIn("WEBSITE_ONLY", design_entry)
+        self.assertNotIn("LOGO_AND_WEBSITE", design_entry)
 
-        self.assertIn("This workflow owns logo diagnosis, redesign and asset locking only", logo_workflow)
-        self.assertIn("continue with the canonical SolidDesign Design Bootstrap", logo_workflow)
-        self.assertNotIn("Website information architecture", logo_workflow)
+        self.assertFalse((ROOT / "prompts/library/logo-website-design.md").exists())
+        self.assertFalse((ROOT / "prompts/workflow/00_LOGO.md").exists())
 
-        self.assertIn("The normal two-URL Design handoff is **WEBSITE_ONLY**", bootstrap)
-        self.assertIn("Do not maintain a second website-design doctrine", bootstrap)
-        self.assertIn("logo-website-design", docs)
-        self.assertIn("same canonical core + workflows 01–04", docs)
+        self.assertIn("there is now exactly one operator entry", docs.lower())
+        self.assertIn("There is no separate WEBSITE_ONLY versus LOGO_AND_WEBSITE mode", docs)
+        self.assertIn("no retired `logo-website-design` or `00_LOGO` parallel path remains", docs)
 
-    def test_identity_is_preserved_without_protecting_weak_execution(self):
+    def test_logo_is_assessed_inside_normal_design_flow(self):
         constitution = self.read("prompts/core/DESIGN_CONSTITUTION.md")
         diagnose = self.read("prompts/workflow/01_DIAGNOSE.md")
+        direction = self.read("prompts/workflow/02_DESIGN_DIRECTION.md")
 
-        self.assertIn("Preserve identity. Re-evaluate execution.", constitution)
-        self.assertIn("## Identity versus execution boundary", constitution)
-        self.assertIn("### LOCK", constitution)
-        self.assertIn("### PRESERVE / EVOLVE", constitution)
-        self.assertIn("### FREE TO REDESIGN", constitution)
-        self.assertIn("### REPLACE WHEN WEAK", constitution)
-        self.assertIn("low-resolution or badly cropped imagery", constitution)
+        self.assertIn("Logo assessment is part of every redesign", constitution)
+        self.assertIn("KEEP / REFINE / REDESIGN", constitution)
+        self.assertIn("## Mandatory logo assessment", diagnose)
+        self.assertIn("### KEEP", diagnose)
+        self.assertIn("### REFINE", diagnose)
+        self.assertIn("### REDESIGN", diagnose)
+        self.assertIn("## Phase B — finalize the logo decision", direction)
+        self.assertIn("LOGO_FINAL_01", direction)
+        self.assertIn("evolutionary redesign", direction)
 
-        self.assertIn("## Mandatory source inheritance map", diagnose)
-        self.assertIn("FREE TO REDESIGN", diagnose)
-        self.assertIn("REPLACE WHEN WEAK", diagnose)
-        self.assertIn("low-resolution or enlarged thumbnail imagery", diagnose)
-
-    def test_imagery_is_planned_and_locked_before_html(self):
+    def test_prominent_imagery_is_produced_and_locked_before_html(self):
+        bootstrap = self.read("prompts/SOLIDDESIGN_BOOTSTRAP.md")
         direction = self.read("prompts/workflow/02_DESIGN_DIRECTION.md")
         build = self.read("prompts/workflow/03_BUILD.md")
         critique = self.read("prompts/workflow/04_CRITIQUE.md")
 
-        self.assertIn("## Image-role planning is mandatory", direction)
-        self.assertIn("Do not design a prominent image container around whatever source image happens to exist", direction)
-        self.assertIn("1. strong real company/project image", direction)
-        self.assertIn("4. high-quality generated image", direction)
+        self.assertIn("Photography and imagery are design inputs, not post-build decoration", bootstrap)
+        self.assertIn("## Phase C — define the image roles", direction)
+        self.assertIn("## Phase D — produce the actual imagery", direction)
+        self.assertIn("create or edit the asset now", direction)
+        self.assertIn("## Phase E — lock the asset set", direction)
+        self.assertIn("## `ASSET_READY` hard gate", direction)
 
-        self.assertIn("## Mandatory production order", build)
-        self.assertLess(build.index("define each required image role"), build.index("build semantic HTML/CSS"))
-        self.assertIn("lock image identity, crop, aspect ratio, focal point and object-position", build)
-        self.assertIn("Do not enlarge low-resolution source imagery", build)
+        self.assertIn("Workflow 03 may start only when", build)
+        self.assertIn("ASSET_READY = PASS", build)
+        self.assertLess(build.index("ASSET_READY = PASS"), build.index("build semantic HTML/CSS"))
+        self.assertIn("return internally to Workflow 02", build)
+        self.assertIn("Do not make the user orchestrate that loop", build)
 
-        self.assertIn("### 7. Imagery and art direction", critique)
-        self.assertIn("## Hard visual release gate", critique)
-        self.assertIn("enlarged low-resolution source imagery", critique)
-        self.assertIn("collage-like source fragments", critique)
-        self.assertIn("generated imagery that materially misrepresents company-specific reality", critique)
+        self.assertIn("### Asset-readiness regression", critique)
+        self.assertIn("return internally to workflow 02", critique.lower())
+        self.assertIn("Do not deliver a candidate marked `REVISE`", critique)
+
+    def test_generated_imagery_truth_boundary_is_explicit(self):
+        constitution = self.read("prompts/core/DESIGN_CONSTITUTION.md")
+        direction = self.read("prompts/workflow/02_DESIGN_DIRECTION.md")
+        critique = self.read("prompts/workflow/04_CRITIQUE.md")
+
+        self.assertIn("may not fabricate company-specific evidence", constitution)
+        self.assertIn("## Truth boundary for generated visuals", direction)
+        self.assertIn("company premises", direction)
+        self.assertIn("vehicle/fleet", direction)
+        self.assertIn("project/client location", direction)
+        self.assertIn("false documentary evidence", critique)
 
     def test_customer_facing_process_copy_is_release_blocking(self):
         constitution = self.read("prompts/core/DESIGN_CONSTITUTION.md")
@@ -83,19 +92,21 @@ class DesignPromptCoreTests(unittest.TestCase):
 
         self.assertIn("Customer-facing copy stays customer-facing", constitution)
         self.assertIn("The prospect website speaks only as the prospect business to its customers", build)
-        self.assertIn("### 11. Customer-copy contamination check", critique)
+        self.assertIn("### 12. Customer-copy contamination check", critique)
         self.assertIn("the current/existing website", critique)
         self.assertIn("in this concept", critique)
-        self.assertIn("Do not deliver a candidate marked `REVISE`", critique)
 
-    def test_adjustment_is_documented_as_reversible_without_state_migration(self):
-        adr = self.read("docs/decisions/20260913_CANONICAL_DESIGN_CORE_REVERSIBLE_ADJUSTMENT.md")
+    def test_adjustment_is_documented_and_has_exact_rollback_anchor(self):
+        adr = self.read("docs/decisions/20260914_INTEGRATED_DESIGN_ASSETS_REVERSIBLE_ADJUSTMENT.md")
+        previous_adr = self.read("docs/decisions/20260913_CANONICAL_DESIGN_CORE_REVERSIBLE_ADJUSTMENT.md")
 
         self.assertIn("Reversibility", adr)
-        self.assertIn("Close the pull request", adr)
-        self.assertIn("Revert the adjustment merge/squash commit", adr)
-        self.assertIn("No compensating database migration", adr)
-        self.assertIn("no database or business-state migration", adr)
+        self.assertIn("cb19884283f539bcf20584aa1e770df69d2e0738", adr)
+        self.assertIn("rollback/pre-2026-09-14-design-flow", adr)
+        self.assertIn("No compensating Supabase migration", adr)
+        self.assertIn("Website Opportunity remains unchanged", adr)
+        self.assertIn("superseded on 2026-09-14", previous_adr)
+        self.assertIn("20260914_INTEGRATED_DESIGN_ASSETS_REVERSIBLE_ADJUSTMENT.md", previous_adr)
 
 
 if __name__ == "__main__":
