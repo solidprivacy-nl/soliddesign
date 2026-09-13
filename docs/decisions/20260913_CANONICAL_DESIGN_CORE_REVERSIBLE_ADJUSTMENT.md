@@ -1,7 +1,7 @@
 # ADR — Canonical Website Design Core as Reversible Adjustment
 
 **Date:** 2026-09-13  
-**Status:** proposed implementation on reversible adjustment branch  
+**Status:** accepted reversible adjustment; implementation tracked in PR #55  
 **Scope:** design prompt architecture only; no database or business-state migration  
 **Governing rule:** `ENGINEERING_CONSTITUTION.md`
 
