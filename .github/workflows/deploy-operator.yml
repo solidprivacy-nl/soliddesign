@@ -147,10 +147,19 @@ jobs:
           ! grep -q 'sector-link-suggestions.js' /tmp/operator.html
 
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/design-process.js" -o /tmp/design-process.js
-          grep -q 'Brief format version:.*0.4' /tmp/design-process.js
+          grep -q 'Brief format version:.*0.5' /tmp/design-process.js
+          grep -q 'Prioritized website opportunities' /tmp/design-process.js
+          grep -q 'websiteOpportunityMarkdown' /tmp/design-process.js
           grep -q '✓ Designopdracht gekopieerd' /tmp/design-process.js
           ! grep -qi 'sector-intelligence' /tmp/design-process.js
           ! grep -q 'canonical_sector_key' /tmp/design-process.js
+
+          # Website Opportunity v5.1 is an integrated prospect capability, not a new workspace.
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/website-opportunity.js" -o /tmp/website-opportunity.js
+          grep -q 'Websitekansen' /tmp/website-opportunity.js
+          grep -q 'operator_set_website_opportunity' /tmp/website-opportunity.js
+          grep -q 'data-mailing-design' /tmp/website-opportunity.js
+          grep -q "prompts.copy(PROMPT_SLUG" /tmp/website-opportunity.js
 
           # Production and previews bootstrap access from active team membership only.
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/app.js" -o /tmp/app.js
@@ -179,6 +188,10 @@ jobs:
           grep -q 'SolidDesign Prospect Design Opportunity Research' /tmp/prospect-research.md
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prompts/library/website-design.md" -o /tmp/website-design.md
           grep -q 'website-design' /tmp/website-design.md || grep -q 'Website' /tmp/website-design.md
+          curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prompts/library/website-opportunity-review.md" -o /tmp/website-opportunity-review.md
+          grep -q 'SolidDesign Website Opportunity Review' /tmp/website-opportunity-review.md
+          grep -q 'source_audit_id' /tmp/website-opportunity-review.md
+          grep -q 'Return \*\*only valid JSON\*\*' /tmp/website-opportunity-review.md
           curl -fsS --retry 5 --retry-delay 1 --retry-all-errors "$BASE_URL/prompts/contracts/prospect-research-import-v1.json" -o /tmp/prospect-research-contract.json
           grep -q 'prospect-research-import-v1' /tmp/prospect-research-contract.json
           grep -q 'triage_decision' /tmp/prospect-research-contract.json
