@@ -58,18 +58,34 @@ begin
     raise exception 'at most 5 website opportunity findings are allowed';
   end if;
 
+  -- Validate types in stages. Do not call object/array functions on malformed JSON
+  -- before their container type has been proven.
   if exists (
     select 1
     from jsonb_array_elements(p_findings) as item(f)
     where jsonb_typeof(f) <> 'object'
-       or not (f ? 'key' and f ? 'title' and f ? 'evidence' and f ? 'business_impact' and f ? 'recommendation')
+  ) then
+    raise exception 'each finding must be a JSON object';
+  end if;
+
+  if exists (
+    select 1
+    from jsonb_array_elements(p_findings) as item(f)
+    where not (f ? 'key' and f ? 'title' and f ? 'evidence' and f ? 'business_impact' and f ? 'recommendation')
        or (f - 'key' - 'title' - 'evidence' - 'business_impact' - 'recommendation') <> '{}'::jsonb
        or jsonb_typeof(f -> 'key') <> 'string'
        or jsonb_typeof(f -> 'title') <> 'string'
        or jsonb_typeof(f -> 'evidence') <> 'array'
        or jsonb_typeof(f -> 'business_impact') <> 'string'
        or jsonb_typeof(f -> 'recommendation') <> 'string'
-       or coalesce(f ->> 'key', '') !~ '^[a-z0-9][a-z0-9_-]{0,62}$'
+  ) then
+    raise exception 'findings do not match the website opportunity shape';
+  end if;
+
+  if exists (
+    select 1
+    from jsonb_array_elements(p_findings) as item(f)
+    where coalesce(f ->> 'key', '') !~ '^[a-z0-9][a-z0-9_-]{0,62}$'
        or char_length(trim(coalesce(f ->> 'title', ''))) not between 1 and 160
        or jsonb_array_length(f -> 'evidence') not between 1 and 5
        or char_length(trim(coalesce(f ->> 'business_impact', ''))) not between 1 and 1000
