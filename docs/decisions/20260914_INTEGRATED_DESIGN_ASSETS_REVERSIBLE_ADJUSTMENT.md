@@ -1,7 +1,7 @@
 # ADR — Integrated Logo + Imagery Design Flow as Reversible Adjustment
 
 **Date:** 2026-09-14  
-**Status:** proposed reversible adjustment  
+**Status:** accepted for production; technical PR verification complete in PR #56  
 **Scope:** SolidDesign design prompt execution only; no database or business-state migration  
 **Governing rule:** `ENGINEERING_CONSTITUTION.md`
 
@@ -290,6 +290,20 @@ Technical acceptance requires:
 - existing CMS upload → CONCEPT → inspect → LIVE lifecycle remains unchanged;
 - CI and PR deploy smoke are green;
 - production CI/deploy are green after merge.
+
+### PR verification evidence
+
+Before production merge:
+
+```text
+PR #56
+head before evidence-only documentation update: db16a9c88546c9e7473dabc9a254f150a345ac94
+CI #612 / run 34786498981: SUCCESS
+Deploy Operator #237 / run 34786498973: SUCCESS on retry attempt 2
+first deploy attempt: static deployment succeeded; transient preview-host root 404 caused smoke failure; unchanged rerun passed
+```
+
+The evidence-only documentation update must itself pass the normal CI/deploy checks before merge.
 
 ## Qualitative acceptance case
 
