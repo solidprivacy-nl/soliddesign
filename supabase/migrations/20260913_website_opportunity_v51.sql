@@ -100,6 +100,13 @@ begin
     raise exception 'findings do not match the website opportunity contract';
   end if;
 
+  if (
+    select count(*) <> count(distinct f ->> 'key')
+    from jsonb_array_elements(p_findings) as item(f)
+  ) then
+    raise exception 'finding keys must be unique';
+  end if;
+
   update public.prospects p
   set qualification = coalesce(p.qualification, '{}'::jsonb)
         || jsonb_build_object(
