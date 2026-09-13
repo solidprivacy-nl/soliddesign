@@ -46,6 +46,28 @@ Only files directly below `prompts/library/` are managed by the CMS Prompt Libra
 
 An operator prompt delegates to an existing canonical system method when one already exists instead of copying that method into a competing prompt.
 
+For design this boundary is explicit:
+
+```text
+WEBSITE_ONLY
+prompts/library/website-design.md
+        ↓
+prompts/SOLIDDESIGN_BOOTSTRAP.md
+        ↓
+canonical core + workflows 01–04
+
+LOGO_AND_WEBSITE
+prompts/library/logo-website-design.md
+        ↓
+optional prompts/workflow/00_LOGO.md
+        ↓
+prompts/SOLIDDESIGN_BOOTSTRAP.md
+        ↓
+the same canonical core + workflows 01–04
+```
+
+The two entry modes may differ only in whether logo redesign precedes the website workflow. They do not own competing website-design rules.
+
 ## 4. Identity and file contract
 
 The Markdown filename is stable prompt identity:
@@ -170,7 +192,8 @@ If strict prompt secrecy later becomes a real business requirement, the correct 
 Current authoritative operator methods are:
 
 - `prospect-research` — evidence-backed prospect research and the CMS CSV handoff;
-- `website-design` — a light wrapper around the canonical SolidDesign Design Bootstrap;
+- `website-design` — WEBSITE_ONLY entry that delegates to the canonical SolidDesign Design Bootstrap; the approved/current logo remains locked unless the user explicitly changes scope;
+- `logo-website-design` — LOGO_AND_WEBSITE entry that runs the optional logo workflow, locks one exact final logo, then delegates to the same canonical website method;
 - `website-opportunity-review` — business-first, evidence-backed review for a selected prospect, returning the exact human-review/import contract used by the prospect dossier.
 
 New entries are added only when an authoritative reusable method actually exists.
@@ -190,6 +213,8 @@ GitHub prompt
 ```
 
 Do not generalize this into a prompt-output database or arbitrary AI import API.
+
+Design artifacts remain owned by the existing Design/version workflow. The Prompt Library does not create a parallel design state plane.
 
 ## 13. Failure behaviour
 
@@ -212,7 +237,8 @@ Do not add without observed need:
 - prompt marketplace;
 - background AI execution or queue;
 - generic AI-result import framework;
-- separate Prompt Manager role.
+- separate Prompt Manager role;
+- a second website-design core for logo+website work.
 
 ## 15. Acceptance
 
@@ -226,6 +252,9 @@ Production/CI verification must establish:
 - PR-preview mutations are rejected;
 - repository credentials remain server-side;
 - Website Opportunity reuses the same renderer and persists only its reviewed business result through its own narrow RPC;
-- Prompt Library remains separate from the prospect-specific Design Bootstrap/Brief workflow.
+- Prompt Library remains separate from the prospect-specific Design Bootstrap/Brief workflow;
+- `website-design` delegates to the canonical Bootstrap rather than duplicating a full website method;
+- `logo-website-design` contains only the logo-first entry behavior and delegates subsequent website work to that same Bootstrap;
+- core website rules have one authoritative location across WEBSITE_ONLY and LOGO_AND_WEBSITE modes.
 
 Further AI automation remains evidence-gated by real operator/commercial use, not by feature completeness.

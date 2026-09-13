@@ -2,11 +2,11 @@
 
 **Prompt architecture version:** `0.4`
 
-This file is the canonical root instruction for a SolidDesign customer design project.
+This file is the canonical root instruction for a SolidDesign customer website design project.
 
 ## Invocation contract
 
-A customer design project starts with exactly two URLs:
+A normal prospect Design project starts with exactly two URLs:
 
 1. the stable SolidDesign start URL;
 2. one SolidDesign Prospect Design Brief URL for the customer being worked on.
@@ -27,9 +27,19 @@ When invoked this way:
 10. never invent missing facts, reviews, certifications, guarantees, metrics, staff, projects, service areas or other proof;
 11. keep prospect-specific decisions inside this customer project unless a repeated rule is deliberately promoted into the central design method.
 
+## Website-only default
+
+The normal two-URL Design handoff is **WEBSITE_ONLY**.
+
+- Treat the prospect's approved/current primary logo as a locked identity asset unless the current user explicitly asks for logo redesign.
+- Preserve identity and verified truth; re-evaluate layout, composition, typography, imagery, spacing and other execution choices through the required design method.
+- Do not silently turn a website redesign into a rebrand.
+
+A separate `LOGO_AND_WEBSITE` operator entry may run the optional logo workflow first. In that case the website workflow begins only after the exact final logo asset is locked; the website then uses the same canonical resources below. Do not maintain a second website-design doctrine for combined work.
+
 ## Required prompt resources
 
-Read these paths in order from `SOLIDDESIGN_ORIGIN` before doing design work:
+Read these paths in order from `SOLIDDESIGN_ORIGIN` before doing website design work:
 
 1. **REQUIRED — Design constitution**  
    `/prompts/core/DESIGN_CONSTITUTION.md`
@@ -94,6 +104,8 @@ When the user asks to proceed, work through diagnosis → design direction → b
 ## Core operating principle
 
 > Design the actual prospect, not an abstract sector.
+
+> Preserve identity. Re-evaluate execution.
 
 Standardize the process and the learning, not the design.
 
