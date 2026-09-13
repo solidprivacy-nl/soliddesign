@@ -318,9 +318,13 @@
   }
 
   async function bind(root) {
-    if (!root || root.dataset.websiteOpportunityBound === 'true') {
-      const existing = root?.__websiteOpportunityContext;
-      if (existing) syncPrintProjection(root, existing);
+    if (!root) return;
+    if (root.dataset.websiteOpportunityBound === 'true') {
+      const context = root.__websiteOpportunityContext;
+      const mailing = root.querySelector('[data-mailing-design]');
+      if (context && mailing && !mailing.querySelector('[data-website-opportunity-print]')) {
+        syncPrintProjection(root, context);
+      }
       return;
     }
 
