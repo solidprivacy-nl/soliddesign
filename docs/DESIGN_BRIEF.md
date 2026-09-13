@@ -1,6 +1,6 @@
 # Prospect Design Brief
 
-**Format:** v0.4  
+**Format:** v0.5  
 **Purpose:** give a SolidDesign design agent the smallest complete prospect-specific context needed to make the right next design decision.
 
 ## First principle
@@ -15,10 +15,11 @@ A field belongs in the brief only when it materially affects design truth, desig
 2. **Prospect profile** — identity, location, source category, website, phone and site kind.
 3. **Verified prospect facts** — customer-facing facts that may safely be used.
 4. **Verification gaps** — facts that must not be inferred or invented.
-5. **Current website evidence** — compact verified audit issues and strengths; no raw audit JSON.
-6. **Current design state** — current LIVE version first, plus a newer non-LIVE version only when one exists.
-7. **Operator direction** — explicit prospect-specific human direction.
-8. **Hard constraints** — no-invention and authority boundaries.
+5. **Prioritized website opportunities** — human-reviewed Website Opportunity titles + concrete evidence in stored priority order.
+6. **Current website evidence** — compact verified technical/diagnostic audit issues and strengths; no raw audit JSON.
+7. **Current design state** — current LIVE version first, plus a newer non-LIVE version only when one exists.
+8. **Operator direction** — explicit prospect-specific human direction.
+9. **Hard constraints** — no-invention and authority boundaries.
 
 ## Prospect-first design boundary
 
@@ -32,12 +33,29 @@ Design context is derived from:
 prospect identity
 + verified facts
 + source website/assets/screenshots
++ reviewed Website Opportunity priorities
 + current website evidence
 + current LIVE/concept
 + operator direction
 ```
 
 This keeps design decisions grounded in the actual business rather than generalized assumptions about its category.
+
+## Website Opportunity projection
+
+`prospects.qualification.website_opportunity` is the one current human-reviewed business-priority layer. The Design Brief does not expose the raw `qualification` object; it projects only the design-relevant subset:
+
+```text
+priority order
++ title / observed issue
++ concrete evidence
+```
+
+The full `business_impact` sales explanation is not repeated by default. `recommendation` is advisory direction rather than an unquestionable visual instruction; the canonical design method still owns design reasoning.
+
+If the stored `source_audit_id` differs from the latest audit, the brief shows a freshness warning instead of silently presenting the review as current.
+
+`design_brief_note` remains a separate explicit operator instruction and is not used to persist Website Opportunity Review.
 
 ## Deliberate exclusions
 
@@ -60,7 +78,9 @@ A later DRAFT may also be shown, but never replaces the LIVE baseline implicitly
 
 ## Evidence rule
 
-Audit findings are reduced to verified evidence only. Generic audit recommendations and verbose business-impact prose are not copied into the brief. Positive findings are included alongside issues so a redesign can preserve what already works.
+Website Opportunity Review supplies human-reviewed business priority, but does not replace evidence. The brief therefore shows its prioritized title + evidence projection and keeps the technical/diagnostic audit evidence separately visible.
+
+Audit findings are reduced to verified evidence only. Generic audit recommendations and verbose business-impact prose are not copied into the technical evidence section. Positive findings are included alongside issues so a redesign can preserve what already works.
 
 The design agent must distinguish visual/UX opportunities from hosting, security, legal and infrastructure work and may not claim that a visual concept fixes the latter.
 
@@ -73,7 +93,7 @@ SolidDesign design method
 ↓
 Prospect Design Brief / verified prospect facts / operator direction
 ↓
-source website / supplied assets / current design evidence
+human-reviewed Website Opportunity priority + source website/current design evidence
 ↓
 other external evidence
 ```

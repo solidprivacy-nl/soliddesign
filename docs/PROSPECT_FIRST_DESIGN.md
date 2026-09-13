@@ -2,6 +2,7 @@
 
 **Status:** current production contract  
 **Production cutover:** 2026-09-09  
+**Website Opportunity extension:** v5.1 / 2026-09-13  
 **Governing rule:** `ENGINEERING_CONSTITUTION.md`
 
 ## Business goal
@@ -11,7 +12,8 @@ Make the Prospect → Design workflow understandable to a new operator without e
 The operator goal is simple:
 
 ```text
-copy design assignment
+review prospect-specific website opportunities
+→ copy design assignment
 → work in ChatGPT
 → upload result
 → inspect version
@@ -46,10 +48,13 @@ Design context is:
 current user/operator instruction
 + SolidDesign design method
 + Prospect Design Brief / verified facts
++ human-reviewed Website Opportunity priorities + evidence
 + source website / source assets / screenshots
 + current LIVE / current concept
 + other relevant evidence
 ```
+
+Website Opportunity does not weaken the prospect-first boundary: it is a review of this prospect's actual website, not reusable sector guidance.
 
 ## Why Sector Intelligence is retired
 
@@ -92,6 +97,24 @@ A direct-URL prospect may have no canonical sector key and must still complete t
 
 A concise category above the prospect name may remain as orientation metadata. It is not customer-facing copy and does not determine design behavior.
 
+## Website Opportunity boundary
+
+Website Opportunity Review is a prospect-specific evidence interpretation step, not a second design method.
+
+```text
+audits.findings
+= technical / diagnostic evidence
+
+qualification.website_opportunity
+= human-reviewed business priority + evidence + improvement direction
+```
+
+The current reviewed list is created through the Prompt Library/ChatGPT and one narrow validated import. It is then reused automatically by the Design Brief.
+
+Design does **not** read an independently retyped opportunity list from `design_brief_note` and does not mutate the audit to make it more commercial.
+
+Canonical detail: `docs/WEBSITE_OPPORTUNITY_REVIEW.md`.
+
 ## Retired capabilities
 
 The cutover removes active use of:
@@ -107,6 +130,8 @@ The cutover removes active use of:
 - Sector Intelligence API/UI code;
 - sector-linking RPCs.
 
+Website Opportunity does not recreate any of those capabilities.
+
 Historical database migrations remain immutable history. The production retirement migration removes only the now-unused runtime RPCs.
 
 ## Design tab UX contract
@@ -120,6 +145,8 @@ The Design tab answers three questions:
 3. Where do I maintain printmailing design artifacts?
 
 It does not teach the operator the internal prompt or brief architecture.
+
+The reviewed Website Opportunity itself is shown in the existing prospect Overview and is projected into the Design Brief automatically.
 
 ### Websiteontwerp
 
@@ -141,10 +168,11 @@ Open ChatGPT-project ↗   # only when configured
 `Kopieer designopdracht` is the one primary ChatGPT action. It:
 
 1. saves the current prospect-specific design instruction;
-2. generates the current Prospect Design Brief;
-3. copies the stable start URL + current Design Brief URL.
+2. refreshes current qualification context, including the reviewed Website Opportunity;
+3. generates the current Prospect Design Brief;
+4. copies the stable start URL + current Design Brief URL.
 
-The operator does not need to manually manage a design-brief URL.
+The operator does not need to manually manage a design-brief URL or copy Website Opportunity findings into Designinstructie.
 
 ### Clean ChatGPT handoff
 
@@ -202,7 +230,9 @@ OUTREACH
 
 Artifact creation therefore remains on Design; sending remains on Outreach.
 
-## Prospect Design Brief v0.4
+The Printmailing card reuses the current persisted Website Opportunity findings as the canonical finding source for the manually created mailing. It does not create or store a second opportunity list.
+
+## Prospect Design Brief v0.5
 
 The brief contains only material prospect-specific design context:
 
@@ -210,18 +240,23 @@ The brief contains only material prospect-specific design context:
 2. Prospect profile
 3. Verified prospect facts
 4. Verification gaps
-5. Current website evidence
-6. Current design state
-7. Operator direction
-8. Hard constraints
+5. Prioritized website opportunities — title + concrete evidence in reviewed order
+6. Current website evidence — technical/diagnostic issues + strengths
+7. Current design state
+8. Operator direction
+9. Hard constraints
 
-It does not contain:
+The Website Opportunity projection intentionally excludes full customer-facing sales prose by default. `recommendation` is advisory context, not an unquestionable design instruction. The design method remains responsible for solving the visual/UX problem.
+
+The brief does not contain:
 
 - canonical sector key;
 - Sector Intelligence URL/content;
 - reusable sector guidance;
 - raw qualification state;
 - implementation internals.
+
+If the review's `source_audit_id` differs from the latest audit, the Design Brief shows a freshness warning rather than silently treating the review as current.
 
 ## Design Bootstrap v0.4
 
@@ -239,27 +274,38 @@ Governing design rule:
 
 > Design the actual prospect, not an abstract sector.
 
+The Bootstrap version need not change merely because the deterministic prospect Brief gained one evidence section; its own method/resource contract is unchanged.
+
 ## Prompt Library boundary
 
-This cutover does not migrate the dossier Design workflow into the operator Prompt Library.
+The dossier Design workflow is still not migrated into the operator Prompt Library.
 
-The two capabilities solve different problems:
+The capabilities solve different problems:
 
-- Prompt Library: reusable operator prompt invocation;
+- Prompt Library: reusable operator prompt invocation, including `website-opportunity-review`;
+- Website Opportunity workflow: human-review/import of one prospect-specific business interpretation;
 - Design Bootstrap + Prospect Design Brief: system-governed prospect-specific design handoff.
 
-Keeping the proven two-URL design handoff avoids unnecessary coupling and scope expansion.
+Keeping these boundaries avoids a generic prompt-output/runtime platform.
 
 ## Database rule
 
 Do not drop `canonical_sector_key` merely to make the schema look cleaner. It remains legitimate discovery/provenance data and removing it would create migration risk without improving the operator workflow.
 
-The following retired runtime capabilities are absent from production:
+Website Opportunity adds no table/column; it uses one bounded `qualification.website_opportunity` namespace plus one narrow RPC. Technical audit evidence remains in `audits` unchanged.
+
+The following retired runtime capabilities remain absent from production:
 
 ```text
 operator_list_sector_link_targets()
 operator_set_prospect_sector(uuid,text)
 ```
+
+## Reversibility
+
+The Website Opportunity extension is additive. Reverting the application change restores the previous Design path; the extra JSON namespace becomes inert. A compensating migration can drop the one Website Opportunity RPC. No table/column/data deletion is required for normal rollback.
+
+Do not introduce a feature-flag subsystem solely for this reversible extension.
 
 ## Open-work cleanup
 
@@ -271,7 +317,7 @@ The final current-truth sweep also removed the unused Google Places fallback ada
 
 ## Production closeout evidence
 
-Core cutover:
+Original prospect-first sector cutover:
 
 ```text
 PR #50: merged
@@ -289,11 +335,9 @@ operator_set_prospect_sector(uuid,text) = absent
 canonical_sector_key column = retained
 ```
 
-Cleanup is protected by executable `unittest` regression coverage so the retired sector capability and unused Google fallback cannot silently reappear as current code.
+Website Opportunity v5.1 acceptance evidence is maintained in the current roadmap and `docs/WEBSITE_OPPORTUNITY_REVIEW.md`; business/commercial acceptance remains separate from technical completion.
 
 ## Acceptance invariants
-
-After cutover:
 
 1. Discovery still accepts sector input.
 2. Overture sector resolution still works.
@@ -301,15 +345,17 @@ After cutover:
 4. A prospect with no canonical sector key can use Design normally.
 5. Design has one primary ChatGPT action: `Kopieer designopdracht`.
 6. Generated Design Brief contains no Sector Intelligence or canonical sector lookup identity.
-7. Design Bootstrap performs no sector lookup.
-8. The two-URL handoff resolves design-method resources from the supplied SolidDesign origin and does not require repository/provider discovery.
-9. Website concept upload/LIVE publication still works.
-10. Printmailing versioning still works on Design.
-11. Outreach still records the exact sent printmailing version.
-12. No active runtime request targets `/api/sector-intelligence`.
-13. No current documentation presents Sector Intelligence as a live capability.
-14. Obsolete sector UI/API/RPC/tests/deploy paths are removed rather than deprecated in parallel.
-15. Discovery exposes only the three documented product intake paths unless real evidence earns another source.
+7. Design Brief automatically includes the current reviewed Website Opportunity priority + evidence when present.
+8. Website Opportunity and explicit Designinstructie remain separate concepts.
+9. Design Bootstrap performs no sector lookup.
+10. The two-URL handoff resolves design-method resources from the supplied SolidDesign origin and does not require repository/provider discovery.
+11. Website concept upload/LIVE publication still works.
+12. Printmailing versioning still works on Design and reuses the same reviewed Website Opportunity source.
+13. Outreach still records the exact sent printmailing version.
+14. No active runtime request targets `/api/sector-intelligence`.
+15. No current documentation presents Sector Intelligence as a live capability.
+16. Obsolete sector UI/API/RPC/tests/deploy paths remain removed rather than deprecated in parallel.
+17. Discovery exposes only the three documented product intake paths unless real evidence earns another source.
 
 ## Definition of Done
 
@@ -319,8 +365,10 @@ Done means:
 business workflow simplified
 + implementation complete
 + discovery regression-proven
++ Website Opportunity contract verified
 + design regression-proven
 + clean ChatGPT handoff regression-proven
++ printmailing reuse verified
 + stale runtime removed
 + conflicting tests removed
 + current docs aligned

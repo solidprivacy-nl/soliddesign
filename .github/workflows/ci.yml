@@ -50,6 +50,7 @@ jobs:
           node --check operator/prompt-invocation.js
           node --check operator/prompt-library.js
           node --check operator/research-discovery.js
+          node --check operator/website-opportunity.js
           node --check operator/qualification-display.js
           node --check 'operator/functions/[slug].js'
           node --check 'operator/functions/p/[[path]].js'
@@ -78,6 +79,8 @@ jobs:
           test -s docs/DISCOVERY_SECTOR_RESOLUTION.md
           test -s docs/PROSPECT_FIRST_DESIGN.md
           test -s docs/DESIGN_BRIEF.md
+          test -s docs/WEBSITE_OPPORTUNITY_REVIEW.md
+          test -s docs/decisions/20260913_WEBSITE_OPPORTUNITY_REVIEW_V51.md
           test ! -e docs/DISCOVERY_TRIAGE.md
           test ! -e docs/SECTOR_INTELLIGENCE_LINKAGE.md
           test ! -e operator/sector-intelligence-ui.js
@@ -101,9 +104,11 @@ jobs:
           test -s supabase/migrations/20260831_sector_linking_security_v03.sql
           test -s supabase/migrations/20260908_research_discovery_import_v01.sql
           test -s supabase/migrations/20260909_retire_sector_linking_v01.sql
+          test -s supabase/migrations/20260913_website_opportunity_v51.sql
           test -s prompts/contracts/prospect-research-import-v1.json
           test -s prompts/library/prospect-research.md
           test -s prompts/library/website-design.md
+          test -s prompts/library/website-opportunity-review.md
           test -s .github/workflows/prepare-prospect.yml
           test -s prompts/SOLIDDESIGN_BOOTSTRAP.md
 
@@ -114,6 +119,7 @@ jobs:
           grep -q 'publicProspectPathPrefix' operator/config.js
           grep -q '/prospect' operator/config.js
           grep -q 'DOMContentLoaded' operator/config.js
+          grep -q "import('./website-opportunity.js')" operator/config.js
           grep -q 'prospect_assignments' operator/team-work.js
           grep -q 'operator_set_assignment' operator/team-work.js
           grep -q 'team_members' supabase/migrations/20260829_integrated_multiuser_foundation_v01.sql
@@ -136,7 +142,9 @@ jobs:
           ! grep -qi 'sector-intelligence' operator/design-process.js
           ! grep -q 'operator_set_prospect_sector' operator/design-detail-ui.js
           ! grep -q 'canonical_sector_key' operator/design-detail-ui.js
-          grep -q 'Brief format version:.*0.4' operator/design-process.js
+          grep -q 'Brief format version:.*0.5' operator/design-process.js
+          grep -q 'Prioritized website opportunities' operator/design-process.js
+          grep -q 'websiteOpportunityMarkdown' operator/design-process.js
           grep -q 'Prompt architecture version.*0.4' prompts/SOLIDDESIGN_BOOTSTRAP.md
           grep -q 'Design the actual prospect' prompts/SOLIDDESIGN_BOOTSTRAP.md
           ! grep -qi 'sector-intelligence' prompts/SOLIDDESIGN_BOOTSTRAP.md
@@ -147,6 +155,22 @@ jobs:
           grep -q 'drop function if exists public.operator_list_sector_link_targets' supabase/migrations/20260909_retire_sector_linking_v01.sql
           grep -q 'Sector may participate in Discovery but never determines prospect Design' docs/INTEGRATED_OPERATING_ARCHITECTURE.md
           grep -q 'Design the actual prospect, not an abstract sector' docs/PROSPECT_FIRST_DESIGN.md
+
+          # Website Opportunity v5.1: one reviewed state, existing dossier/Design/Print consumers.
+          grep -q 'Websitekansen' operator/website-opportunity.js
+          grep -q 'operator_set_website_opportunity' operator/website-opportunity.js
+          grep -q 'data-dossier-pane="overview"' operator/website-opportunity.js
+          grep -q 'data-mailing-design' operator/website-opportunity.js
+          grep -q "prompts.copy(PROMPT_SLUG" operator/website-opportunity.js
+          grep -q 'operator_set_website_opportunity' supabase/migrations/20260913_website_opportunity_v51.sql
+          grep -q "'website_opportunity'" supabase/migrations/20260913_website_opportunity_v51.sql
+          grep -q 'operator_assert_allowed' supabase/migrations/20260913_website_opportunity_v51.sql
+          grep -q 'website_opportunity_reviewed' supabase/migrations/20260913_website_opportunity_v51.sql
+          grep -q 'finding keys must be unique' supabase/migrations/20260913_website_opportunity_v51.sql
+          ! grep -qi 'create table' supabase/migrations/20260913_website_opportunity_v51.sql
+          ! grep -qi 'update public.audits' supabase/migrations/20260913_website_opportunity_v51.sql
+          grep -q 'SolidDesign Website Opportunity Review' prompts/library/website-opportunity-review.md
+          grep -q 'source_audit_id' prompts/library/website-opportunity-review.md
 
           # Discovery remains sector-aware where required.
           grep -q "stukadoor: \['plasterer'\]" operator/discovery-sectors.js

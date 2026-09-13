@@ -1,7 +1,7 @@
 # SolidDesign Integrated Operating Architecture
 
 **Status:** current target production operating architecture  
-**Date:** 2026-09-09
+**Date:** 2026-09-13
 
 ## Objective
 
@@ -15,6 +15,7 @@ The system remains:
 - one prospect dossier/workflow;
 - one Discovery Inbox;
 - one canonical mock-up storage/LIVE lifecycle;
+- one current human-reviewed Website Opportunity list per prospect when reviewed;
 - GitHub-governed reusable method/content;
 - explicit human control;
 - minimal state and dependencies.
@@ -30,6 +31,10 @@ DISCOVERY
   ↓
 PROSPECT DOSSIER
   ↓
+TECHNICAL / WEBSITE EVIDENCE
+  ↓
+WEBSITE OPPORTUNITY REVIEW
+  ↓
 DESIGN
   ↓
 PUBLIC DELIVERY + PRINTMAILING
@@ -43,7 +48,7 @@ OUTCOME
 LEARNING
 ```
 
-Research evidence may inform discovery. Design is prospect-first and is not driven by reusable sector research.
+Research evidence may inform discovery. Website Opportunity is the reviewed business interpretation of current-site evidence. Design remains prospect-first and is not driven by reusable sector research.
 
 ## System boundaries
 
@@ -77,6 +82,7 @@ Remains the one operational business-state plane:
 - responsibilities;
 - prospects/discovery runs;
 - qualification/evidence state;
+- reviewed Website Opportunity state;
 - audits;
 - demos;
 - mailings;
@@ -162,6 +168,8 @@ System/design architecture prompts remain engineering-governed under the Bootstr
 USER and KEY_USER may see prompt metadata/invocation fields and copy a complete invocation. They do not receive prompt body through CMS management APIs and cannot mutate prompts. ADMIN may additionally retrieve/create/update/delete operator prompts.
 
 Git is prompt version history; no second version model exists.
+
+Website Opportunity Review uses this same invocation renderer. Its prompt remains GitHub method content; only the human-approved review result becomes prospect operational state.
 
 Canonical detail: `docs/PROMPT_LIBRARY.md`.
 
@@ -256,6 +264,65 @@ The current five-factor 0–25 commercial qualification remains current during t
 
 Research priority is discovery evidence. PDOS/WES/RDS/CPF remain experimental deeper evidence until enough real outreach outcomes support calibration.
 
+## Website Opportunity Review
+
+Website Opportunity Review is the business-first interpretation layer between website evidence and Design/Print.
+
+Hard separation:
+
+```text
+audits.findings
+= technical / diagnostic evidence
+
+qualification.website_opportunity
+= human-reviewed commercial interpretation and priority
+```
+
+The review may:
+
+- inspect the actual website;
+- use current audit evidence;
+- select, combine, rephrase and prioritize observed issues;
+- add other directly verifiable current-site issues not produced by the scanner.
+
+It may not rewrite the audit or create new business facts.
+
+Current source of truth:
+
+```text
+prospects.qualification.website_opportunity = {
+  source_audit_id,
+  findings: [
+    { key, title, evidence, business_impact, recommendation }
+  ]
+}
+```
+
+Array order is business priority. No score, severity model, confidence model, `OP-*` identity or workflow status machine is added.
+
+### Human-in-the-loop workflow
+
+```text
+existing prospect + current audit + actual website
+→ website-opportunity-review Prompt Library invocation
+→ ChatGPT proposal
+→ human review/correction
+→ narrow validated import
+→ qualification.website_opportunity
+```
+
+The dedicated RPC validates active membership, non-archived prospect, source-audit ownership, finding count/shape and concrete evidence. It preserves every unrelated `qualification.*` namespace and records one material activity event in the same transaction.
+
+There is no generic AI-result importer and no server-side AI execution path.
+
+### Derived freshness
+
+`source_audit_id` is compared with the latest current audit. A mismatch is displayed as stale relative to current evidence.
+
+No persistent `DRAFT / APPROVED / STALE / ARCHIVED` Website Opportunity state machine is required.
+
+Canonical detail: `docs/WEBSITE_OPPORTUNITY_REVIEW.md`.
+
 ## Prospect-first Design
 
 Design starts at the individual prospect, not at a sector abstraction.
@@ -278,6 +345,7 @@ Canonical design context is:
 current user/operator instruction
 + SolidDesign design method
 + Prospect Design Brief / verified facts
++ human-reviewed Website Opportunity priority + evidence
 + source website / assets / screenshots
 + current LIVE / current concept
 + other relevant evidence
@@ -293,7 +361,25 @@ No Design runtime, Design Brief or Bootstrap path may:
 
 A prospect with no canonical sector key must complete the same Design workflow normally.
 
-Canonical detail: `docs/PROSPECT_FIRST_DESIGN.md` and `docs/DESIGN_BRIEF.md`.
+Website Opportunity does not reintroduce category templates. It is prospect-specific reviewed evidence.
+
+Canonical detail: `docs/PROSPECT_FIRST_DESIGN.md`, `docs/DESIGN_BRIEF.md` and `docs/WEBSITE_OPPORTUNITY_REVIEW.md`.
+
+### Design Brief
+
+Design Brief v0.5 projects reviewed Website Opportunity findings as:
+
+```text
+priority order
++ title / observed issue
++ concrete evidence
+```
+
+It does not copy the full sales narrative as design authority. `recommendation` remains advisory and the design method still owns the visual/UX solution.
+
+Technical/diagnostic audit evidence and verified strengths remain separately visible.
+
+`design_brief_note` remains explicit operator design direction and is not used as Website Opportunity storage.
 
 ### Design tab UX
 
@@ -307,7 +393,7 @@ Primary sequence:
 3. Upload resultaat
 ```
 
-`Kopieer designopdracht` saves the prospect-specific design instruction, publishes the current Design Brief and copies the stable start URL + Design Brief URL.
+`Kopieer designopdracht` saves the prospect-specific design instruction, refreshes current prospect qualification context, publishes the current Design Brief and copies the stable start URL + Design Brief URL.
 
 Occasional project controls such as a ChatGPT project URL and opening the raw/current Design Brief stay behind progressive disclosure.
 
@@ -352,6 +438,10 @@ OUTREACH
 
 The same stored artifact may be surfaced in Design and Outreach but is never duplicated into separate phase state.
 
+The current mailing creation path remains manual and deliberately does not gain a PDF generator or screenshot platform in v5.1. The Printmailing surface exposes/copies the same persisted Website Opportunity findings so the operator does not retype or independently reprioritize them.
+
+Prospect-facing proof must use the real current-site image, the real intended concept image and a truthful link/QR when one is shown.
+
 ## Engagement
 
 `prospect_visits` measures campaign response, not visitor identity.
@@ -372,13 +462,17 @@ Prompts
 Team
 ```
 
-There is no `Sectoronderzoek` workspace.
+There is no `Sectoronderzoek` or `Website Opportunity` top-level workspace.
 
 Prospect dossier:
 
 ```text
 Overzicht | Design | Outreach | Activiteit
 ```
+
+### Overzicht
+
+Owns compact dossier status and the `Websitekansen` review surface. Website Opportunity stays prospect-local rather than becoming a new workspace.
 
 ### Bedrijven zoeken
 
@@ -400,7 +494,8 @@ Owns:
 
 - the prospect-specific ChatGPT handoff;
 - website concept/version lifecycle;
-- immutable printmailing design outputs.
+- immutable printmailing design outputs;
+- read-only reuse of the reviewed Website Opportunity findings for the mailing.
 
 ### Outreach
 
@@ -420,7 +515,26 @@ production database
 
 Historical migrations are not rewritten to hide past architecture.
 
-The prospect-first cutover retains `canonical_sector_key` as legitimate discovery/provenance data but removes unused design-side linking RPCs through a forward retirement migration.
+Website Opportunity v5.1 requires no new table or column. One forward migration adds only the narrow `operator_set_website_opportunity` RPC. The JSON namespace is written into the existing `prospects.qualification` object using the same namespace-preserving pattern already used by research evidence.
+
+## Reversibility
+
+v5.1 is intentionally reversible without destructive schema surgery:
+
+```text
+application rollback
+= revert the v5.1 merge
+
+database capability rollback
+= compensating migration drops operator_set_website_opportunity(...)
+
+data
+= may remain inert in qualification.website_opportunity
+```
+
+Persisted Website Opportunity JSON need not be deleted to restore prior runtime behaviour. Avoiding destructive rollback preserves history and keeps reversal low-risk.
+
+A feature-flag subsystem is not justified for this isolated change.
 
 ## Deployment topology
 
@@ -457,7 +571,10 @@ Do not add without observed need:
 - PDOS columns/parallel permanent score model;
 - sector design templates/overlays;
 - reusable Sector Intelligence subsystem;
-- AI job queue/server-side AI execution before measured need.
+- Website Opportunity table/service/scoring engine;
+- generic AI-result import API;
+- AI job queue/server-side AI execution before measured need;
+- screenshot service/browser farm merely to produce the first mailings.
 
 ## Architecture invariants
 
@@ -477,9 +594,16 @@ Do not add without observed need:
 14. Workflow `QUALIFIED` is not equivalent to a completed 0–25 score.
 15. Existing commercial qualification remains canonical until outcome evidence justifies replacement.
 16. Sector may participate in Discovery but never determines prospect Design.
-17. Design Brief and Design Bootstrap are sector-independent.
-18. There is one primary ChatGPT action in the prospect Design workflow.
-19. Transitional compatibility/configuration must shrink after verified cutover.
-20. Replaced code and documents are removed rather than kept as competing current truth.
-21. No subsystem is added without an observed problem that justifies it.
-22. Done means business outcome + implementation + verification + cleanup + documentation alignment.
+17. Technical audit evidence is not rewritten into commercial Website Opportunity state.
+18. One current human-reviewed Website Opportunity list is shared by Overview, Design and Print when it exists.
+19. Website Opportunity priority is array order; no second scoring system exists.
+20. AI Website Opportunity output requires human review before operational persistence.
+21. Design Brief and Design Bootstrap remain sector-independent.
+22. Design Brief keeps Website Opportunity evidence separate from operator direction and technical audit evidence.
+23. There is one primary ChatGPT action in the prospect Design workflow.
+24. Printmailing reuses the reviewed opportunity state rather than maintaining a second finding list.
+25. Prospect-facing before/after proof must depict the real intended concept.
+26. Transitional compatibility/configuration must shrink after verified cutover.
+27. Replaced code and documents are removed rather than kept as competing current truth.
+28. No subsystem is added without an observed problem that justifies it.
+29. Done means business outcome + implementation + verification + cleanup + documentation alignment.

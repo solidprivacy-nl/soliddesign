@@ -10,6 +10,7 @@ const EVENT_LABELS = {
   mailing_marked_sent: 'Brief als verstuurd geregistreerd',
   contact_recorded: 'Contactmoment geregistreerd',
   contact_status_changed: 'Contactstatus gewijzigd',
+  website_opportunity_reviewed: 'Websitekansen beoordeeld',
   prospect_archived: 'Prospect gearchiveerd',
   prospect_restored: 'Prospect hersteld'
 };
@@ -214,4 +215,11 @@ document.addEventListener('click', (event) => {
 document.addEventListener('soliddesign:open-dossier-tab', (event) => {
   const root = document.querySelector('#detailPanel .detail-content');
   if (root) activateTab(root, event.detail?.tab || 'overview');
+});
+
+document.addEventListener('soliddesign:prospect-activity-changed', (event) => {
+  const root = document.querySelector('#detailPanel .detail-content');
+  if (!root || root.dataset.dossierProspectId !== event.detail?.prospectId) return;
+  const activity = root.querySelector('[data-dossier-pane="activity"]');
+  if (activity) loadActivity(event.detail.prospectId, activity).catch(console.error);
 });

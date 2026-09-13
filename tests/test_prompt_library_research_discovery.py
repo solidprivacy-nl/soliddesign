@@ -38,7 +38,7 @@ class PromptLibraryResearchDiscoveryTests(unittest.TestCase):
         self.assertLess(api.index("GITHUB_CONTENT_TOKEN"), api.index("GITHUB_SECTOR_INTELLIGENCE_TOKEN"))
         self.assertNotIn("GOOGLE_PLACES_API_KEY", env_example)
         self.assertNotIn("proven sector overlays", docs.lower())
-        self.assertIn("Acceptance — verified", docs)
+        self.assertIn("## 15. Acceptance", docs)
 
     def test_prompt_invocation_is_shared_and_initial_methods_are_real_repository_files(self):
         config = self.read("operator/config.js")
@@ -54,6 +54,7 @@ class PromptLibraryResearchDiscoveryTests(unittest.TestCase):
         self.assertIn("import('./research-discovery.js')", config)
         self.assertTrue((ROOT / "prompts/library/prospect-research.md").is_file())
         self.assertTrue((ROOT / "prompts/library/website-design.md").is_file())
+        self.assertTrue((ROOT / "prompts/library/website-opportunity-review.md").is_file())
 
     def test_research_csv_uses_one_machine_contract_and_existing_candidate_ingest(self):
         research = self.read("operator/research-discovery.js")

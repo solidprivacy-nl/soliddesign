@@ -21,9 +21,10 @@ function loadPromptFeatures() {
   import('./prompt-invocation.js')
     .then(() => Promise.all([
       import('./prompt-library.js'),
-      import('./research-discovery.js')
+      import('./research-discovery.js'),
+      import('./website-opportunity.js')
     ]))
-    .catch((error) => console.error('Promptbibliotheek of research-discovery kon niet laden.', error));
+    .catch((error) => console.error('Promptbibliotheek, research-discovery of Website Opportunity kon niet laden.', error));
 }
 
 if (document.readyState === 'loading') {
