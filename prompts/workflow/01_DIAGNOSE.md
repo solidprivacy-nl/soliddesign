@@ -2,11 +2,13 @@
 
 ## Goal
 
-Understand the prospect's commercial, UX and visual problem before proposing changes.
+Understand the prospect's commercial, UX, brand and visual problem before proposing changes.
 
 ## Required inputs
 
 Use the Prospect Design Brief plus verified external evidence when needed. Do not fill gaps with assumptions presented as facts.
+
+Website Opportunity findings are prioritized problem evidence. They do not dictate layout, art direction, logo treatment or photography by themselves.
 
 ## Diagnose in this order
 
@@ -15,30 +17,56 @@ Use the Prospect Design Brief plus verified external evidence when needed. Do no
 3. **Intent** — urgent, considered, repeat, local, high-trust, price-sensitive, comparison-driven or another buying mode?
 4. **Primary conversion** — what is the single most valuable next action?
 5. **Trust requirement** — what must a reasonable visitor believe before taking that action?
-6. **Current strengths** — what genuinely creates recognition, clarity, trust or conversion and should survive?
-7. **Current leakage** — where do clarity, hierarchy, credibility, usability, visual quality or action break down?
-8. **Information architecture** — what content is missing, misplaced, duplicated or overemphasized?
-9. **Imagery quality** — which source images are strong enough to retain, and which are low-resolution, badly cropped, amateur, generic or compositionally limiting?
-10. **Mobile risk** — what becomes harder or less credible on a small screen?
-11. **Evidence quality** — which claims are verified and which remain unknown?
+6. **Website Opportunity** — which reviewed opportunities must the redesign visibly solve?
+7. **Current strengths** — what genuinely creates recognition, clarity, trust or conversion and should survive?
+8. **Current leakage** — where do clarity, hierarchy, credibility, usability, visual quality or action break down?
+9. **Information architecture** — what content is missing, misplaced, duplicated or overemphasized?
+10. **Logo quality** — does the current logo work at website-header/mobile size, preserve useful recognition and look professionally resolved?
+11. **Brand equity** — which colors, shapes, wordmark characteristics, terminology or visual cues are genuinely worth preserving?
+12. **Imagery inventory** — which source images are strong enough for prominent use, which are useful only as factual/reference material, and which are low-resolution, badly cropped, amateur, generic or compositionally limiting?
+13. **Asset gaps** — which prominent visual roles cannot be solved professionally with the existing assets?
+14. **Mobile risk** — what becomes harder or less credible on a small screen?
+15. **Evidence quality** — which claims are verified and which remain unknown?
+
+## Mandatory logo assessment
+
+Choose one provisional direction based on evidence:
+
+### KEEP
+
+Use when the current logo is already professionally usable and recognition value outweighs marginal aesthetic gain.
+
+### REFINE
+
+Use when the concept/equity is sound but one or more craft issues materially limit digital use, for example:
+
+- poor small-size legibility;
+- weak spacing/kerning;
+- awkward proportions;
+- inconsistent geometry;
+- unusable transparent/background treatment.
+
+### REDESIGN
+
+Use only when the current logo materially limits a professional result. Prefer evolutionary redesign that preserves useful recognition. Do not replace a merely old-looking logo with an unrelated identity.
+
+This is a design decision, not a separate operator workflow.
 
 ## Mandatory source inheritance map
 
-Before design direction, classify meaningful source elements as:
-
 ### LOCK
 
-Verified facts and approved identity/proof that must not drift:
+Verified facts/proof that must not drift:
 
 - company name;
-- approved logo for normal website-only work;
 - verified contact information;
 - verified certifications, memberships, reviews or other proof.
 
 ### PRESERVE / EVOLVE
 
-Useful recognition that may be refined:
+Useful recognition that may be professionally refined:
 
+- current logo equity pending KEEP / REFINE / REDESIGN decision;
 - brand colors;
 - customer terminology;
 - useful service categories;
@@ -72,13 +100,17 @@ Source execution that should not constrain the redesign:
 
 ## Output
 
-Keep the diagnosis decision-oriented:
+Keep diagnosis decision-oriented:
 
 - business/customer summary;
 - primary conversion;
-- top 3–5 conversion/UX/visual problems in priority order;
+- top 3–5 business/UX/visual problems in priority order;
+- explicit Website Opportunity problems the design must solve;
+- logo assessment: KEEP / REFINE / REDESIGN + one-sentence rationale;
+- brand equity to preserve/evolve;
+- imagery inventory: usable / reference-only / replace;
+- required visual-asset gaps;
 - inheritance map: LOCK / PRESERVE-EVOLVE / FREE TO REDESIGN / REPLACE WHEN WEAK;
-- missing/unverified facts that constrain the design;
-- recommended next design move.
+- missing/unverified facts that materially constrain design.
 
-Do not start redesigning while the diagnosis is still unclear unless the user explicitly instructs you to proceed with best-effort assumptions.
+Do not stop and ask the operator to make routine visual judgments that can be derived from the source evidence. Continue into design direction and asset production unless a genuinely missing fact makes that unsafe.
