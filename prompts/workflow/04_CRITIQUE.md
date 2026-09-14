@@ -43,17 +43,24 @@ Check that:
 Check composition, spacing, typography, contrast, alignment, image treatment, overflow, clipping, awkward line breaks and visual balance.
 
 ### 8. Imagery and art direction
-Check whether every prominent image is professionally usable for its role:
+Check whether every prominent image is professionally usable for its role and still deserves its pre-lock PASS in the rendered page:
 
+- immediately understandable without needing explanatory copy;
+- reinforces the intended brand/service perception rather than an accidental negative signal;
+- materially relevant to the proposition or section rather than merely sector-related;
+- credible and physically plausible in tools, materials, anatomy, scale and technical relationships where applicable;
 - adequate effective resolution at rendered size;
 - intentional crop and focal point;
 - coherent photographic/illustrative style;
+- composition works with adjacent copy on desktop and mobile;
 - no enlarged thumbnails;
 - no screenshot-like recycled fragments;
 - no visibly amateur source photography in dominant roles when grounded replacement is possible;
 - no generic filler stock where a prospect-specific or grounded asset is justified;
 - no generated image that creates false documentary evidence;
 - no image that appears chosen after layout merely because it fit the box.
+
+Temporarily ignore the copy and inspect the page through imagery alone. The visual story should remain clear, credible and consistent with the intended proposition.
 
 ### 9. Mobile
 Check the same commercial story on a small screen: hierarchy, readability, navigation, tap targets, logo treatment, image crop/focal point and CTA visibility.
@@ -88,9 +95,22 @@ REVISE immediately when any prominent visual contains:
 - generated imagery that materially misrepresents company-specific reality;
 - a logo approximation different from the locked final logo.
 
+### Image-quality regression
+
+REVISE when the actual render proves that a prominent image should not have passed the Pre-Lock Image Quality Gate, including when:
+
+- the subject/activity is materially ambiguous in context;
+- the final crop introduces confusion or hides the meaningful subject;
+- deterioration, dirt, damage, emergency-repair character or another unintended signal dominates the desired brand perception;
+- the image is merely sector-related but does not support the section's message or customer decision;
+- a generated/stock scene is physically or technically implausible;
+- the image is aesthetically acceptable in isolation but materially weakens the page composition.
+
+A previous asset lock is not a reason to preserve a bad decision. Return internally to Workflow 02, unlock and replace/re-lock the affected asset, then rebuild and critique again.
+
 ### Asset-readiness regression
 
-REVISE if the rendered site proves that `ASSET_READY` should never have passed, for example because the hero photography, logo, or major service imagery is still visibly under-resolved.
+REVISE if the rendered site otherwise proves that `ASSET_READY` should never have passed, for example because the hero photography, logo, or major service imagery is still visibly under-resolved or the asset set no longer reads as one coherent visual family.
 
 Return internally to Workflow 02, fix/re-lock the affected visual assets, then rebuild and critique again.
 
@@ -111,7 +131,8 @@ A concept passes only when all are true:
 5. logo, imagery and layout feel intentionally designed together;
 6. no obvious overlap, clipping, filler, fake proof, process-copy leakage or AI-template pattern;
 7. imagery looks deliberately selected/art-directed rather than mechanically reused;
-8. the improvement is material enough to justify showing the source and candidate side by side to the prospect.
+8. every prominent image remains immediately understandable and supports the desired perception in its final crop;
+9. the improvement is material enough to justify showing the source and candidate side by side to the prospect.
 
 A deterministic scanner pass does not override a human visual failure.
 
@@ -139,6 +160,7 @@ Do not make the operator discover that photography, logo treatment or layout is 
 
 Deliver only when:
 
+- every prominent image still deserves `IMAGE_QUALITY_GATE = PASS` in the actual render;
 - `ASSET_READY = PASS` still holds in the actual render;
 - critique = `PASS`;
 - final HTML uses the exact locked visual assets;
