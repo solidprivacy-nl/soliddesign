@@ -59,8 +59,13 @@ class DesignPromptCoreTests(unittest.TestCase):
         self.assertIn("Do not turn this into an administrative classification system", combined)
         self.assertIn("# 12. Image asset lock", combined)
         self.assertIn("Never substitute semantically similar but visually weaker images", combined)
-        self.assertIn("# 15. HTML fidelity contract", combined)
-        self.assertLess(combined.index("# 12. Image asset lock"), combined.index("# 15. HTML fidelity contract"))
+        self.assertIn("## 8.1 Mandatory production order", combined)
+        self.assertIn("6. lock image assets and crops;", combined)
+        self.assertIn("7. build final semantic HTML/CSS;", combined)
+        self.assertLess(
+            combined.index("6. lock image assets and crops;"),
+            combined.index("7. build final semantic HTML/CSS;"),
+        )
         self.assertNotIn("ASSET_READY", combined)
         self.assertNotIn("IMAGE_QUALITY_GATE", combined)
 
@@ -78,18 +83,19 @@ class DesignPromptCoreTests(unittest.TestCase):
         combined = self.read("prompts/SOLIDDESIGN_COMBINED_SKILL.md")
         design_entry = self.read("prompts/library/website-design.md")
 
-        self.assertIn("# 14.1 Customer-facing copy boundary", combined)
-        self.assertIn("the current/existing website", combined)
+        self.assertIn(
+            "Customer-facing copy must never expose audit, redesign, CMS or SolidDesign process language",
+            combined,
+        )
+        self.assertIn("current website", combined)
         self.assertIn("in this concept", combined)
-        self.assertIn("CMS / SolidDesign process terminology", combined)
         self.assertIn("Do not leak redesign/audit/CMS/SolidDesign process language", design_entry)
 
     def test_decorative_numbering_is_rejected(self):
         combined = self.read("prompts/SOLIDDESIGN_COMBINED_SKILL.md")
 
-        self.assertIn("Do not use decorative numbering", combined)
-        self.assertIn("decorative `01 / 02 / 03 / 04` numbering", combined)
-        self.assertIn("real semantic meaning", combined)
+        self.assertIn("Do not use decorative numbering such as `01 / 02 / 03 / 04`", combined)
+        self.assertIn("unless the number communicates a real sequence", combined)
 
     def test_adjustment_is_documented_and_has_exact_rollback_anchor(self):
         adr = self.read("docs/decisions/20260914_INTEGRATED_DESIGN_ASSETS_REVERSIBLE_ADJUSTMENT.md")
