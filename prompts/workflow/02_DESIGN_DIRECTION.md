@@ -74,7 +74,7 @@ Typical roles may include hero, one or more service images, company/about imager
 
 ## Phase D — produce the actual imagery
 
-Resolve every prominent role to an exact asset before HTML.
+Resolve every prominent role to an exact candidate asset before HTML.
 
 Choose the strongest truthful solution in this order:
 
@@ -106,7 +106,76 @@ Do not present as real company evidence unless verified:
 
 If a generated visual is illustrative, ensure the surrounding copy does not imply it documents a verified company-specific fact.
 
-## Phase E — lock the asset set
+## Phase E — pre-lock image quality gate
+
+Topical relevance is not sufficient. Before any prominent candidate image receives a locked asset identity, inspect the **actual candidate in its intended role and crop** and require:
+
+**`IMAGE_QUALITY_GATE = PASS`**
+
+Evaluate all six dimensions:
+
+### 1. Immediate clarity
+
+Within approximately two seconds, can a normal visitor understand what the image depicts and why it belongs on this page?
+
+FAIL when the subject, activity or technical scene is materially ambiguous, visually confusing or requires explanation before it becomes meaningful.
+
+### 2. Desired perception
+
+What does the image communicate emotionally and commercially before the visitor reads the copy?
+
+It must reinforce the intended perception — for example professionalism, workmanship, cleanliness, reliability, expertise, care or quality — rather than an accidental negative signal.
+
+A defect, worn component or damaged object may be shown when diagnosis, repair or a before-state is explicitly the message. It must not become the unintended dominant brand impression.
+
+### 3. Business and message relevance
+
+The exact image must materially support the proposition, section purpose or customer decision. Sector similarity alone is insufficient.
+
+“Something related to plumbing”, “something electrical” or another generic category match is not an adequate selection rationale.
+
+### 4. Credibility and physical plausibility
+
+The depicted situation must make sense. Check where applicable:
+
+- tools and materials;
+- connections and equipment;
+- human anatomy and posture;
+- scale and spatial relationships;
+- construction/installation logic;
+- working environment.
+
+Reject impossible, uncanny or technically incoherent imagery even when visually attractive. Preserve the generated-visual truth boundary above.
+
+### 5. Composition fit
+
+Judge the image in the intended page composition, not only as a standalone picture. Check focal point, subject placement, negative space, crop, direction of action/gaze, relation to adjacent copy, rendered visual weight and desktop/mobile treatment.
+
+A good photograph that performs poorly in the actual role is not a passing asset.
+
+### 6. Visual craft
+
+The image must meet the quality level of the intended redesign. Check lighting, clarity, tonal quality, photographic coherence, distracting artifacts, visual noise, cheap/generic stock character and consistency with the page's photographic language.
+
+### Hard decision rule
+
+A material failure on **any** dimension is `IMAGE_QUALITY_GATE = FAIL`.
+
+Do not average away a serious weakness with strengths elsewhere and do not create a numeric image-quality score. A failed candidate is not locked. Select, edit or generate another candidate and repeat the gate.
+
+If no candidate meets the required quality level, prefer a strong no-image composition over knowingly using weak imagery.
+
+The selection question is not merely:
+
+> Is this image related to the sector?
+
+It is:
+
+> Does this exact image, in this exact role and crop, make the business clearer, more credible and more desirable without misleading the visitor?
+
+## Phase F — lock the asset set
+
+Only assets with `IMAGE_QUALITY_GATE = PASS` may be locked for prominent image roles.
 
 Assign stable internal identities to every final prominent asset, for example:
 
@@ -135,7 +204,8 @@ Set `ASSET_READY = PASS` only when all are true:
 
 - final logo decision is KEEP / REFINE / REDESIGN and `LOGO_FINAL_01` exists;
 - every prominent image role has a final exact asset;
-- no dominant image knowingly relies on inadequate resolution, accidental crop or amateur source treatment;
+- every prominent image has `IMAGE_QUALITY_GATE = PASS`;
+- no dominant image knowingly relies on inadequate resolution, accidental crop, amateur source treatment, material ambiguity or unintended negative brand perception;
 - the set looks like one art-directed family rather than mismatched fragments;
 - desktop/mobile crop intent is known;
 - generated visuals remain grounded and non-misleading.
@@ -166,6 +236,7 @@ Handoff to Workflow 03 only with:
 - visual direction;
 - `LOGO_FINAL_01` decision + exact asset;
 - final image-role manifest with exact locked assets/crops;
+- `IMAGE_QUALITY_GATE = PASS` for every prominent image;
 - mobile-specific decisions;
 - `ASSET_READY = PASS`.
 
