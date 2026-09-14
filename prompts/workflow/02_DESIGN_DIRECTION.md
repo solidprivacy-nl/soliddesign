@@ -62,7 +62,7 @@ For every prominent visual role, define before asset selection/generation:
 
 - purpose — what must the image communicate?
 - subject — what verified or generic subject is appropriate?
-- whether it is evidence, atmosphere, service explanation or brand recognition;
+- role class — **EVIDENCE** or **ILLUSTRATIVE**;
 - aspect ratio;
 - focal point;
 - intended crop/object-position;
@@ -72,17 +72,66 @@ For every prominent visual role, define before asset selection/generation:
 
 Typical roles may include hero, one or more service images, company/about imagery or project imagery. Do not create image slots merely to fill a grid.
 
+## Visual evidence / polish balance
+
+Use this as the governing visual rule:
+
+> **Real for trust. Generated for polish. Never misleading.**
+
+Do not collapse all imagery into one truth standard. The correct asset source depends on the role.
+
+### EVIDENCE roles
+
+An image has an **EVIDENCE** role when a normal visitor could reasonably read it as proof of company-specific reality or identity, for example:
+
+- company premises;
+- team/staff;
+- vehicle/fleet;
+- a real project or completed installation;
+- a specific client/location;
+- certification, partnership or owned equipment;
+- historical company material.
+
+For EVIDENCE roles, use verified real source material. Editing, crop, cleanup and restoration are allowed when they preserve the underlying truth. Do not replace missing evidence with generated documentary-looking imagery.
+
+### ILLUSTRATIVE roles
+
+An image has an **ILLUSTRATIVE** role when it supports comprehension, atmosphere, service explanation, material quality, craft or premium perception without claiming to document the prospect itself.
+
+For ILLUSTRATIVE roles, high-quality generated imagery is explicitly allowed and should be used when it materially improves the design. Typical uses include:
+
+- clean service-detail photography;
+- materials, tools or technical context;
+- premium interior/work-detail imagery;
+- atmospheric craft imagery;
+- compositions that support visual rhythm or clarify a service.
+
+Generated people may be used only when the context remains clearly illustrative. Do not use a generated person in a role where a normal visitor is likely to infer “this is their employee/customer/team member”.
+
+### Balance rule
+
+The truth boundary is **not** a reason to remove useful imagery by default.
+
+Do not solve uncertainty by making the page unnecessarily sparse. If supporting imagery materially improves comprehension, perceived quality, visual rhythm or premium character, resolve suitable ILLUSTRATIVE imagery instead of omitting it merely because verified company photography is limited.
+
+Conversely, do not add generated imagery simply to fill empty space. The number of images follows the composition and business need; there is no fixed image quota.
+
+A strong result usually combines:
+
+- verified real assets where identity/trust must be proven; and
+- carefully art-directed illustrative assets where visual polish or service communication benefits from them.
+
 ## Phase D — produce the actual imagery
 
 Resolve every prominent role to an exact candidate asset before HTML.
 
-Choose the strongest truthful solution in this order:
+Choose the strongest truthful solution in this order, while respecting the role class above:
 
 1. strong real company/project image already suitable for the role;
 2. real source image improved by crop/edit/cleanup when quality permits;
 3. grounded art-directed visualization based on verified reality;
 4. authentic service/sector-relevant photography;
-5. high-quality generated image;
+5. high-quality generated image for an ILLUSTRATIVE role;
 6. generic stock only as a last resort.
 
 Weak source photography does not gain preservation rights merely because it is authentic. Preserve useful subject matter or visual truth; improve the pixels/presentation when the existing asset materially limits design quality.
@@ -104,7 +153,7 @@ Do not present as real company evidence unless verified:
 - completed installation;
 - certification or product partnership.
 
-If a generated visual is illustrative, ensure the surrounding copy does not imply it documents a verified company-specific fact.
+If a generated visual is illustrative, ensure the surrounding copy and placement do not imply it documents a verified company-specific fact.
 
 ## Phase E — pre-lock image quality gate
 
@@ -163,7 +212,7 @@ A material failure on **any** dimension is `IMAGE_QUALITY_GATE = FAIL`.
 
 Do not average away a serious weakness with strengths elsewhere and do not create a numeric image-quality score. A failed candidate is not locked. Select, edit or generate another candidate and repeat the gate.
 
-If no candidate meets the required quality level, prefer a strong no-image composition over knowingly using weak imagery.
+If no candidate meets the required quality level, prefer a strong no-image composition over knowingly using weak imagery. This is an exception for a failed role, not a default reaction to limited verified photography; first consider whether a truthful ILLUSTRATIVE asset can solve the role.
 
 The selection question is not merely:
 
@@ -190,11 +239,11 @@ IMG_ABOUT_01
 For each image lock:
 
 - exact asset identity;
+- role class: EVIDENCE or ILLUSTRATIVE;
 - aspect ratio;
 - focal point;
 - desktop crop/object-position;
-- mobile crop/object-position;
-- evidence vs illustrative role.
+- mobile crop/object-position.
 
 Do not generate different imagery later merely because implementation starts.
 
@@ -205,6 +254,9 @@ Set `ASSET_READY = PASS` only when all are true:
 - final logo decision is KEEP / REFINE / REDESIGN and `LOGO_FINAL_01` exists;
 - every prominent image role has a final exact asset;
 - every prominent image has `IMAGE_QUALITY_GATE = PASS`;
+- every prominent image is explicitly classified EVIDENCE or ILLUSTRATIVE;
+- EVIDENCE roles use verified real material and are not replaced by generated documentary-looking proof;
+- ILLUSTRATIVE imagery is present where it materially improves comprehension or premium visual quality, rather than being omitted merely because verified company photography is limited;
 - no dominant image knowingly relies on inadequate resolution, accidental crop, amateur source treatment, material ambiguity or unintended negative brand perception;
 - the set looks like one art-directed family rather than mismatched fragments;
 - desktop/mobile crop intent is known;
@@ -216,14 +268,15 @@ If adequate source imagery does not exist and required generation/editing capabi
 
 ## Decision rules
 
-1. Every major visual must serve comprehension, trust, action or genuine brand recognition.
-2. Do not add generic statistics, testimonials, badges or logo strips without verified content and a commercial reason.
-3. Use customer language rather than database labels, audit terminology or internal jargon.
-4. Do not force the same layout on businesses with materially different buying behavior.
-5. Preserve identity; improve execution.
-6. Prefer bespoke coherent art direction over collage-like reuse of mismatched source fragments.
-7. Keep the asset set as small as the design actually needs.
-8. Do not expose exploratory weak variants to the operator merely because they were generated.
+1. Every major visual must serve comprehension, trust, action, premium perception or genuine brand recognition.
+2. Real company imagery is preferred for trust/evidence; generated imagery is valid for illustration/polish when it does not impersonate evidence.
+3. Do not add generic statistics, testimonials, badges or logo strips without verified content and a commercial reason.
+4. Use customer language rather than database labels, audit terminology or internal jargon.
+5. Do not force the same layout on businesses with materially different buying behavior.
+6. Preserve identity; improve execution.
+7. Prefer bespoke coherent art direction over collage-like reuse of mismatched source fragments.
+8. Keep the asset set as small as the design actually needs, but do not confuse minimalism with visual under-resolution.
+9. Do not expose exploratory weak variants to the operator merely because they were generated.
 
 ## Output/handoff
 
@@ -235,7 +288,7 @@ Handoff to Workflow 03 only with:
 - trust/content strategy;
 - visual direction;
 - `LOGO_FINAL_01` decision + exact asset;
-- final image-role manifest with exact locked assets/crops;
+- final image-role manifest with exact locked assets/crops and EVIDENCE/ILLUSTRATIVE classification;
 - `IMAGE_QUALITY_GATE = PASS` for every prominent image;
 - mobile-specific decisions;
 - `ASSET_READY = PASS`.

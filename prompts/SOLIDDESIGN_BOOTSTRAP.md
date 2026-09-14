@@ -1,7 +1,7 @@
 # SolidDesign Design Bootstrap
 
 **Prompt architecture version:** `0.4`  
-**Design execution revision:** `integrated-assets-v3 / 2026-09-14`
+**Design execution revision:** `visual-evidence-balance-v1 / 2026-09-14`
 
 This file is the canonical root instruction for a SolidDesign customer website redesign.
 
@@ -40,7 +40,7 @@ prospect evidence + Website Opportunity
 → assess logo and brand equity
 → choose KEEP / REFINE / REDESIGN for the logo
 → establish visual direction
-→ define every prominent image role
+→ define every prominent image role as EVIDENCE or ILLUSTRATIVE
 → select / edit / generate candidate imagery
 → PRE-LOCK IMAGE QUALITY GATE
 → lock final logo + passing imagery
@@ -65,11 +65,30 @@ Protect the company name and valuable recognition. Do not rebrand merely because
 
 Photography and imagery are design inputs, not post-build decoration.
 
-For every prominent image role, determine its purpose, subject, aspect ratio, focal point, crop and desktop/mobile behavior. If available source imagery is not strong enough for that role, edit, reconstruct or generate a better truthful candidate **before** building the HTML.
+Use this governing rule:
+
+> **Real for trust. Generated for polish. Never misleading.**
+
+For every prominent image role, determine its purpose, subject, EVIDENCE/ILLUSTRATIVE classification, aspect ratio, focal point, crop and desktop/mobile behavior.
+
+- **EVIDENCE** roles are company-specific proof or identity and require verified real material.
+- **ILLUSTRATIVE** roles support service comprehension, atmosphere, craft, visual rhythm or premium perception and may use high-quality generated imagery when it remains clearly non-documentary and physically plausible.
+
+Limited verified company photography is not a reason to make the design unnecessarily sparse. If illustrative imagery materially improves the result, resolve it before HTML. Conversely, do not add generated imagery merely to fill space.
+
+If available source imagery is not strong enough for a role, edit, reconstruct or generate a better truthful candidate **before** building the HTML, provided the chosen solution respects the EVIDENCE/ILLUSTRATIVE boundary.
 
 Before locking any prominent image, apply the mandatory Pre-Lock Image Quality Gate from Workflow 02. Topical/sector relevance alone is never sufficient. The exact candidate in its intended role and crop must pass clarity, desired perception, business relevance, credibility/plausibility, composition fit and visual craft.
 
-Do not wait for the user to point out weak photography that the design process can identify itself. When image-generation/editing capability is available and stronger imagery is required, use it autonomously. If no adequate source asset exists and the required generation/editing capability is genuinely unavailable, report that as a blocker instead of building around known-bad imagery.
+Do not wait for the user to point out weak photography that the design process can identify itself. When image-generation/editing capability is available and stronger ILLUSTRATIVE imagery is required, use it autonomously. If no adequate source asset exists for a required EVIDENCE role, do not fabricate one.
+
+### Semantic decoration rule
+
+Do not manufacture visual structure with meaningless UI devices.
+
+In particular, do not add `01 / 02 / 03 / 04` or other numbering to services/cards unless the number itself communicates a real sequence, ranking, date/year, quantity, verified metric or useful numbered reference.
+
+Apply the same test to badges, chips, repeated cards and pseudo-dashboard elements: use them only when they improve comprehension, trust, navigation, action or genuine brand recognition.
 
 ### Asset-readiness gate
 
@@ -79,6 +98,9 @@ Do not wait for the user to point out weak photography that the design process c
 
 - one exact final logo asset chosen and locked;
 - every prominent image role resolved to an exact selected/edited/generated asset;
+- every prominent image classified EVIDENCE or ILLUSTRATIVE;
+- EVIDENCE roles use verified real material rather than generated documentary-looking proof;
+- ILLUSTRATIVE imagery is present where it materially improves comprehension or premium visual quality rather than being omitted solely because verified company photography is limited;
 - every prominent image has `IMAGE_QUALITY_GATE = PASS` before lock;
 - intended aspect ratio, focal point and crop known for desktop and mobile;
 - no known low-resolution or amateur image forced into a dominant role;
@@ -146,7 +168,7 @@ After loading the two URLs and all REQUIRED resources, execute the design assign
 2. inspect the source website, current concept when present and relevant visual evidence;
 3. diagnose the business, Website Opportunity, brand/logo and imagery quality;
 4. establish one coherent design direction;
-5. resolve candidate imagery, pass the Pre-Lock Image Quality Gate, then lock logo + prominent imagery until `ASSET_READY` passes;
+5. classify image roles as EVIDENCE or ILLUSTRATIVE, resolve candidate imagery, pass the Pre-Lock Image Quality Gate, then lock logo + prominent imagery until `ASSET_READY` passes;
 6. build the actual HTML around those assets;
 7. render and inspect desktop and mobile;
 8. compare source/current concept → candidate;
@@ -162,6 +184,8 @@ Ask the user only when a genuinely missing fact or irreversible identity decisio
 > Design the actual prospect, not an abstract sector.
 
 > Logo and imagery are part of the design, not cleanup after the design.
+
+> Real for trust. Generated for polish. Never misleading.
 
 > Resolve visual assets first; admit only passing imagery; then build once around the exact assets that passed.
 
