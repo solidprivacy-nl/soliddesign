@@ -60,7 +60,7 @@ class DesignPromptCoreTests(unittest.TestCase):
         self.assertIn("## Phase C — define the image roles", direction)
         self.assertIn("## Phase D — produce the actual imagery", direction)
         self.assertIn("create or edit the asset now", direction)
-        self.assertIn("## Phase E — lock the asset set", direction)
+        self.assertIn("## Phase F — lock the asset set", direction)
         self.assertIn("## `ASSET_READY` hard gate", direction)
 
         self.assertIn("Workflow 03 may start only when", build)
@@ -72,6 +72,32 @@ class DesignPromptCoreTests(unittest.TestCase):
         self.assertIn("### Asset-readiness regression", critique)
         self.assertIn("return internally to workflow 02", critique.lower())
         self.assertIn("Do not deliver a candidate marked `REVISE`", critique)
+
+    def test_pre_lock_image_quality_gate_is_mandatory_and_non_numeric(self):
+        bootstrap = self.read("prompts/SOLIDDESIGN_BOOTSTRAP.md")
+        direction = self.read("prompts/workflow/02_DESIGN_DIRECTION.md")
+        critique = self.read("prompts/workflow/04_CRITIQUE.md")
+
+        self.assertIn("PRE-LOCK IMAGE QUALITY GATE", bootstrap)
+        self.assertIn("every prominent image has `IMAGE_QUALITY_GATE = PASS` before lock", bootstrap)
+
+        self.assertIn("## Phase E — pre-lock image quality gate", direction)
+        self.assertIn("**`IMAGE_QUALITY_GATE = PASS`**", direction)
+        self.assertIn("### 1. Immediate clarity", direction)
+        self.assertIn("### 2. Desired perception", direction)
+        self.assertIn("### 3. Business and message relevance", direction)
+        self.assertIn("### 4. Credibility and physical plausibility", direction)
+        self.assertIn("### 5. Composition fit", direction)
+        self.assertIn("### 6. Visual craft", direction)
+        self.assertIn("Do not average away a serious weakness", direction)
+        self.assertIn("do not create a numeric image-quality score", direction)
+        self.assertIn("Only assets with `IMAGE_QUALITY_GATE = PASS` may be locked", direction)
+        self.assertNotIn("IMAGE_QUALITY_SCORE", direction)
+
+        self.assertIn("### Image-quality regression", critique)
+        self.assertIn("A previous asset lock is not a reason to preserve a bad decision", critique)
+        self.assertIn("unlock and replace/re-lock the affected asset", critique)
+        self.assertIn("every prominent image still deserves `IMAGE_QUALITY_GATE = PASS`", critique)
 
     def test_generated_imagery_truth_boundary_is_explicit(self):
         constitution = self.read("prompts/core/DESIGN_CONSTITUTION.md")
@@ -107,6 +133,17 @@ class DesignPromptCoreTests(unittest.TestCase):
         self.assertIn("Website Opportunity remains unchanged", adr)
         self.assertIn("superseded on 2026-09-14", previous_adr)
         self.assertIn("20260914_INTEGRATED_DESIGN_ASSETS_REVERSIBLE_ADJUSTMENT.md", previous_adr)
+
+    def test_image_quality_adjustment_is_documented_and_reversible(self):
+        adr = self.read("docs/decisions/20260914_PRE_LOCK_IMAGE_QUALITY_GATE_REVERSIBLE_ADJUSTMENT.md")
+
+        self.assertIn("Pre-Lock Image Quality Gate", adr)
+        self.assertIn("4393af7b19d4446c4cc14661ec096570b62f568f", adr)
+        self.assertIn("rollback/pre-2026-09-14-image-quality-gate", adr)
+        self.assertIn("No Supabase", adr)
+        self.assertIn("No CMS runtime", adr)
+        self.assertIn("A. van Berkel", adr)
+        self.assertIn("hard PASS/FAIL", adr)
 
 
 if __name__ == "__main__":
