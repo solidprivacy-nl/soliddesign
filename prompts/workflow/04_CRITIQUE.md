@@ -43,8 +43,16 @@ Check that:
 Check composition, spacing, typography, contrast, alignment, image treatment, overflow, clipping, awkward line breaks and visual balance.
 
 ### 8. Imagery and art direction
+
+Use the governing rule:
+
+> **Real for trust. Generated for polish. Never misleading.**
+
 Check whether every prominent image is professionally usable for its role and still deserves its pre-lock PASS in the rendered page:
 
+- its EVIDENCE / ILLUSTRATIVE classification still makes sense in context;
+- EVIDENCE imagery is genuinely verified company-specific material rather than synthetic documentary theatre;
+- ILLUSTRATIVE imagery clearly supports service comprehension, atmosphere, craft or premium perception without impersonating proof;
 - immediately understandable without needing explanatory copy;
 - reinforces the intended brand/service perception rather than an accidental negative signal;
 - materially relevant to the proposition or section rather than merely sector-related;
@@ -60,7 +68,16 @@ Check whether every prominent image is professionally usable for its role and st
 - no generated image that creates false documentary evidence;
 - no image that appears chosen after layout merely because it fit the box.
 
-Temporarily ignore the copy and inspect the page through imagery alone. The visual story should remain clear, credible and consistent with the intended proposition.
+Also judge the balance of the full page, not only each image individually:
+
+- authentic company imagery should carry identity and trust where useful source material exists;
+- generated/illustrative imagery should provide enough visual richness when the proposition benefits from it;
+- limited verified photography must not automatically result in a visually under-resolved or unnecessarily sparse page;
+- generated imagery must not dominate so strongly that the business starts to feel fictional or generic.
+
+There is no fixed image count. Judge whether the page has the right amount and type of imagery for this specific business and composition.
+
+Temporarily ignore the copy and inspect the page through imagery alone. The visual story should remain clear, credible, sufficiently rich and consistent with the intended proposition.
 
 ### 9. Mobile
 Check the same commercial story on a small screen: hierarchy, readability, navigation, tap targets, logo treatment, image crop/focal point and CTA visibility.
@@ -68,8 +85,12 @@ Check the same commercial story on a small screen: hierarchy, readability, navig
 ### 10. AI-slop check
 Reject generic patterns that could belong to almost any company: ornamental gradients, repetitive cards, fabricated numbers, empty slogans, decorative dark panels, generic stock-person imagery or unnecessary UI complexity.
 
+Specifically reject **decorative numbering** such as `01 / 02 / 03 / 04` when the numbers do not communicate a real sequence, ranking, date/year, quantity, verified metric or useful numbered reference. Numbering used only to make a short set of services/cards look designed is an AI/template giveaway and is `REVISE`.
+
+Also challenge repetitive badges, chips, pseudo-dashboard elements and identical card patterns when they provide no semantic or interaction value.
+
 ### 11. Truth check
-No unverified claim may become customer-facing fact. Generated visual context may not be described as verified company-specific proof unless it actually is.
+No unverified claim may become customer-facing fact. Generated visual context may not be described or visually framed as verified company-specific proof unless it actually is.
 
 ### 12. Customer-copy contamination check
 The website may never expose the design process. REVISE if customer-facing copy contains audit language, redesign rationale, CMS/SolidDesign terminology or phrases such as:
@@ -93,7 +114,17 @@ REVISE immediately when any prominent visual contains:
 - broken/missing assets;
 - obviously weaker imagery than the role requires;
 - generated imagery that materially misrepresents company-specific reality;
+- an EVIDENCE role filled by generated documentary-looking material;
 - a logo approximation different from the locked final logo.
+
+### Visual-balance regression
+
+REVISE when either extreme has occurred:
+
+- **under-resolution:** useful imagery has been removed so aggressively that the page feels sparse, generic or less premium even though truthful ILLUSTRATIVE imagery could materially improve it; or
+- **synthetic overreach:** generated imagery has become so prominent or documentary-looking that it weakens authenticity or suggests unverified company-specific reality.
+
+The correct response to weak real source photography is not automatically “remove all imagery”. Return to Workflow 02 and resolve the missing polish role with truthful illustration/generation when that improves the design.
 
 ### Image-quality regression
 
@@ -110,7 +141,7 @@ A previous asset lock is not a reason to preserve a bad decision. Return interna
 
 ### Asset-readiness regression
 
-REVISE if the rendered site otherwise proves that `ASSET_READY` should never have passed, for example because the hero photography, logo, or major service imagery is still visibly under-resolved or the asset set no longer reads as one coherent visual family.
+REVISE if the rendered site otherwise proves that `ASSET_READY` should never have passed, for example because the hero photography, logo, or major service imagery is still visibly under-resolved, the EVIDENCE/ILLUSTRATIVE distinction is violated or the asset set no longer reads as one coherent visual family.
 
 Return internally to Workflow 02, fix/re-lock the affected visual assets, then rebuild and critique again.
 
@@ -129,10 +160,11 @@ A concept passes only when all are true:
 3. proposition understandable above the fold;
 4. primary CTA obvious without hunting;
 5. logo, imagery and layout feel intentionally designed together;
-6. no obvious overlap, clipping, filler, fake proof, process-copy leakage or AI-template pattern;
+6. no obvious overlap, clipping, filler, fake proof, process-copy leakage, decorative numbering or AI-template pattern;
 7. imagery looks deliberately selected/art-directed rather than mechanically reused;
 8. every prominent image remains immediately understandable and supports the desired perception in its final crop;
-9. the improvement is material enough to justify showing the source and candidate side by side to the prospect.
+9. real company imagery provides authenticity where it matters and illustrative imagery provides sufficient polish where useful;
+10. the improvement is material enough to justify showing the source and candidate side by side to the prospect.
 
 A deterministic scanner pass does not override a human visual failure.
 
@@ -154,13 +186,15 @@ If `REVISE`:
 
 **Do not deliver a candidate marked `REVISE`.**
 
-Do not make the operator discover that photography, logo treatment or layout is weak through multiple chat rounds. Failed intermediate candidates remain internal unless the user explicitly asks to inspect alternatives.
+Do not make the operator discover that photography, logo treatment, visual richness or layout is weak through multiple chat rounds. Failed intermediate candidates remain internal unless the user explicitly asks to inspect alternatives.
 
 ## Final delivery gate
 
 Deliver only when:
 
 - every prominent image still deserves `IMAGE_QUALITY_GATE = PASS` in the actual render;
+- every prominent visual still respects its EVIDENCE / ILLUSTRATIVE role;
+- the page achieves a credible real-for-trust / generated-for-polish balance without either visual starvation or synthetic overreach;
 - `ASSET_READY = PASS` still holds in the actual render;
 - critique = `PASS`;
 - final HTML uses the exact locked visual assets;
