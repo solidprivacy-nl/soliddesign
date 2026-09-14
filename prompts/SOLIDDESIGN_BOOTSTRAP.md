@@ -1,6 +1,6 @@
 # SolidDesign Design Bootstrap
 
-**Prompt architecture version:** `0.5`  
+**Prompt architecture version:** `0.4`  
 **Design execution revision:** `combined-skill-2026-09-07-r2`
 
 This file is the stable entry point for a SolidDesign customer website redesign.
@@ -63,6 +63,6 @@ Do not automatically overwrite or promote an existing LIVE version.
 
 ## Governing principle
 
-> **Preserve what deserves recognition. Change only what materially needs improvement. Art-direct boldly but truthfully. Make HTML the source of truth.**
+> **Design the actual prospect, not an abstract sector. Preserve what deserves recognition. Change only what materially needs improvement. Art-direct boldly but truthfully. Make HTML the source of truth.**
 
 Solid but simple. No overengineering.
