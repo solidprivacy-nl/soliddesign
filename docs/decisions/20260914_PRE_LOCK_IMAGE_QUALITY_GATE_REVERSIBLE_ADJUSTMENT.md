@@ -1,7 +1,7 @@
 # ADR — Pre-Lock Image Quality Gate as Reversible Design-Method Adjustment
 
 **Date:** 2026-09-14  
-**Status:** proposed in isolated PR; production unchanged until merge  
+**Status:** accepted for production; PR and production verification complete  
 **Scope:** SolidDesign design prompt execution only  
 **Governing rule:** `ENGINEERING_CONSTITUTION.md`
 
@@ -185,6 +185,34 @@ Technical acceptance requires:
 - no CMS/Supabase/runtime architecture is added;
 - design prompt regression tests pass;
 - normal CI passes on the exact PR head.
+
+### Verification evidence
+
+The implementation was merged through PR #57 as one squash commit:
+
+```text
+production merge SHA: 658f526c52b9a1053df1a11891daa7710aa06522
+PR head SHA:          0fd62c71bec4f22650b3b00ebe710cbb27f3143d
+```
+
+Exact-head PR verification:
+
+```text
+CI #615 / run 34865969954: SUCCESS
+Deploy Operator #240 / run 34865970018: SUCCESS on retry attempt 2
+first deploy attempt: static deployment succeeded; preview smoke temporarily returned 404 for discovery-triage.js; unchanged failed-job rerun passed
+```
+
+Production verification on the merge SHA:
+
+```text
+CI #616 / run 34866196275: SUCCESS
+Deploy Operator #241 / run 34866196086: SUCCESS
+production smoke: SUCCESS
+legacy preview alias: SUCCESS
+```
+
+No runtime/schema change or compensating state action was required.
 
 ## Qualitative regression case
 
