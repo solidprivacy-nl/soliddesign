@@ -1,7 +1,7 @@
 # SolidDesign Design Bootstrap
 
 **Prompt architecture version:** `0.4`  
-**Design execution revision:** `integrated-assets-v2 / 2026-09-14`
+**Design execution revision:** `integrated-assets-v3 / 2026-09-14`
 
 This file is the canonical root instruction for a SolidDesign customer website redesign.
 
@@ -41,8 +41,9 @@ prospect evidence + Website Opportunity
 → choose KEEP / REFINE / REDESIGN for the logo
 → establish visual direction
 → define every prominent image role
-→ select / edit / generate the required final imagery
-→ lock final logo + imagery
+→ select / edit / generate candidate imagery
+→ PRE-LOCK IMAGE QUALITY GATE
+→ lock final logo + passing imagery
 → ASSET_READY
 → build HTML around those exact assets
 → render desktop + mobile
@@ -64,7 +65,9 @@ Protect the company name and valuable recognition. Do not rebrand merely because
 
 Photography and imagery are design inputs, not post-build decoration.
 
-For every prominent image role, determine its purpose, subject, aspect ratio, focal point, crop and desktop/mobile behavior. If available source imagery is not strong enough for that role, edit, reconstruct or generate a better truthful asset **before** building the HTML.
+For every prominent image role, determine its purpose, subject, aspect ratio, focal point, crop and desktop/mobile behavior. If available source imagery is not strong enough for that role, edit, reconstruct or generate a better truthful candidate **before** building the HTML.
+
+Before locking any prominent image, apply the mandatory Pre-Lock Image Quality Gate from Workflow 02. Topical/sector relevance alone is never sufficient. The exact candidate in its intended role and crop must pass clarity, desired perception, business relevance, credibility/plausibility, composition fit and visual craft.
 
 Do not wait for the user to point out weak photography that the design process can identify itself. When image-generation/editing capability is available and stronger imagery is required, use it autonomously. If no adequate source asset exists and the required generation/editing capability is genuinely unavailable, report that as a blocker instead of building around known-bad imagery.
 
@@ -76,8 +79,10 @@ Do not wait for the user to point out weak photography that the design process c
 
 - one exact final logo asset chosen and locked;
 - every prominent image role resolved to an exact selected/edited/generated asset;
+- every prominent image has `IMAGE_QUALITY_GATE = PASS` before lock;
 - intended aspect ratio, focal point and crop known for desktop and mobile;
 - no known low-resolution or amateur image forced into a dominant role;
+- no materially ambiguous, implausible or unintended negative-perception image knowingly locked into a prominent role;
 - no generated visual presented as documentary proof of unverified company-specific reality.
 
 If the gate fails, solve the visual assets first. Do not create an intermediate weak website and ask the user to repair the photography through later chat iterations.
@@ -141,7 +146,7 @@ After loading the two URLs and all REQUIRED resources, execute the design assign
 2. inspect the source website, current concept when present and relevant visual evidence;
 3. diagnose the business, Website Opportunity, brand/logo and imagery quality;
 4. establish one coherent design direction;
-5. resolve and lock logo + prominent imagery until `ASSET_READY` passes;
+5. resolve candidate imagery, pass the Pre-Lock Image Quality Gate, then lock logo + prominent imagery until `ASSET_READY` passes;
 6. build the actual HTML around those assets;
 7. render and inspect desktop and mobile;
 8. compare source/current concept → candidate;
@@ -158,7 +163,7 @@ Ask the user only when a genuinely missing fact or irreversible identity decisio
 
 > Logo and imagery are part of the design, not cleanup after the design.
 
-> Resolve visual assets first; then build once around the exact assets that passed.
+> Resolve visual assets first; admit only passing imagery; then build once around the exact assets that passed.
 
 Standardize the process and the learning, not the visual outcome.
 
