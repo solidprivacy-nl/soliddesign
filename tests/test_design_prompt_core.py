@@ -11,116 +11,85 @@ class DesignPromptCoreTests(unittest.TestCase):
         self.assertTrue(path.is_file(), f"missing required file: {relative_path}")
         return path.read_text(encoding="utf-8")
 
-    def test_one_integrated_design_entry_without_parallel_logo_mode(self):
+    def test_one_integrated_design_entry_uses_combined_skill(self):
         bootstrap = self.read("prompts/SOLIDDESIGN_BOOTSTRAP.md")
         design_entry = self.read("prompts/library/website-design.md")
+        combined = self.read("prompts/SOLIDDESIGN_COMBINED_SKILL.md")
         docs = self.read("docs/PROMPT_LIBRARY.md")
 
-        self.assertIn("## One integrated redesign flow", bootstrap)
-        self.assertIn("There is one normal SolidDesign redesign flow", bootstrap)
-        self.assertIn("logo assessment is mandatory", bootstrap.lower())
-        self.assertIn("NO HTML BEFORE `ASSET_READY`", bootstrap)
+        self.assertIn("single canonical redesign method", bootstrap)
+        self.assertIn("/prompts/SOLIDDESIGN_COMBINED_SKILL.md", bootstrap)
+        self.assertIn("not required inputs", bootstrap)
+        self.assertNotIn("/prompts/core/DESIGN_CONSTITUTION.md", bootstrap)
+        self.assertNotIn("ASSET_READY", bootstrap)
 
         self.assertIn("# SolidDesign Redesign", design_entry)
         self.assertIn("Treat this as one end-to-end design assignment", design_entry)
         self.assertIn("KEEP / REFINE / REDESIGN", design_entry)
-        self.assertIn("ASSET_READY", design_entry)
+        self.assertIn("Combined Skill is the canonical method", design_entry)
+        self.assertNotIn("ASSET_READY", design_entry)
         self.assertNotIn("WEBSITE_ONLY", design_entry)
         self.assertNotIn("LOGO_AND_WEBSITE", design_entry)
 
+        self.assertIn("Version: 2026-09-07-r2", combined)
+        self.assertIn("one coherent improved identity system", combined)
         self.assertFalse((ROOT / "prompts/library/logo-website-design.md").exists())
         self.assertFalse((ROOT / "prompts/workflow/00_LOGO.md").exists())
 
         self.assertIn("there is now exactly one operator entry", docs.lower())
         self.assertIn("There is no separate WEBSITE_ONLY versus LOGO_AND_WEBSITE mode", docs)
-        self.assertIn("no retired `logo-website-design` or `00_LOGO` parallel path remains", docs)
 
-    def test_logo_is_assessed_inside_normal_design_flow(self):
-        constitution = self.read("prompts/core/DESIGN_CONSTITUTION.md")
-        diagnose = self.read("prompts/workflow/01_DIAGNOSE.md")
-        direction = self.read("prompts/workflow/02_DESIGN_DIRECTION.md")
+    def test_logo_is_assessed_keep_refine_redesign_inside_combined_skill(self):
+        combined = self.read("prompts/SOLIDDESIGN_COMBINED_SKILL.md")
 
-        self.assertIn("Logo assessment is part of every redesign", constitution)
-        self.assertIn("KEEP / REFINE / REDESIGN", constitution)
-        self.assertIn("## Mandatory logo assessment", diagnose)
-        self.assertIn("### KEEP", diagnose)
-        self.assertIn("### REFINE", diagnose)
-        self.assertIn("### REDESIGN", diagnose)
-        self.assertIn("## Phase B — finalize the logo decision", direction)
-        self.assertIn("LOGO_FINAL_01", direction)
-        self.assertIn("evolutionary redesign", direction)
+        self.assertIn("assess the existing logo and choose KEEP / REFINE / REDESIGN", combined)
+        self.assertIn("### A. KEEP", combined)
+        self.assertIn("### B. REFINE", combined)
+        self.assertIn("### C. REDESIGN — evolutionary", combined)
+        self.assertIn("### D. REDESIGN — replacement", combined)
+        self.assertIn("A logo redesign is not mandatory", combined)
+        self.assertIn("LOGO_FINAL_01", combined)
+        self.assertIn("KEEP when already good; otherwise evolution before replacement", combined)
 
-    def test_prominent_imagery_is_produced_and_locked_before_html(self):
-        bootstrap = self.read("prompts/SOLIDDESIGN_BOOTSTRAP.md")
-        direction = self.read("prompts/workflow/02_DESIGN_DIRECTION.md")
-        build = self.read("prompts/workflow/03_BUILD.md")
-        critique = self.read("prompts/workflow/04_CRITIQUE.md")
+    def test_imagery_is_art_directed_and_locked_before_html_without_gate_stack(self):
+        combined = self.read("prompts/SOLIDDESIGN_COMBINED_SKILL.md")
 
-        self.assertIn("Photography and imagery are design inputs, not post-build decoration", bootstrap)
-        self.assertIn("## Phase C — define the image roles", direction)
-        self.assertIn("## Phase D — produce the actual imagery", direction)
-        self.assertIn("create or edit the asset now", direction)
-        self.assertIn("## Phase F — lock the asset set", direction)
-        self.assertIn("## `ASSET_READY` hard gate", direction)
+        self.assertIn("Grounded artistic freedom for imagery", combined)
+        self.assertIn("real where proof matters; generated/art-directed where presentation benefits; never misleading", combined)
+        self.assertIn("Do not turn this into an administrative classification system", combined)
+        self.assertIn("# 12. Image asset lock", combined)
+        self.assertIn("Never substitute semantically similar but visually weaker images", combined)
+        self.assertIn("# 15. HTML fidelity contract", combined)
+        self.assertLess(combined.index("# 12. Image asset lock"), combined.index("# 15. HTML fidelity contract"))
+        self.assertNotIn("ASSET_READY", combined)
+        self.assertNotIn("IMAGE_QUALITY_GATE", combined)
 
-        self.assertIn("Workflow 03 may start only when", build)
-        self.assertIn("ASSET_READY = PASS", build)
-        self.assertLess(build.index("ASSET_READY = PASS"), build.index("build semantic HTML/CSS"))
-        self.assertIn("return internally to Workflow 02", build)
-        self.assertIn("Do not make the user orchestrate that loop", build)
+    def test_generated_imagery_truth_boundary_is_explicit_but_compact(self):
+        combined = self.read("prompts/SOLIDDESIGN_COMBINED_SKILL.md")
 
-        self.assertIn("### Asset-readiness regression", critique)
-        self.assertIn("return internally to workflow 02", critique.lower())
-        self.assertIn("Do not deliver a candidate marked `REVISE`", critique)
+        self.assertIn("Creative freedom applies to **presentation**, not to factual claims", combined)
+        self.assertIn("Do not use generated images in a way that falsely presents them as documentary evidence", combined)
+        self.assertIn("clients;", combined)
+        self.assertIn("certifications;", combined)
+        self.assertIn("named staff;", combined)
+        self.assertIn("specific completed projects;", combined)
 
-    def test_pre_lock_image_quality_gate_is_mandatory_and_non_numeric(self):
-        bootstrap = self.read("prompts/SOLIDDESIGN_BOOTSTRAP.md")
-        direction = self.read("prompts/workflow/02_DESIGN_DIRECTION.md")
-        critique = self.read("prompts/workflow/04_CRITIQUE.md")
+    def test_customer_facing_process_copy_is_blocked(self):
+        combined = self.read("prompts/SOLIDDESIGN_COMBINED_SKILL.md")
+        design_entry = self.read("prompts/library/website-design.md")
 
-        self.assertIn("PRE-LOCK IMAGE QUALITY GATE", bootstrap)
-        self.assertIn("every prominent image has `IMAGE_QUALITY_GATE = PASS` before lock", bootstrap)
+        self.assertIn("# 14.1 Customer-facing copy boundary", combined)
+        self.assertIn("the current/existing website", combined)
+        self.assertIn("in this concept", combined)
+        self.assertIn("CMS / SolidDesign process terminology", combined)
+        self.assertIn("Do not leak redesign/audit/CMS/SolidDesign process language", design_entry)
 
-        self.assertIn("## Phase E — pre-lock image quality gate", direction)
-        self.assertIn("**`IMAGE_QUALITY_GATE = PASS`**", direction)
-        self.assertIn("### 1. Immediate clarity", direction)
-        self.assertIn("### 2. Desired perception", direction)
-        self.assertIn("### 3. Business and message relevance", direction)
-        self.assertIn("### 4. Credibility and physical plausibility", direction)
-        self.assertIn("### 5. Composition fit", direction)
-        self.assertIn("### 6. Visual craft", direction)
-        self.assertIn("Do not average away a serious weakness", direction)
-        self.assertIn("do not create a numeric image-quality score", direction)
-        self.assertIn("Only assets with `IMAGE_QUALITY_GATE = PASS` may be locked", direction)
-        self.assertNotIn("IMAGE_QUALITY_SCORE", direction)
+    def test_decorative_numbering_is_rejected(self):
+        combined = self.read("prompts/SOLIDDESIGN_COMBINED_SKILL.md")
 
-        self.assertIn("### Image-quality regression", critique)
-        self.assertIn("A previous asset lock is not a reason to preserve a bad decision", critique)
-        self.assertIn("unlock and replace/re-lock the affected asset", critique)
-        self.assertIn("every prominent image still deserves `IMAGE_QUALITY_GATE = PASS`", critique)
-
-    def test_generated_imagery_truth_boundary_is_explicit(self):
-        constitution = self.read("prompts/core/DESIGN_CONSTITUTION.md")
-        direction = self.read("prompts/workflow/02_DESIGN_DIRECTION.md")
-        critique = self.read("prompts/workflow/04_CRITIQUE.md")
-
-        self.assertIn("may not fabricate company-specific evidence", constitution)
-        self.assertIn("## Truth boundary for generated visuals", direction)
-        self.assertIn("company premises", direction)
-        self.assertIn("vehicle/fleet", direction)
-        self.assertIn("project/client location", direction)
-        self.assertIn("false documentary evidence", critique)
-
-    def test_customer_facing_process_copy_is_release_blocking(self):
-        constitution = self.read("prompts/core/DESIGN_CONSTITUTION.md")
-        build = self.read("prompts/workflow/03_BUILD.md")
-        critique = self.read("prompts/workflow/04_CRITIQUE.md")
-
-        self.assertIn("Customer-facing copy stays customer-facing", constitution)
-        self.assertIn("The prospect website speaks only as the prospect business to its customers", build)
-        self.assertIn("### 12. Customer-copy contamination check", critique)
-        self.assertIn("the current/existing website", critique)
-        self.assertIn("in this concept", critique)
+        self.assertIn("Do not use decorative numbering", combined)
+        self.assertIn("decorative `01 / 02 / 03 / 04` numbering", combined)
+        self.assertIn("real semantic meaning", combined)
 
     def test_adjustment_is_documented_and_has_exact_rollback_anchor(self):
         adr = self.read("docs/decisions/20260914_INTEGRATED_DESIGN_ASSETS_REVERSIBLE_ADJUSTMENT.md")
