@@ -66,7 +66,8 @@ class ProspectFirstDesignBoundaryTests(unittest.TestCase):
 
         self.assertIn("SOLIDDESIGN_ORIGIN", bootstrap)
         self.assertIn("SOLIDDESIGN_ORIGIN", start)
-        self.assertIn("/prompts/core/DESIGN_CONSTITUTION.md", bootstrap)
+        self.assertIn("/prompts/SOLIDDESIGN_COMBINED_SKILL.md", bootstrap)
+        self.assertNotIn("/prompts/core/DESIGN_CONSTITUTION.md", bootstrap)
         self.assertIn(
             "repository and infrastructure discovery are outside the normal design workflow",
             start.lower(),
